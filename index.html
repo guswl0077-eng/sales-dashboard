@@ -425,9 +425,7 @@ tr.row-done td select{text-decoration:none}
       <div class="report-box" id="report-out">리포트 버튼을 눌러 생성하세요.</div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
         <button class="btn btn-outline" onclick="copyReport()">복사하기</button>
-        <button class="btn btn-outline" id="ai-feedback-btn" onclick="genAIFeedback()">✨ AI 피드백</button>
       </div>
-      <div class="report-box" id="ai-feedback-out" style="display:none;margin-top:10px;white-space:pre-wrap;border-color:#c7d7f5;background:#f5f8ff"></div>
     </div>
 
     <!-- 개강 일정 -->
@@ -1603,41 +1601,6 @@ async function genDaily(){
 📝 메모
 ${d.memo||'없음'}`;
   document.getElementById('report-out').textContent=reportText;
-  document.getElementById('ai-feedback-out').style.display='none';
-}
-
-async function genAIFeedback(){
-  const report=document.getElementById('report-out').textContent;
-  if(!report||report.includes('리포트 버튼을 눌러')){showToast('먼저 리포트를 생성해주세요');return;}
-  const btn=document.getElementById('ai-feedback-btn');
-  btn.disabled=true;btn.textContent='분석 중...';
-  const out=document.getElementById('ai-feedback-out');
-  out.style.display='block';out.textContent='AI가 분석 중이에요...';
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1200,
-        messages:[{role:'user',content:`당신은 요리학원 영업팀의 따뜻하고 날카로운 멘토입니다.
-아래는 영업 멘토 현지의 오늘 업무 리포트입니다.
-
-${report}
-
-다음 기준으로 한국어로 친근하게 피드백해주세요:
-1. 잘한 점 — 수치와 메모/할일 내용을 구체적으로 언급 (환불방어, 상담 성공 등 메모에 적힌 내용도 칭찬)
-2. 개선할 점 — 미완료 할일, 미루기 횟수, 목표 대비 부족한 수치
-3. 내일을 위한 조언 — 미룬 할일 중 우선순위, 구체적인 액션
-응원 메시지로 마무리해주세요. 200자 내외로 간결하게.`}]
-      })
-    });
-    const data=await res.json();
-    out.textContent=data.content?.[0]?.text||'피드백을 가져올 수 없어요.';
-  }catch(err){
-    out.textContent='피드백 생성에 실패했어요. 잠시 후 다시 시도해주세요.';
-  }
-  btn.disabled=false;btn.textContent='✨ AI 피드백';
 }
 
 async function genWeekly(){
@@ -1681,7 +1644,6 @@ async function genWeekly(){
 많이 미룬 할일:
 ${top3}`;
   document.getElementById('report-out').textContent=reportText;
-  document.getElementById('ai-feedback-out').style.display='none';
 }
 
 function copyReport(){navigator.clipboard.writeText(document.getElementById('report-out').textContent).then(()=>showToast('복사됐어요 ✓'))}
