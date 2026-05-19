@@ -385,7 +385,7 @@ tr.row-done td select{text-decoration:none}
 
     <!-- 결제 리스트 -->
     <div class="tabs-page" id="tab-list">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <div class="list-filter-tabs">
           <div class="list-filter-tab active" onclick="setListFilter('all')">전체</div>
           <div class="list-filter-tab" onclick="setListFilter('done')">완료</div>
@@ -395,6 +395,12 @@ tr.row-done td select{text-decoration:none}
           <button class="btn btn-outline" onclick="loadPeriodsForPicker();document.getElementById('bulk-student-modal').classList.add('open')">+ 일괄 입력</button>
           <button class="btn btn-primary" onclick="document.getElementById('student-modal').classList.add('open')">+ 학생 추가</button>
         </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input class="form-input" id="list-search" placeholder="이름 검색..." oninput="renderList()" style="width:140px;padding:6px 10px;font-size:13px">
+        <select class="form-input" id="list-period-filter" onchange="renderList()" style="width:140px;padding:6px 10px;font-size:13px">
+          <option value="">전체 영업일</option>
+        </select>
       </div>
       <div class="card"><div class="tbl-wrap" style="overflow-x:hidden"><table style="table-layout:fixed;width:100%"><thead><tr>
         <th style="width:20px"></th>
@@ -417,7 +423,11 @@ tr.row-done td select{text-decoration:none}
         <button class="btn btn-outline" onclick="genWeekly()">주간 리포트</button>
       </div>
       <div class="report-box" id="report-out">리포트 버튼을 눌러 생성하세요.</div>
-      <button class="btn btn-outline" onclick="copyReport()">복사하기</button>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="copyReport()">복사하기</button>
+        <button class="btn btn-outline" id="ai-feedback-btn" onclick="genAIFeedback()">✨ AI 피드백</button>
+      </div>
+      <div class="report-box" id="ai-feedback-out" style="display:none;margin-top:10px;white-space:pre-wrap;border-color:#c7d7f5;background:#f5f8ff"></div>
     </div>
 
     <!-- 개강 일정 -->
@@ -560,7 +570,7 @@ const todayKey=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.get
 const todayStr=()=>{const d=new Date();return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${DAYS[d.getDay()]})`};
 
 let currentUser=null,currentProfile=null,todos=[],fixedTodos=[];
-let calWorkData={},calScheduleData={},calLogData={},calTagData={};
+let calWorkData={},calScheduleData={},calLogData={},calTagData={},calTodoData={};
 let sharedTags=[],personalTags=[],selectedTag=null;
 let selectedColors={shared:'#fde8e8',personal:'#e8f0fe'};
 let calPeriodIdx=0,allPeriods=[];
@@ -693,6 +703,8 @@ function renderTodos(){
       <span class="todo-text ${t.done?'done-text':''}" style="flex:1;cursor:text"
         ondblclick="editTodoInline(this,'${t.id}',${!!t._fixed})"
         title="더블클릭하면 수정">${t.content}</span>
+      ${!t.done&&(t.postpone_count||0)>0?`<span style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:500;white-space:nowrap;${(t.postpone_count||0)>=3?'background:#fee2e2;color:#991b1b':'background:#fef3c7;color:#92400e'}">${t.postpone_count}회 미룸</span>`:''}
+      ${!t.done?`<button onclick="postponeTodo('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #e8e6e0;background:#fff;color:#888;cursor:pointer;white-space:nowrap">미루기</button>`:''}
       <span class="todo-del" onclick="deleteTodo('${t.id}',${!!t._fixed})">×</span>
     </div>`).join('');
   // 드래그 순서 배열 저장
@@ -763,6 +775,26 @@ async function toggleTodo(id,isFixed){
   fixedTodos.sort((a,b)=>(a.done===b.done)?0:a.done?1:-1);
   todos.sort((a,b)=>(a.done===b.done)?0:a.done?1:-1);
   renderTodos();
+  if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
+}
+
+async function postponeTodo(id){
+  const tomorrow=new Date();
+  tomorrow.setDate(tomorrow.getDate()+1);
+  const tKey=`${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+  // 현재 영업일 찾기
+  const today2=todayKey();
+  const {data:periods}=await sb.from('periods').select('*').order('start_date');
+  const curPeriod=periods?.find(p=>p.start_date<=today2&&p.end_date>=today2);
+  const curPeriodName=curPeriod?.name||'';
+  // 기존 카운트 가져오기
+  const {data:cur}=await sb.from('todos').select('postpone_count,postpone_period').eq('id',id).single();
+  // 영업일 바뀌면 카운트 리셋
+  const prevPeriod=cur?.postpone_period||'';
+  const newCount=prevPeriod===curPeriodName?(cur?.postpone_count||0)+1:1;
+  await sb.from('todos').update({date:tKey,done:false,postpone_count:newCount,postpone_period:curPeriodName}).eq('id',id);
+  showToast(`미뤘어요 (${newCount}회)`);
+  await loadTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
 }
 
@@ -1036,6 +1068,9 @@ async function renderCalendar(){
   }
 
   calWorkData={};(workData||[]).forEach(w=>calWorkData[w.date]=w);
+  // 할일 데이터 로드
+  const {data:todoData}=await sb.from('todos').select('date,done,content,is_fixed').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr).eq('is_fixed',false);
+  calTodoData={};(todoData||[]).forEach(t=>{if(!calTodoData[t.date])calTodoData[t.date]=[];calTodoData[t.date].push(t);});
   calScheduleData={};(schedData||[]).forEach(s=>{if(!calScheduleData[s.date])calScheduleData[s.date]=[];calScheduleData[s.date].push(s.title)});
   calLogData={};(logData||[]).forEach(l=>calLogData[l.date]={real:(l.sales||0)-(l.refund||0),blog:l.blog||0});
   // 태그 우선순위: 내 태그(personal) > 공용 태그(shared)
@@ -1083,6 +1118,7 @@ async function renderCalendar(){
       ${calLogData[dateStr]?.blog&&inPeriod?`<div style="font-size:10px;color:#888">📝 ${calLogData[dateStr].blog}건</div>`:''}
       ${inPeriod?scheds.slice(0,2).map(s=>`<div style="font-size:10px;color:#888;line-height:1.3">• ${s.length>8?s.slice(0,8)+'..':s}</div>`).join(''):''}
       ${inPeriod&&scheds.length>2?`<div style="font-size:10px;color:#bbb">+${scheds.length-2}개</div>`:''}
+      ${inPeriod&&calTodoData[dateStr]?.length?`<div style="display:flex;align-items:center;gap:2px;margin-top:2px;flex-wrap:wrap">${calTodoData[dateStr].slice(0,5).map(t=>`<div style="width:6px;height:6px;border-radius:50%;background:${t.done?'#22c55e':'#e5e7eb'};border:1px solid ${t.done?'#16a34a':'#d1d5db'};flex-shrink:0"></div>`).join('')}${calTodoData[dateStr].length>5?`<span style="font-size:9px;color:#bbb">+${calTodoData[dateStr].length-5}</span>`:''}</div>`:''}
     </div>`;
     cur.setDate(cur.getDate()+1);
   }
@@ -1269,8 +1305,19 @@ function periodSortKey(periodStr){
 async function renderList(){
   const {data}=await sb.from('students').select('*').eq('user_id',currentUser.id);
   let students=data||[];
-  // 영업일 기준 정렬 (5→6→...→12→1→2→3→4)
   students.sort((a,b)=>periodSortKey(a.period)-periodSortKey(b.period));
+  // 영업일 필터 옵션 채우기
+  const periodSel=document.getElementById('list-period-filter');
+  if(periodSel){
+    const periods=[...new Set(students.map(s=>s.period).filter(Boolean))].sort((a,b)=>periodSortKey(a)-periodSortKey(b));
+    const curVal=periodSel.value;
+    periodSel.innerHTML='<option value="">전체 영업일</option>'+periods.map(p=>`<option value="${p}" ${curVal===p?'selected':''}>${p}</option>`).join('');
+  }
+  // 검색 + 영업일 필터
+  const searchVal=(document.getElementById('list-search')?.value||'').trim().toLowerCase();
+  const periodVal=document.getElementById('list-period-filter')?.value||'';
+  if(searchVal) students=students.filter(s=>s.name?.toLowerCase().includes(searchVal));
+  if(periodVal) students=students.filter(s=>s.period===periodVal);
   if(listFilter==='done') students=students.filter(s=>s.completed);
   else if(listFilter==='pending') students=students.filter(s=>!s.completed);
   window._studentOrder=students;
@@ -1516,10 +1563,17 @@ async function savePeriod(){
 async function genDaily(){
   const {data:e}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).eq('date',todayKey()).single();
   const {data:logs}=await sb.from('daily_logs').select('sales,refund').eq('user_id',currentUser.id);
+  // 결제 리스트 총 매출 자동 계산
+  const {data:students}=await sb.from('students').select('amount,completed').eq('user_id',currentUser.id);
+  const listTotal=(students||[]).reduce((s,st)=>s+(st.amount||0),0);
+  const listDone=(students||[]).filter(st=>st.completed).reduce((s,st)=>s+(st.amount||0),0);
+  const {data:todos}=await sb.from('todos').select('content,done').eq('user_id',currentUser.id).eq('date',todayKey()).eq('is_fixed',false);
+  const todoDone=(todos||[]).filter(t=>t.done);
+  const todoUndone=(todos||[]).filter(t=>!t.done);
   const totalReal=(logs||[]).reduce((s,l)=>s+(l.sales||0)-(l.refund||0),0);
   const goal=Number(currentProfile?.goal)||0;
   const d=e||{};const real=(d.sales||0)-(d.refund||0);
-  document.getElementById('report-out').textContent=
+  const reportText=
 `📋 데일리 리포트 — ${todayStr()}
 
 💰 매출 현황
@@ -1527,19 +1581,63 @@ async function genDaily(){
 금일 환불:    ${fmt(d.refund)}
 금일 실매출:  ${fmt(real)}
 누적 실매출:  ${fmt(totalReal)}
-목표 잔여:    ${fmt(Math.max(0,goal-totalReal))}
+목표 잔여:    ${fmt(Math.max(0,goal-totalReal))} (달성 ${pct(totalReal,goal)}%)
+
+📋 결제 리스트
+총 등록:  ${(students||[]).length}명 / ${fmt(listTotal)}
+완료:     ${(students||[]).filter(s=>s.completed).length}명 / ${fmt(listDone)}
 
 📊 영업 / 상담
 상담잡기:  ${d.counsel_set||0}건 / 목표 2건 (${pct(d.counsel_set||0,2)}%)
 상담하기:  ${d.counsel_done||0}건
 
-✅ 할 일
+✅ 오늘 할 일 (${todoDone.length}/${(todos||[]).length})
+완료: ${todoDone.map(t=>t.content).join(', ')||'없음'}
+미완료: ${todoUndone.map(t=>t.content).join(', ')||'없음'}
+
+📞 활동
 콜 수:   ${d.calls||0}콜 / 목표 10콜 (${pct(d.calls||0,10)}%)
 분 수:   ${d.mins||0}분 / 목표 40분 (${pct(d.mins||0,40)}%)
 블로그:  ${d.blog||0}건 / 목표 2건 (${pct(d.blog||0,2)}%)
 
 📝 메모
 ${d.memo||'없음'}`;
+  document.getElementById('report-out').textContent=reportText;
+  document.getElementById('ai-feedback-out').style.display='none';
+}
+
+async function genAIFeedback(){
+  const report=document.getElementById('report-out').textContent;
+  if(!report||report.includes('리포트 버튼을 눌러')){showToast('먼저 리포트를 생성해주세요');return;}
+  const btn=document.getElementById('ai-feedback-btn');
+  btn.disabled=true;btn.textContent='분석 중...';
+  const out=document.getElementById('ai-feedback-out');
+  out.style.display='block';out.textContent='AI가 분석 중이에요...';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1200,
+        messages:[{role:'user',content:`당신은 요리학원 영업팀의 따뜻하고 날카로운 멘토입니다.
+아래는 영업 멘토 현지의 오늘 업무 리포트입니다.
+
+${report}
+
+다음 기준으로 한국어로 친근하게 피드백해주세요:
+1. 잘한 점 — 수치와 메모/할일 내용을 구체적으로 언급 (환불방어, 상담 성공 등 메모에 적힌 내용도 칭찬)
+2. 개선할 점 — 미완료 할일, 미루기 횟수, 목표 대비 부족한 수치
+3. 내일을 위한 조언 — 미룬 할일 중 우선순위, 구체적인 액션
+응원 메시지로 마무리해주세요. 200자 내외로 간결하게.`}]
+      })
+    });
+    const data=await res.json();
+    out.textContent=data.content?.[0]?.text||'피드백을 가져올 수 없어요.';
+  }catch(err){
+    out.textContent='피드백 생성에 실패했어요. 잠시 후 다시 시도해주세요.';
+  }
+  btn.disabled=false;btn.textContent='✨ AI 피드백';
 }
 
 async function genWeekly(){
@@ -1549,14 +1647,22 @@ async function genWeekly(){
   const period=periods?.find(p=>p.start_date<=today2&&p.end_date>=today2)||periods?.[periods.length-1]||{};
   const entries=logs||[];
   if(!entries.length){document.getElementById('report-out').textContent='저장된 기록이 없어요.';return;}
+  // 이번 영업일 할일 미루기 통계
+  const {data:allTodos}=await sb.from('todos').select('content,done,postpone_count,postpone_period').eq('user_id',currentUser.id);
+  const periodName=period.name||'';
+  const postponed=(allTodos||[]).filter(t=>t.postpone_period===periodName&&(t.postpone_count||0)>0)
+    .sort((a,b)=>(b.postpone_count||0)-(a.postpone_count||0));
+  const totalPostpone=postponed.reduce((s,t)=>s+(t.postpone_count||0),0);
+  const top3=postponed.slice(0,3).map(t=>`  · ${t.content} (${t.postpone_count}회)`).join('
+')||'  없음';
   const totalSales=entries.reduce((s,e)=>s+(e.sales||0),0);
   const totalRefund=entries.reduce((s,e)=>s+(e.refund||0),0);
   const realSales=totalSales-totalRefund;
   const goal=Number(currentProfile?.goal)||0;
   const n=entries.length;
-  document.getElementById('report-out').textContent=
+  const reportText=
 `📊 주간 리포트 — ${todayStr()} 기준
-영업일: ${period.name||''}
+영업일: ${periodName}
 
 💰 매출 현황
 총 매출:  ${fmt(totalSales)}
@@ -1567,11 +1673,16 @@ async function genWeekly(){
 
 📊 영업 / 상담 (${n}일 합산)
 총 상담잡기: ${entries.reduce((s,e)=>s+(e.counsel_set||0),0)}건
+총 콜 수:    ${entries.reduce((s,e)=>s+(e.calls||0),0)}콜
+총 분 수:    ${entries.reduce((s,e)=>s+(e.mins||0),0)}분
+총 블로그:   ${entries.reduce((s,e)=>s+(e.blog||0),0)}건
 
-✅ 할 일 합산
-총 콜 수:  ${entries.reduce((s,e)=>s+(e.calls||0),0)}콜
-총 분 수:  ${entries.reduce((s,e)=>s+(e.mins||0),0)}분
-총 블로그: ${entries.reduce((s,e)=>s+(e.blog||0),0)}건`;
+⏭️ 미루기 현황 (이번 영업일)
+총 미루기: ${totalPostpone}회 / ${postponed.length}개 항목
+많이 미룬 할일:
+${top3}`;
+  document.getElementById('report-out').textContent=reportText;
+  document.getElementById('ai-feedback-out').style.display='none';
 }
 
 function copyReport(){navigator.clipboard.writeText(document.getElementById('report-out').textContent).then(()=>showToast('복사됐어요 ✓'))}
