@@ -469,10 +469,10 @@ tr.row-done td select{text-decoration:none}
         <div class="form-group" style="flex:1"><label class="form-label">환불</label><input class="form-input" type="number" id="dm-refund" placeholder="0"></div>
       </div>
       <div class="form-row">
-        <div class="form-group" style="flex:1"><label class="form-label">상담잡기</label><input class="form-input" type="number" id="dm-cs" placeholder="0"></div>
         <div class="form-group" style="flex:1"><label class="form-label">콜 수</label><input class="form-input" type="number" id="dm-calls" placeholder="0"></div>
+        <div class="form-group" style="flex:1"><label class="form-label">분 수</label><input class="form-input" type="number" id="dm-mins" placeholder="0"></div>
       </div>
-      <div class="form-group"><label class="form-label">분 수</label><input class="form-input" type="number" id="dm-mins" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">상담잡기</label><input class="form-input" type="number" id="dm-cs" placeholder="0"></div>
       <div class="form-group"><label class="form-label">블로그</label><input class="form-input" type="number" id="dm-blog" placeholder="0"></div>
       <div class="form-group"><label class="form-label">메모</label><textarea class="form-input" id="dm-memo" rows="2"></textarea></div>
     </div>
@@ -1110,8 +1110,9 @@ async function openDayModal(dateStr){
   dayModalDate=dateStr;
   const d=new Date(dateStr+'T00:00:00');
   document.getElementById('day-modal-title').textContent=`${dateStr.slice(5,7)}월 ${dateStr.slice(8,10)}일 (${DAYS[d.getDay()]})`;
-  const work=calWorkData[dateStr];
-  selectedWorkType=work?.work_type||null;
+  // 근무유형 항상 DB에서 직접 조회 (캐시 말고)
+  const {data:workFresh}=await sb.from('work_schedules').select('*').eq('user_id',currentUser.id).eq('date',dateStr).single();
+  selectedWorkType=workFresh?.work_type||null;
   document.getElementById('work-type-custom').value=WORK_TYPES.includes(selectedWorkType)?'':selectedWorkType||'';
   renderWorkTypeBtns();
   const {data:log}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).eq('date',dateStr).single();
@@ -1228,7 +1229,12 @@ function selectWorkType(w){
 async function saveDayModal(){
   const customVal=document.getElementById('work-type-custom').value.trim();
   const workType=customVal||selectedWorkType||null;
-  if(workType) await sb.from('work_schedules').upsert({user_id:currentUser.id,date:dayModalDate,work_type:workType},{onConflict:'user_id,date'});
+  // 근무유형 저장 or 삭제
+  if(workType){
+    await sb.from('work_schedules').upsert({user_id:currentUser.id,date:dayModalDate,work_type:workType},{onConflict:'user_id,date'});
+  } else {
+    await sb.from('work_schedules').delete().eq('user_id',currentUser.id).eq('date',dayModalDate);
+  }
   const payload={user_id:currentUser.id,date:dayModalDate,
     sales:Number(document.getElementById('dm-sale').value)||0,
     refund:Number(document.getElementById('dm-refund').value)||0,
