@@ -289,7 +289,7 @@ tr.row-done td select{text-decoration:none}
           <div class="sec-title">근무 유형</div>
           <div class="card" style="padding:12px 14px">
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px" id="today-work-type-btns"></div>
-            <input class="form-input" id="today-work-custom" placeholder="기타 직접 입력..." oninput="triggerAutoSave()" style="font-size:13px;padding:6px 10px">
+            <input class="form-input" id="today-work-custom" placeholder="기타 직접 입력..." oninput="if(!this.value.trim()){todayWorkType=null;renderTodayWorkTypeBtns();}triggerAutoSave()" style="font-size:13px;padding:6px 10px">
           </div>
           <div class="sec-title">영업 / 상담 성과</div>
           <div class="card">
@@ -461,7 +461,7 @@ tr.row-done td select{text-decoration:none}
     <div class="form-group">
       <label class="form-label">근무유형</label>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px" id="work-type-btns"></div>
-      <input class="form-input" id="work-type-custom" placeholder="기타 직접 입력...">
+      <input class="form-input" id="work-type-custom" placeholder="기타 직접 입력..." oninput="if(!this.value.trim()){selectedWorkType=null;renderWorkTypeBtns();}">
     </div>
     <div style="border-top:1px solid #f0eeea;margin:12px 0;padding-top:12px">
       <div class="form-row">
