@@ -232,7 +232,7 @@ tr.row-done td select{text-decoration:none}
 </style>
 </head>
 <body>
-
+ 
 <!-- 로그인 -->
 <div class="auth-wrap" id="auth-wrap">
   <div class="auth-card">
@@ -259,7 +259,7 @@ tr.row-done td select{text-decoration:none}
     </div>
   </div>
 </div>
-
+ 
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
@@ -280,7 +280,7 @@ tr.row-done td select{text-decoration:none}
     <div class="tab admin-only" onclick="switchTab('period')" style="display:none">영업일 관리</div>
   </div>
   <div class="content">
-
+ 
     <!-- 오늘 활동 -->
     <div class="tabs-page active" id="tab-main">
       <div class="split">
@@ -337,7 +337,7 @@ tr.row-done td select{text-decoration:none}
         </div>
       </div>
     </div>
-
+ 
     <!-- 달력 -->
     <div class="tabs-page" id="tab-calendar">
       <div class="tag-palette">
@@ -382,7 +382,7 @@ tr.row-done td select{text-decoration:none}
       </div>
       <div style="font-size:12px;color:#aaa;text-align:center;margin-top:8px">태그 선택 후 날짜 클릭 = 적용 · 다시 클릭 = 해제</div>
     </div>
-
+ 
     <!-- 결제 리스트 -->
     <div class="tabs-page" id="tab-list">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
@@ -415,7 +415,7 @@ tr.row-done td select{text-decoration:none}
         <th style="width:24px"></th>
       </tr></thead><tbody id="student-tbody"></tbody></table></div></div>
     </div>
-
+ 
     <!-- 리포트 -->
     <div class="tabs-page" id="tab-report">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
@@ -429,7 +429,7 @@ tr.row-done td select{text-decoration:none}
       </div>
       <div class="report-box" id="ai-feedback-out" style="display:none;margin-top:10px;white-space:pre-wrap;border-color:#c7d7f5;background:#f5f8ff"></div>
     </div>
-
+ 
     <!-- 개강 일정 -->
     <div class="tabs-page" id="tab-schedule">
       <div class="card">
@@ -444,7 +444,7 @@ tr.row-done td select{text-decoration:none}
       <div class="sec-title">전체 개강 일정</div>
       <div id="schedule-list"></div>
     </div>
-
+ 
     <!-- 영업일 관리 -->
     <div class="tabs-page" id="tab-period">
       <div class="admin-notice">⚙️ 관리자 전용 — 영업일 설정은 모든 사용자에게 적용돼요</div>
@@ -460,10 +460,10 @@ tr.row-done td select{text-decoration:none}
       <div class="sec-title">영업일 이력</div>
       <div class="card"><div class="tbl-wrap"><table><thead><tr><th>영업일</th><th>기간</th></tr></thead><tbody id="period-tbody"></tbody></table></div></div>
     </div>
-
+ 
   </div>
 </div>
-
+ 
 <!-- 날짜 모달 -->
 <div class="modal-bg" id="day-modal">
   <div class="modal">
@@ -500,7 +500,7 @@ tr.row-done td select{text-decoration:none}
     </div>
   </div>
 </div>
-
+ 
 <!-- 일괄 학생 모달 -->
 <div class="modal-bg" id="bulk-student-modal">
   <div class="modal">
@@ -523,7 +523,7 @@ tr.row-done td select{text-decoration:none}
     </div>
   </div>
 </div>
-
+ 
 <!-- 학생 추가 모달 -->
 <div class="modal-bg" id="student-modal">
   <div class="modal">
@@ -550,9 +550,9 @@ tr.row-done td select{text-decoration:none}
     </div>
   </div>
 </div>
-
+ 
 <div class="toast" id="toast"></div>
-
+ 
 <script>
 const SUPABASE_URL='https://eqjdbffuwryfgplehgak.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxamRiZmZ1d3J5ZmdwbGVoZ2FrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MjY0MzIsImV4cCI6MjA5NDQwMjQzMn0.ABzSY04G0_Y4WkDg6UalKXKMx2OhG_iWJA5AHdMCKiA';
@@ -568,7 +568,7 @@ const pct=(v,t)=>t>0?Math.min(100,Math.round(v/t*100)):0;
 const fillColor=p=>p>=100?'#1a8a50':p>=60?'#f59e0b':'#ef4444';
 const todayKey=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const todayStr=()=>{const d=new Date();return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${DAYS[d.getDay()]})`};
-
+ 
 let currentUser=null,currentProfile=null,todos=[],fixedTodos=[];
 let calWorkData={},calScheduleData={},calLogData={},calTagData={},calTodoData={};
 let sharedTags=[],personalTags=[],selectedTag=null;
@@ -576,15 +576,15 @@ let selectedColors={shared:'#fde8e8',personal:'#e8f0fe'};
 let calPeriodIdx=0,allPeriods=[];
 let dayModalDate=null,selectedWorkType=null;
 const isAdmin=()=>currentProfile?.username?.trim()===ADMIN_ID.trim();
-
+ 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
-
+ 
 function switchAuth(mode){
   document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===(mode==='login'?0:1)));
   document.querySelectorAll('.auth-form').forEach((f,i)=>f.classList.toggle('active',i===(mode==='login'?0:1)));
   ['login-msg','signup-msg','signup-ok'].forEach(id=>document.getElementById(id).textContent='');
 }
-
+ 
 async function doLogin(){
   const id=document.getElementById('li').value.trim();
   const pw=document.getElementById('lp').value;
@@ -600,7 +600,7 @@ async function doLogin(){
   if(error){msgEl.textContent='아이디 또는 비밀번호가 틀렸어요.';return;}
   currentUser=data.user;await loadProfile();enterApp();
 }
-
+ 
 async function doSignup(){
   const id=document.getElementById('si').value.trim();
   const pw=document.getElementById('sp').value;
@@ -626,7 +626,7 @@ async function doSignup(){
   ['si','sp','sp2'].forEach(i=>document.getElementById(i).value='');
   setTimeout(()=>switchAuth('login'),1500);
 }
-
+ 
 async function doLogout(){
   await sb.auth.signOut();
   currentUser=null;currentProfile=null;todos=[];fixedTodos=[];selectedTag=null;
@@ -634,12 +634,12 @@ async function doLogout(){
   document.getElementById('auth-wrap').style.display='flex';
   document.getElementById('li').value='';document.getElementById('lp').value='';
 }
-
+ 
 async function loadProfile(){
   const {data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
   currentProfile=data;
 }
-
+ 
 function enterApp(){
   document.getElementById('auth-wrap').style.display='none';
   document.getElementById('app').style.display='block';
@@ -652,7 +652,7 @@ function enterApp(){
   }
   loadTodayLog();loadTodos();loadTodaySchedule();renderSales();loadPeriodsForPicker();loadTodayWorkType();
 }
-
+ 
 async function loadTodayLog(){
   const {data}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).eq('date',todayKey()).single();
   if(data){
@@ -667,14 +667,14 @@ async function loadTodayLog(){
   }
   updateBars();
 }
-
+ 
 async function loadTodaySchedule(){
   const {data}=await sb.from('schedules').select('*').eq('date',todayKey()).order('title');
   const box=document.getElementById('today-schedule-box');
   if(!data||!data.length){box.innerHTML='';return;}
   box.innerHTML=`<div class="today-schedule"><div class="today-schedule-title">📅 오늘의 개강 일정</div>${data.map(s=>`<div style="font-size:13px;padding:3px 0">• ${s.title}</div>`).join('')}</div>`;
 }
-
+ 
 async function loadTodos(){
   const {data}=await sb.from('todos').select('*').eq('user_id',currentUser.id).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at');
   const today=todayKey();
@@ -682,7 +682,7 @@ async function loadTodos(){
   todos=(data||[]).filter(t=>!t.is_fixed&&t.date===today).sort((a,b)=>(a.done===b.done)?0:a.done?1:-1);
   renderTodos();
 }
-
+ 
 function renderTodos(){
   const el=document.getElementById('todo-list');
   // 완료 아래로 정렬
@@ -710,7 +710,7 @@ function renderTodos(){
   // 드래그 순서 배열 저장
   window._todoOrder=all;
 }
-
+ 
 // 드래그 상태
 let _dragIdx=null;
 function todoDragStart(e,idx){_dragIdx=idx;e.currentTarget.classList.add('dragging');}
@@ -735,7 +735,7 @@ async function todoDrop(e,toIdx){
   }
   await loadTodos();
 }
-
+ 
 async function editTodoInline(el,id,isFixed){
   if(el.querySelector('input'))return;
   const cur=el.textContent;
@@ -755,7 +755,7 @@ async function editTodoInline(el,id,isFixed){
   input.addEventListener('blur',save);
   input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape'){input.value=cur;input.blur();}});
 }
-
+ 
 async function addTodo(isFixed){
   const content=document.getElementById('todo-text').value.trim();
   if(!content)return;
@@ -766,7 +766,7 @@ async function addTodo(isFixed){
   renderTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
 }
-
+ 
 async function toggleTodo(id,isFixed){
   const list=isFixed?fixedTodos:todos;
   const item=list.find(t=>t.id===id);if(!item)return;
@@ -777,7 +777,7 @@ async function toggleTodo(id,isFixed){
   renderTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
 }
-
+ 
 async function postponeTodo(id){
   const tomorrow=new Date();
   tomorrow.setDate(tomorrow.getDate()+1);
@@ -797,7 +797,7 @@ async function postponeTodo(id){
   await loadTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
 }
-
+ 
 async function deleteTodo(id,isFixed){
   await sb.from('todos').delete().eq('id',id);
   if(isFixed)fixedTodos=fixedTodos.filter(t=>t.id!==id);
@@ -805,7 +805,7 @@ async function deleteTodo(id,isFixed){
   renderTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
 }
-
+ 
 function updateBars(){
   [['pb-cs','f-cs',2],['pb-calls','f-calls',10],['pb-mins','f-mins',40],['pb-blog','f-blog',2]].forEach(([pbId,inputId,target])=>{
     const v=Number(document.getElementById(inputId).value)||0;
@@ -814,13 +814,13 @@ function updateBars(){
     el.style.width=p+'%';el.style.background=fillColor(p);
   });
 }
-
+ 
 function clearDay(){
   ['f-sale','f-refund','f-cs','f-cd','f-calls','f-mins','f-blog'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-memo').value='';
   updateBars();showToast('초기화됐어요');
 }
-
+ 
 // ── 자동저장 ──
 let _autoSaveTimer=null;
 function triggerAutoSave(){
@@ -836,7 +836,7 @@ function triggerAutoSave(){
     if(indicator){indicator.textContent='자동저장됨 ✓';setTimeout(()=>indicator.textContent='',2000);}
   },1200);
 }
-
+ 
 async function _doSave(){
   const customWork=document.getElementById('today-work-custom').value.trim();
   const workType=customWork||todayWorkType||null;
@@ -857,7 +857,7 @@ async function _doSave(){
     memo:document.getElementById('f-memo').value};
   await sb.from('daily_logs').upsert(payload,{onConflict:'user_id,date'});
 }
-
+ 
 async function saveDaily(){
   const btn=document.getElementById('save-btn');
   if(_autoSaveTimer){clearTimeout(_autoSaveTimer);_autoSaveTimer=null;}
@@ -866,15 +866,15 @@ async function saveDaily(){
   btn.disabled=false;btn.textContent='오늘 기록 저장';
   showToast('저장됐어요 ✓');
 }
-
-
-
+ 
+ 
+ 
 async function saveMyGoal(){
   const goal=Number(document.getElementById('my-goal').value)||0;
   await sb.from('profiles').update({goal}).eq('id',currentUser.id);
   currentProfile.goal=goal;showToast('목표 저장됐어요 ✓');renderSales();
 }
-
+ 
 function switchTab(name){
   const tabs=['main','calendar','list','report','schedule','period'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===name));
@@ -886,7 +886,7 @@ function switchTab(name){
   if(name==='schedule')renderSchedule();
   if(name==='period')renderPeriod();
 }
-
+ 
 async function renderSales(){
   const {data:logs}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).order('date',{ascending:false});
   const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:true});
@@ -916,11 +916,11 @@ async function renderSales(){
     <tr><td>${e.date}</td><td style="font-weight:600">${fmt((e.sales||0)-(e.refund||0))}</td><td style="text-align:center">${e.counsel_set||0}건</td><td style="text-align:center">${e.calls||0}콜</td></tr>`).join('')
     :'<tr><td colspan="4" style="text-align:center;color:#bbb;padding:20px">저장된 기록이 없어요</td></tr>';
 }
-
+ 
 // 색상 팔레트
 const BASIC_COLORS=['#f44336','#e91e63','#9c27b0','#3f51b5','#2196f3','#00bcd4','#009688','#4caf50','#cddc39','#ffeb3b','#ffc107','#ff9800','#ff5722','#795548','#9e9e9e','#607d8b','#000000','#ffffff','#fce4ec','#e3f2fd','#e8f5e9','#fff9c4','#fff3e0'];
 const FULL_COLORS=['#b71c1c','#880e4f','#4a148c','#1a237e','#0d47a1','#006064','#004d40','#1b5e20','#f57f17','#e65100','#3e2723','#212121','#d32f2f','#c2185b','#7b1fa2','#1976d2','#0288d1','#0097a7','#388e3c','#689f38','#fbc02d','#f57c00','#e64a19','#ef9a9a','#f48fb1','#ce93d8','#90caf9','#80cbc4','#a5d6a7','#fff176','#ffcc80','#ffab91'];
-
+ 
 function buildPalette(scope){
   const popup=document.getElementById(scope+'-palette');
   popup.innerHTML=`
@@ -928,26 +928,26 @@ function buildPalette(scope){
     <div class="palette-full" id="${scope}-full">${FULL_COLORS.map(c=>`<div class="palette-color" style="background:${c}" onclick="pickColor('${scope}','${c}')"></div>`).join('')}</div>
     <div class="palette-more" onclick="toggleFull('${scope}')">더보기 ∨</div>`;
 }
-
+ 
 function togglePalette(scope){
   const popup=document.getElementById(scope+'-palette');
   if(popup.style.display==='none'){buildPalette(scope);popup.style.display='block';}
   else popup.style.display='none';
 }
-
+ 
 function toggleFull(scope){
   const full=document.getElementById(scope+'-full');
   const more=full.nextElementSibling;
   if(full.style.display==='none'||!full.style.display){full.style.display='grid';more.textContent='접기 ∧';}
   else{full.style.display='none';more.textContent='더보기 ∨';}
 }
-
+ 
 function pickColor(scope,color){
   selectedColors[scope]=color;
   document.getElementById(scope+'-color-swatch').style.background=color;
   document.getElementById(scope+'-palette').style.display='none';
 }
-
+ 
 document.addEventListener('click',e=>{
   ['shared','personal'].forEach(scope=>{
     const popup=document.getElementById(scope+'-palette');
@@ -955,7 +955,7 @@ document.addEventListener('click',e=>{
     if(popup&&swatch&&!popup.contains(e.target)&&!swatch.contains(e.target)) popup.style.display='none';
   });
 });
-
+ 
 async function loadTags(){
   const [{data:shared},{data:personal}]=await Promise.all([
     sb.from('cal_tags').select('*').eq('scope','shared').order('created_at'),
@@ -964,7 +964,7 @@ async function loadTags(){
   sharedTags=shared||[];personalTags=personal||[];
   renderTagPalette();
 }
-
+ 
 function renderTagPalette(){
   const render=(tags,elId,canDelete)=>{
     const el=document.getElementById(elId);
@@ -979,14 +979,14 @@ function renderTagPalette(){
   render(sharedTags,'shared-tag-list',isAdmin());
   render(personalTags,'personal-tag-list',true);
 }
-
+ 
 function selectTag(id){
   const tag=[...sharedTags,...personalTags].find(t=>t.id===id);
   selectedTag=selectedTag?.id===id?null:tag;
   renderTagPalette();
   showToast(selectedTag?`"${selectedTag.text}" 선택 — 날짜 클릭하세요`:'태그 선택 해제');
 }
-
+ 
 async function addTag(scope){
   const text=document.getElementById(scope+'-tag-text').value.trim();
   const color=selectedColors[scope]||'#fde8e8';
@@ -996,14 +996,14 @@ async function addTag(scope){
   document.getElementById(scope+'-tag-text').value='';
   await loadTags();showToast('태그 추가됐어요 ✓');
 }
-
+ 
 async function deleteTag(id){
   await sb.from('cal_tags').delete().eq('id',id);
   await sb.from('cal_date_tags').delete().eq('tag_id',id);
   if(selectedTag?.id===id)selectedTag=null;
   await loadTags();renderCalendar();showToast('삭제됐어요');
 }
-
+ 
 // 영업일 달력
 function calMove(dir){
   if(dir===0){
@@ -1015,29 +1015,29 @@ function calMove(dir){
   }
   renderCalendar();
 }
-
+ 
 async function renderCalendar(){
   const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:true});
   allPeriods=periods||[];
-
+ 
   if(!allPeriods.length){
     document.getElementById('cal-title').textContent='영업일 없음';
     document.getElementById('cal-period-info').textContent='영업일 관리 탭에서 영업일을 등록해주세요.';
     document.getElementById('cal-body').innerHTML='';
     return;
   }
-
+ 
   if(calPeriodIdx>=allPeriods.length) calPeriodIdx=allPeriods.length-1;
   const period=allPeriods[calPeriodIdx];
   const nextPeriod=allPeriods[calPeriodIdx+1]||null;
-
+ 
   const startStr=period.start_date;
   const endStr=period.end_date;
   const startDate=new Date(startStr+'T00:00:00');
   const endDate=new Date(endStr+'T00:00:00');
-
+ 
   document.getElementById('cal-title').textContent=period.name||'영업일 달력';
-
+ 
   const dayCount=Math.round((endDate-startDate)/(1000*60*60*24))+1;
   let info=`해당 영업일: ${startStr.slice(5).replace('-','.')} ~ ${endStr.slice(5).replace('-','.')} (${dayCount}일)`;
   if(nextPeriod){
@@ -1045,28 +1045,28 @@ async function renderCalendar(){
     info+=` | 다음: ${nextPeriod.name} (${nextPeriod.start_date.slice(5).replace('-','.')}~${nextPeriod.end_date.slice(5).replace('-','.')} · ${nc}일)`;
   }
   document.getElementById('cal-period-info').textContent=info;
-
+ 
   const calStart=new Date(startDate);
   calStart.setDate(calStart.getDate()-calStart.getDay());
   const calEnd=new Date(endDate);
   calEnd.setDate(calEnd.getDate()+(6-calEnd.getDay()));
-
+ 
   const today=todayKey();
-
+ 
   const [{data:workData},{data:schedData},{data:logData},{data:dateTagData}]=await Promise.all([
     sb.from('work_schedules').select('*').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr),
     sb.from('schedules').select('*').gte('date',startStr).lte('date',endStr),
     sb.from('daily_logs').select('date,sales,refund,blog').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr),
     sb.from('cal_date_tags').select('*').gte('date',startStr).lte('date',endStr)
   ]);
-
+ 
   const allTagIds=[...new Set((dateTagData||[]).map(d=>d.tag_id))];
   let tagMap={};
   if(allTagIds.length){
     const {data:tagRows}=await sb.from('cal_tags').select('*').in('id',allTagIds);
     (tagRows||[]).forEach(t=>tagMap[t.id]=t);
   }
-
+ 
   calWorkData={};(workData||[]).forEach(w=>calWorkData[w.date]=w);
   // 할일 데이터 로드
   const {data:todoData}=await sb.from('todos').select('date,done,content,is_fixed').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr).eq('is_fixed',false);
@@ -1086,7 +1086,7 @@ async function renderCalendar(){
     if(personalOnes.length) calTagData[date]=personalOnes;
     else calTagData[date]=calTagData[date].filter(d=>d.cal_tags.scope==='shared');
   });
-
+ 
   let html='';
   const cur=new Date(calStart);
   while(cur<=calEnd){
@@ -1107,7 +1107,7 @@ async function renderCalendar(){
     const tc=tagBg?'color:#fff':'';
     const wBg='';
     const day=cur.getDate();
-
+ 
     html+=`<div class="cal-cell ${isToday?'today':''} ${!inPeriod?'out-period':''}"
       onclick="${inPeriod?`onCalCellClick('${dateStr}')`:''}"
       style="${style}">
@@ -1124,7 +1124,7 @@ async function renderCalendar(){
   }
   document.getElementById('cal-body').innerHTML=html;
 }
-
+ 
 async function onCalCellClick(dateStr){
   if(selectedTag){
     const existing=(calTagData[dateStr]||[]).find(d=>d.tag_id===selectedTag.id);
@@ -1141,7 +1141,7 @@ async function onCalCellClick(dateStr){
   }
   openDayModal(dateStr);
 }
-
+ 
 async function openDayModal(dateStr){
   dayModalDate=dateStr;
   const d=new Date(dateStr+'T00:00:00');
@@ -1163,8 +1163,8 @@ async function openDayModal(dateStr){
   await renderDmTodos(dateStr);
   document.getElementById('day-modal').classList.add('open');
 }
-
-
+ 
+ 
 // ── 결제 리스트 드래그 ──
 let _stuDragIdx=null;
 function stuDragStart(e,idx){_stuDragIdx=idx;e.currentTarget.style.opacity='.4';}
@@ -1183,7 +1183,7 @@ async function stuDrop(e,toIdx){
   }catch(err){console.warn('sort_order 저장 실패:',err);}
   await renderList();
 }
-
+ 
 // ── 달력 모달 할일 ──
 let dmTodos=[];
 async function renderDmTodos(dateStr){
@@ -1191,7 +1191,7 @@ async function renderDmTodos(dateStr){
   dmTodos=data||[];
   renderDmTodoList();
 }
-
+ 
 function renderDmTodoList(){
   const el=document.getElementById('dm-todo-list');
   if(!el)return;
@@ -1202,7 +1202,7 @@ function renderDmTodoList(){
       <span style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px" onclick="deleteDmTodo('${t.id}')">×</span>
     </div>`).join(''):'<div style="font-size:12px;color:#ccc;padding:4px 0">할 일을 추가해보세요</div>';
 }
-
+ 
 async function addDmTodo(){
   const input=document.getElementById('dm-todo-input');
   const content=input.value.trim();
@@ -1213,7 +1213,7 @@ async function addDmTodo(){
   dmTodos.push(data);
   renderDmTodoList();
 }
-
+ 
 async function toggleDmTodo(id){
   const t=dmTodos.find(x=>x.id===id);if(!t)return;
   t.done=!t.done;
@@ -1222,14 +1222,14 @@ async function toggleDmTodo(id){
   // 오늘 날짜면 메인탭 할일도 갱신
   if(dayModalDate===todayKey())loadTodos();
 }
-
+ 
 async function deleteDmTodo(id){
   await sb.from('todos').delete().eq('id',id);
   dmTodos=dmTodos.filter(t=>t.id!==id);
   renderDmTodoList();
   if(dayModalDate===todayKey())loadTodos();
 }
-
+ 
 // ── 오늘 활동 근무유형 ──
 let todayWorkType=null;
 async function loadTodayWorkType(){
@@ -1238,30 +1238,30 @@ async function loadTodayWorkType(){
   document.getElementById('today-work-custom').value=WORK_TYPES.includes(todayWorkType)?'':todayWorkType||'';
   renderTodayWorkTypeBtns();
 }
-
+ 
 function renderTodayWorkTypeBtns(){
   document.getElementById('today-work-type-btns').innerHTML=WORK_TYPES.map(w=>`
     <button onclick="selectTodayWorkType('${w}')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid ${todayWorkType===w?'#1a1a1a':'#e8e6e0'};background:${todayWorkType===w?'#1a1a1a':'#fff'};color:${todayWorkType===w?'#fff':'#555'}">${w}</button>`).join('');
 }
-
+ 
 function selectTodayWorkType(w){
   todayWorkType=todayWorkType===w?null:w;
   document.getElementById('today-work-custom').value='';
   renderTodayWorkTypeBtns();
   triggerAutoSave();
 }
-
+ 
 function renderWorkTypeBtns(){
   document.getElementById('work-type-btns').innerHTML=WORK_TYPES.map(w=>`
     <button onclick="selectWorkType('${w}')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid ${selectedWorkType===w?'#1a1a1a':'#e8e6e0'};background:${selectedWorkType===w?'#1a1a1a':'#fff'};color:${selectedWorkType===w?'#fff':'#555'}">${w}</button>`).join('');
 }
-
+ 
 function selectWorkType(w){
   selectedWorkType=selectedWorkType===w?null:w;
   document.getElementById('work-type-custom').value='';
   renderWorkTypeBtns();
 }
-
+ 
 async function saveDayModal(){
   const customVal=document.getElementById('work-type-custom').value.trim();
   const workType=customVal||selectedWorkType||null;
@@ -1285,14 +1285,14 @@ async function saveDayModal(){
   await renderCalendar();
   if(dayModalDate===todayKey())loadTodayLog();
 }
-
+ 
 let listFilter='all';
 function setListFilter(f){
   listFilter=f;
   document.querySelectorAll('.list-filter-tab').forEach((t,i)=>t.classList.toggle('active',['all','done','pending'][i]===f));
   renderList();
 }
-
+ 
 function periodSortKey(periodStr){
   // 5월이 pivot — 5~12 먼저, 1~4 나중
   if(!periodStr) return 999;
@@ -1301,7 +1301,7 @@ function periodSortKey(periodStr){
   const mo=Number(m[1]);
   return mo>=5 ? mo : mo+12;
 }
-
+ 
 async function renderList(){
   const {data}=await sb.from('students').select('*').eq('user_id',currentUser.id);
   let students=data||[];
@@ -1344,13 +1344,13 @@ async function renderList(){
     <td><span onclick="deleteStudent('${s.id}')" style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px">×</span></td></tr>`).join('')
     :'<tr><td colspan="9" style="text-align:center;color:#bbb;padding:20px">등록된 학생이 없어요</td></tr>';
 }
-
+ 
 async function toggleStudentDone(id,current){
   await sb.from('students').update({completed:!current}).eq('id',id);
   showToast(!current?'완료 처리됐어요 ✓':'완료 해제됐어요');
   renderList();
 }
-
+ 
 function editCell(el,id,field){
   const cur=el.textContent.replace('원','').replace(/,/g,'').trim();
   const val=cur==='-'?'':cur;
@@ -1384,21 +1384,21 @@ function editCell(el,id,field){
     }
   });
 }
-
+ 
 async function deleteStudent(id){
   if(!confirm('이 학생을 삭제할까요?'))return;
   await sb.from('students').delete().eq('id',id);
   renderList();showToast('삭제됐어요');
 }
-
+ 
 async function updateStudentCategory(id,val){await sb.from('students').update({category:val}).eq('id',id);showToast('구분 업데이트 완료')}
 async function updateStudentStatus(id,val){await sb.from('students').update({status:val}).eq('id',id);showToast('상태 업데이트 완료')}
-
+ 
 function closeStudentModal(){
   document.getElementById('student-modal').classList.remove('open');
   document.getElementById('m-period-picker').classList.remove('open');
 }
-
+ 
 async function addStudent(){
   const name=document.getElementById('m-name').value.trim();
   if(!name){showToast('이름을 입력해주세요');return;}
@@ -1410,12 +1410,12 @@ async function addStudent(){
   document.getElementById('m-status').value='연락예정';
   renderList();showToast('추가됐어요 ✓');
 }
-
+ 
 function closeBulkModal(){
   document.getElementById('bulk-student-modal').classList.remove('open');
   document.getElementById('bulk-period-picker').classList.remove('open');
 }
-
+ 
 async function bulkAddStudents(){
   const period=document.getElementById('bulk-period').value.trim();
   if(!period){showToast('영업일을 선택해주세요');return;}
@@ -1433,14 +1433,14 @@ async function bulkAddStudents(){
   closeBulkModal();
   renderList();showToast(`${rows.length}명 추가됐어요 ✓`);
 }
-
+ 
 // 영업일 피커
 let periodPickerData=[];
 async function loadPeriodsForPicker(){
   const {data}=await sb.from('periods').select('*').order('start_date',{ascending:false});
   periodPickerData=data||[];
 }
-
+ 
 function sortPeriods(periods){
   // 현재 월 기준으로 5월~12월 먼저, 1월~4월 나중
   // "5월 영업일" → 5 추출
@@ -1461,7 +1461,7 @@ function sortPeriods(periods){
   }
   return [...periods].sort((a,b)=>sortKey(a)-sortKey(b));
 }
-
+ 
 function togglePeriodPicker(pickerId){
   const picker=document.getElementById(pickerId);
   const isOpen=picker.classList.contains('open');
@@ -1481,7 +1481,7 @@ function togglePeriodPicker(pickerId){
     </div>`).join('');
   picker.classList.add('open');
 }
-
+ 
 function selectPeriodFromPicker(name,inputId,pickerId){
   document.getElementById(inputId).value=name;
   document.getElementById(pickerId).classList.remove('open');
@@ -1490,7 +1490,7 @@ function selectPeriodFromPicker(name,inputId,pickerId){
     el.classList.toggle('selected',el.querySelector('div').textContent===name);
   });
 }
-
+ 
 // 피커 외부 클릭 시 닫기
 document.addEventListener('click',e=>{
   document.querySelectorAll('.period-picker').forEach(picker=>{
@@ -1498,13 +1498,13 @@ document.addEventListener('click',e=>{
     if(wrap&&!wrap.contains(e.target))picker.classList.remove('open');
   });
 });
-
+ 
 function parseKorDate(str){
   const m=str.match(/(\d+)월\s*(\d+)일/);
   if(!m)return null;
   return `${new Date().getFullYear()}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
 }
-
+ 
 async function bulkAddSchedule(){
   const text=document.getElementById('bulk-input').value.trim();
   if(!text){showToast('내용을 입력해주세요');return;}
@@ -1520,13 +1520,13 @@ async function bulkAddSchedule(){
   document.getElementById('bulk-input').value='';
   showToast(`${rows.length}개 등록됐어요 ✓`);renderSchedule();
 }
-
+ 
 async function clearAllSchedules(){
   if(!confirm('전부 삭제할까요?'))return;
   await sb.from('schedules').delete().neq('id','00000000-0000-0000-0000-000000000000');
   renderSchedule();showToast('전체 삭제됐어요');
 }
-
+ 
 async function renderSchedule(){
   const {data}=await sb.from('schedules').select('*').order('date',{ascending:true}).order('title',{ascending:true});
   const el=document.getElementById('schedule-list');
@@ -1543,23 +1543,23 @@ async function renderSchedule(){
     </div>`;
   }).join('');
 }
-
+ 
 async function deleteSchedule(id){await sb.from('schedules').delete().eq('id',id);renderSchedule();showToast('삭제됐어요')}
-
+ 
 async function renderPeriod(){
   const {data}=await sb.from('periods').select('*').order('created_at',{ascending:false});
   const periods=data||[];
   if(periods[0]){document.getElementById('p-name').value=periods[0].name||'';document.getElementById('p-start').value=periods[0].start_date||'';document.getElementById('p-end').value=periods[0].end_date||'';}
   document.getElementById('period-tbody').innerHTML=periods.length?periods.map(p=>`<tr><td style="font-weight:500">${p.name}</td><td style="font-size:12px;color:#aaa">${p.start_date||''}~${p.end_date||''}</td></tr>`).join(''):'<tr><td colspan="2" style="text-align:center;color:#bbb;padding:20px">없어요</td></tr>';
 }
-
+ 
 async function savePeriod(){
   if(!isAdmin()){showToast('관리자만 설정할 수 있어요');return;}
   const {error}=await sb.from('periods').insert({name:document.getElementById('p-name').value,start_date:document.getElementById('p-start').value||null,end_date:document.getElementById('p-end').value||null});
   if(error){showToast('저장 실패 😢');return;}
   showToast('영업일 저장됐어요 ✓');renderPeriod();
 }
-
+ 
 async function genDaily(){
   const {data:e}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).eq('date',todayKey()).single();
   const {data:logs}=await sb.from('daily_logs').select('sales,refund').eq('user_id',currentUser.id);
@@ -1575,37 +1575,37 @@ async function genDaily(){
   const d=e||{};const real=(d.sales||0)-(d.refund||0);
   const reportText=
 `📋 데일리 리포트 — ${todayStr()}
-
+ 
 💰 매출 현황
 금일 매출:    ${fmt(d.sales)}
 금일 환불:    ${fmt(d.refund)}
 금일 실매출:  ${fmt(real)}
 누적 실매출:  ${fmt(totalReal)}
 목표 잔여:    ${fmt(Math.max(0,goal-totalReal))} (달성 ${pct(totalReal,goal)}%)
-
+ 
 📋 결제 리스트
 총 등록:  ${(students||[]).length}명 / ${fmt(listTotal)}
 완료:     ${(students||[]).filter(s=>s.completed).length}명 / ${fmt(listDone)}
-
+ 
 📊 영업 / 상담
 상담잡기:  ${d.counsel_set||0}건 / 목표 2건 (${pct(d.counsel_set||0,2)}%)
 상담하기:  ${d.counsel_done||0}건
-
+ 
 ✅ 오늘 할 일 (${todoDone.length}/${(todos||[]).length})
 완료: ${todoDone.map(t=>t.content).join(', ')||'없음'}
 미완료: ${todoUndone.map(t=>t.content).join(', ')||'없음'}
-
+ 
 📞 활동
 콜 수:   ${d.calls||0}콜 / 목표 10콜 (${pct(d.calls||0,10)}%)
 분 수:   ${d.mins||0}분 / 목표 40분 (${pct(d.mins||0,40)}%)
 블로그:  ${d.blog||0}건 / 목표 2건 (${pct(d.blog||0,2)}%)
-
+ 
 📝 메모
 ${d.memo||'없음'}`;
   document.getElementById('report-out').textContent=reportText;
   document.getElementById('ai-feedback-out').style.display='none';
 }
-
+ 
 async function genAIFeedback(){
   const report=document.getElementById('report-out').textContent;
   if(!report||report.includes('리포트 버튼을 눌러')){showToast('먼저 리포트를 생성해주세요');return;}
@@ -1622,9 +1622,9 @@ async function genAIFeedback(){
         max_tokens:1200,
         messages:[{role:'user',content:`당신은 요리학원 영업팀의 따뜻하고 날카로운 멘토입니다.
 아래는 영업 멘토 현지의 오늘 업무 리포트입니다.
-
+ 
 ${report}
-
+ 
 다음 기준으로 한국어로 친근하게 피드백해주세요:
 1. 잘한 점 — 수치와 메모/할일 내용을 구체적으로 언급 (환불방어, 상담 성공 등 메모에 적힌 내용도 칭찬)
 2. 개선할 점 — 미완료 할일, 미루기 횟수, 목표 대비 부족한 수치
@@ -1639,7 +1639,7 @@ ${report}
   }
   btn.disabled=false;btn.textContent='✨ AI 피드백';
 }
-
+ 
 async function genWeekly(){
   const {data:logs}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).order('date',{ascending:true});
   const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:true});
@@ -1662,20 +1662,20 @@ async function genWeekly(){
   const reportText=
 `📊 주간 리포트 — ${todayStr()} 기준
 영업일: ${periodName}
-
+ 
 💰 매출 현황
 총 매출:  ${fmt(totalSales)}
 총 환불:  ${fmt(totalRefund)}
 실매출:   ${fmt(realSales)}
 내 목표:  ${fmt(goal)}
 잔여:     ${fmt(Math.max(0,goal-realSales))} (달성 ${pct(realSales,goal)}%)
-
+ 
 📊 영업 / 상담 (${n}일 합산)
 총 상담잡기: ${entries.reduce((s,e)=>s+(e.counsel_set||0),0)}건
 총 콜 수:    ${entries.reduce((s,e)=>s+(e.calls||0),0)}콜
 총 분 수:    ${entries.reduce((s,e)=>s+(e.mins||0),0)}분
 총 블로그:   ${entries.reduce((s,e)=>s+(e.blog||0),0)}건
-
+ 
 ⏭️ 미루기 현황 (이번 영업일)
 총 미루기: ${totalPostpone}회 / ${postponed.length}개 항목
 많이 미룬 할일:
@@ -1683,9 +1683,9 @@ ${top3}`;
   document.getElementById('report-out').textContent=reportText;
   document.getElementById('ai-feedback-out').style.display='none';
 }
-
+ 
 function copyReport(){navigator.clipboard.writeText(document.getElementById('report-out').textContent).then(()=>showToast('복사됐어요 ✓'))}
-
+ 
 sb.auth.getSession().then(({data:{session}})=>{
   if(session){currentUser=session.user;loadProfile().then(()=>enterApp());}
   else{document.getElementById('auth-wrap').style.display='flex';}
@@ -1693,3 +1693,4 @@ sb.auth.getSession().then(({data:{session}})=>{
 </script>
 </body>
 </html>
+ 
