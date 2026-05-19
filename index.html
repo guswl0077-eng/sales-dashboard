@@ -1653,8 +1653,7 @@ async function genWeekly(){
   const postponed=(allTodos||[]).filter(t=>t.postpone_period===periodName&&(t.postpone_count||0)>0)
     .sort((a,b)=>(b.postpone_count||0)-(a.postpone_count||0));
   const totalPostpone=postponed.reduce((s,t)=>s+(t.postpone_count||0),0);
-  const top3=postponed.slice(0,3).map(t=>`  · ${t.content} (${t.postpone_count}회)`).join('
-')||'  없음';
+  const top3=postponed.slice(0,3).map(t=>`  · ${t.content} (${t.postpone_count}회)`).join('\n')||'  없음';
   const totalSales=entries.reduce((s,e)=>s+(e.sales||0),0);
   const totalRefund=entries.reduce((s,e)=>s+(e.refund||0),0);
   const realSales=totalSales-totalRefund;
