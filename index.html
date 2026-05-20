@@ -485,8 +485,8 @@ tr.row-refund{background:#fff8f0}
       </div>
       <div class="form-group"><label class="form-label">상담잡기</label><input class="form-input" type="number" id="dm-cs" placeholder="0"></div>
       <div class="form-group"><label class="form-label">블로그</label><input class="form-input" type="number" id="dm-blog" placeholder="0"></div>
-      <div class="form-group"><label class="form-label">메모</label><textarea class="form-input" id="dm-memo" rows="2"></textarea></div>
     </div>
+    <div id="dm-schedule-box"></div>
     <div style="border-top:1px solid #f0eeea;margin:12px 0;padding-top:12px">
       <div class="form-label" style="font-size:12px;color:#888;font-weight:500;margin-bottom:8px">할 일</div>
       <div id="dm-todo-list" style="margin-bottom:8px"></div>
@@ -494,6 +494,9 @@ tr.row-refund{background:#fff8f0}
         <input class="form-input" id="dm-todo-input" placeholder="할 일 입력..." style="font-size:13px" onkeydown="if(event.key==='Enter')addDmTodo()">
         <button class="btn btn-outline btn-sm" onclick="addDmTodo()">추가</button>
       </div>
+    </div>
+    <div style="border-top:1px solid #f0eeea;margin:12px 0;padding-top:12px">
+      <div class="form-group"><label class="form-label">메모</label><textarea class="form-input" id="dm-memo" rows="2"></textarea></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="document.getElementById('day-modal').classList.remove('open')">닫기</button>
@@ -1121,12 +1124,28 @@ async function renderCalendar(){
         ${inPeriod?`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;${dDayStyle}">${dDayLabel}</span>`:''}
       </div>
       ${dateTags.map(t=>`<div style="font-size:10px;font-weight:700;color:#fff;margin-bottom:1px;line-height:1.3">${t.cal_tags.text}</div>`).join('')}
-      ${wType&&inPeriod?`<div class="cal-work-badge work-${cls}">${wType}</div>`:''}
-      ${realSales>0&&inPeriod?`<div style="font-size:10px;font-weight:600;color:#1a8a50">${Number(realSales).toLocaleString()}원</div>`:''}
-      ${calLogData[dateStr]?.blog&&inPeriod?`<div style="font-size:10px;color:#888">📝 ${calLogData[dateStr].blog}건</div>`:''}
-      ${inPeriod?scheds.slice(0,2).map(s=>`<div style="font-size:10px;color:#888;line-height:1.3">• ${s.length>8?s.slice(0,8)+'..':s}</div>`).join(''):''}
-      ${inPeriod&&scheds.length>2?`<div style="font-size:10px;color:#bbb">+${scheds.length-2}개</div>`:''}
-      ${inPeriod&&calTodoData[dateStr]?.length?`<div style="display:flex;align-items:center;gap:2px;margin-top:2px;flex-wrap:wrap">${calTodoData[dateStr].slice(0,5).map(t=>`<div style="width:6px;height:6px;border-radius:50%;background:${t.done?'#22c55e':'#e5e7eb'};border:1px solid ${t.done?'#16a34a':'#d1d5db'};flex-shrink:0"></div>`).join('')}${calTodoData[dateStr].length>5?`<span style="font-size:9px;color:#bbb">+${calTodoData[dateStr].length-5}</span>`:''}</div>`:''}
+      ${(()=>{
+        // 최대 7줄: 근무유형(1) + 매출(1) + 개강일정(최대n) + 할일(나머지)
+        let lines=0;
+        let out='';
+        if(wType&&inPeriod){out+=`<div class="cal-work-badge work-${cls}">${wType}</div>`;lines++;}
+        if(realSales>0&&inPeriod){out+=`<div style="font-size:10px;font-weight:600;color:#1a8a50">${Number(realSales).toLocaleString()}원</div>`;lines++;}
+        const schedList=inPeriod?scheds:[];
+        for(const s of schedList){
+          if(lines>=7)break;
+          out+=`<div style="font-size:10px;color:#888;line-height:1.3">• ${s.length>9?s.slice(0,9)+'..':s}</div>`;
+          lines++;
+        }
+        const todoList=inPeriod?(calTodoData[dateStr]||[]):[];
+        let shownTodos=0;
+        for(const t of todoList){
+          if(lines>=7)break;
+          out+=`<div style="font-size:10px;color:#888;line-height:1.3;${t.done?'text-decoration:line-through;opacity:.5':''}">${t.content.length>9?t.content.slice(0,9)+'..':t.content}</div>`;
+          lines++;shownTodos++;
+        }
+        const remaining=(todoList.length-shownTodos)+(schedList.length-(lines-1-(realSales>0?1:0)-(wType?1:0)-shownTodos));
+        return out;
+      })()}
     </div>`;
     cur.setDate(cur.getDate()+1);
   }
@@ -1167,6 +1186,17 @@ async function openDayModal(dateStr){
   document.getElementById('dm-mins').value=log?.mins||'';
   document.getElementById('dm-blog').value=log?.blog||'';
   document.getElementById('dm-memo').value=log?.memo||'';
+  // 개강일정 로드
+  const {data:dayScheds}=await sb.from('schedules').select('*').eq('date',dateStr).order('title');
+  const schedBox=document.getElementById('dm-schedule-box');
+  if(dayScheds&&dayScheds.length){
+    schedBox.innerHTML=`<div style="border-top:1px solid #f0eeea;margin:12px 0;padding-top:12px">
+      <div class="form-label" style="font-size:12px;color:#b45309;font-weight:600;margin-bottom:6px">📅 개강 일정</div>
+      ${dayScheds.map(s=>`<div style="font-size:13px;padding:4px 0;border-bottom:1px solid #f5f4f0;color:#333">• ${s.title}</div>`).join('')}
+    </div>`;
+  } else {
+    schedBox.innerHTML='';
+  }
   // 할일 로드
   await renderDmTodos(dateStr);
   document.getElementById('day-modal').classList.add('open');
@@ -1313,7 +1343,13 @@ function periodSortKey(periodStr){
 async function renderList(){
   const {data}=await sb.from('students').select('*').eq('user_id',currentUser.id);
   let students=data||[];
-  students.sort((a,b)=>periodSortKey(a.period)-periodSortKey(b.period));
+  students.sort((a,b)=>{
+    const cancelStatus=['취소','결제 후 환불'];
+    const aCancel=cancelStatus.includes(a.status)?1:0;
+    const bCancel=cancelStatus.includes(b.status)?1:0;
+    if(aCancel!==bCancel) return aCancel-bCancel;
+    return periodSortKey(a.period)-periodSortKey(b.period);
+  });
   // 영업일 필터 옵션 채우기
   const periodSel=document.getElementById('list-period-filter');
   if(periodSel){
@@ -1345,7 +1381,7 @@ async function renderList(){
     <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','name')" style="cursor:pointer;font-weight:500;display:inline-block">${s.name}</span></td>
     <td><span onclick="editCell(this,'${s.id}','course')" style="cursor:pointer;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:125px">${s.course||'-'}</span></td>
     <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','amount')" style="cursor:pointer;display:inline-block">${s.amount?Number(s.amount).toLocaleString()+'원':'-'}</span></td>
-    <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="border:1px solid ${s.status==='결제'?'#a3d9a5':['결제 후 환불'].includes(s.status)?'#f5c5a0':s.status==='취소'?'#f5c5c5':'#e8e6e0'};border-radius:20px;font-size:11px;font-weight:600;padding:2px 8px;outline:none;background:${s.status==='결제'?'#e8f5e9':s.status==='결제 후 환불'?'#fff3e0':s.status==='취소'?'#fee2e2':'#fff'};color:${s.status==='결제'?'#1a7a3a':s.status==='결제 후 환불'?'#b45309':s.status==='취소'?'#991b1b':'#333'};cursor:pointer">
+    <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="border:1px solid ${s.status==='결제'?'#a3d9a5':['결제 후 환불'].includes(s.status)?'#f5c5a0':s.status==='취소'?'#f5c5c5':'#e8e6e0'};border-radius:20px;font-size:11px;font-weight:600;padding:2px 6px;outline:none;min-width:90px;background:${s.status==='결제'?'#e8f5e9':s.status==='결제 후 환불'?'#fff3e0':s.status==='취소'?'#fee2e2':'#fff'};color:${s.status==='결제'?'#1a7a3a':s.status==='결제 후 환불'?'#b45309':s.status==='취소'?'#991b1b':'#333'};cursor:pointer">
       ${['연락예정','연락완료','등록완료','보류','결제','결제 후 환불','취소'].map(v=>`<option ${v===s.status?'selected':''}>${v}</option>`).join('')}
     </select></td>
     <td style="min-width:120px"><span onclick="editCell(this,'${s.id}','memo')" style="cursor:pointer;display:inline-block;font-size:12px;color:#888;white-space:pre-wrap;word-break:break-word;line-height:1.6">${s.memo||'-'}</span></td>
