@@ -145,18 +145,21 @@ td{padding:8px 10px;border-bottom:1px solid #f5f4f0;color:#1a1a1a}
 .palette-color{width:22px;height:22px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:transform .1s}
 .palette-color:hover{transform:scale(1.2);border-color:#1a1a1a}
 .palette-more{font-size:11px;color:#aaa;cursor:pointer;text-align:center;padding:2px}
-/* 결제리스트 완료 탭 */
+/* 결제리스트 탭 */
 .list-filter-tabs{display:flex;gap:6px;margin-bottom:12px}
 .list-filter-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e8e6e0;background:#fff;color:#888;transition:all .15s}
 .list-filter-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
-/* 완료 행 */
-tr.row-done td{opacity:.45}
-tr.row-done td span,tr.row-done td{text-decoration:line-through;text-decoration-color:#aaa}
-tr.row-done td select{text-decoration:none}
-/* 학생 체크박스 */
-.stu-chk{width:20px;height:20px;border-radius:6px;border:1.5px solid #ddd;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;vertical-align:middle}
-.stu-chk.done{background:#1a1a1a;border-color:#1a1a1a}
-.stu-chk.done::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
+.list-filter-tab.tab-cancel{color:#c0392b;border-color:#f5c5c5}
+.list-filter-tab.tab-cancel.active{background:#fee2e2;border-color:#f5c5c5;color:#991b1b}
+/* 결제 행 */
+tr.row-paid td:not(:nth-child(5)){color:#666}
+tr.row-paid{background:#f6fff8}
+/* 결제 후 환불 / 취소 행 */
+tr.row-cancel td span,tr.row-cancel td:not(:nth-child(5)){text-decoration:line-through;text-decoration-color:#ccc;color:#aaa}
+tr.row-cancel{background:#fff5f5}
+tr.row-refund td span,tr.row-refund td:not(:nth-child(5)){text-decoration:line-through;text-decoration-color:#ccc;color:#aaa}
+tr.row-refund{background:#fff8f0}
+
 /* 영업일 날짜 선택 */
 .period-picker{display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid #e8e6e0;border-radius:14px;padding:16px;z-index:180;box-shadow:0 6px 24px rgba(0,0,0,.12);min-width:280px}
 .period-picker.open{display:block}
@@ -340,7 +343,7 @@ tr.row-done td select{text-decoration:none}
 
     <!-- 달력 -->
     <div class="tabs-page" id="tab-calendar">
-      <div class="tag-palette">
+      <div class="tag-palette admin-only" id="shared-tag-palette" style="display:none">
         <div class="tag-palette-title">🏷️ 공용 태그 <span style="font-size:10px;color:#bbb">(관리자 설정 · 전체 동기화)</span></div>
         <div class="tag-list" id="shared-tag-list"></div>
         <div class="tag-add-row" id="shared-tag-add" style="display:none">
@@ -388,8 +391,9 @@ tr.row-done td select{text-decoration:none}
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <div class="list-filter-tabs">
           <div class="list-filter-tab active" onclick="setListFilter('all')">전체</div>
-          <div class="list-filter-tab" onclick="setListFilter('done')">완료</div>
-          <div class="list-filter-tab" onclick="setListFilter('pending')">미완료</div>
+          <div class="list-filter-tab" onclick="setListFilter('paid')">결제</div>
+          <div class="list-filter-tab" onclick="setListFilter('unpaid')">미결제</div>
+          <div class="list-filter-tab tab-cancel" onclick="setListFilter('cancel')">취소</div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline" onclick="loadPeriodsForPicker();document.getElementById('bulk-student-modal').classList.add('open')">+ 일괄 입력</button>
@@ -404,7 +408,6 @@ tr.row-done td select{text-decoration:none}
       </div>
       <div class="card"><div class="tbl-wrap" style="overflow-x:hidden"><table style="table-layout:fixed;width:100%"><thead><tr>
         <th style="width:20px"></th>
-        <th style="width:28px"></th>
         <th style="width:72px">구분</th>
         <th style="width:100px">영업일</th>
         <th style="width:60px">이름</th>
@@ -540,7 +543,7 @@ tr.row-done td select{text-decoration:none}
     <div class="form-group"><label class="form-label">이름</label><input class="form-input" id="m-name" placeholder="홍길동"></div>
     <div class="form-group"><label class="form-label">과정</label><input class="form-input" id="m-course" placeholder="F&B, 로스팅 LV.1 등"></div>
     <div class="form-group"><label class="form-label">금액 (원)</label><input class="form-input" type="number" id="m-amount" placeholder="4800000"></div>
-    <div class="form-group"><label class="form-label">상태</label><select class="form-input" id="m-status"><option>연락예정</option><option>연락완료</option><option>등록완료</option><option>보류</option></select></div>
+    <div class="form-group"><label class="form-label">상태</label><select class="form-input" id="m-status"><option>연락예정</option><option>연락완료</option><option>등록완료</option><option>보류</option><option>결제</option><option>결제 후 환불</option><option>취소</option></select></div>
     <div class="form-group"><label class="form-label">메모</label><input class="form-input" id="m-memo" placeholder="메모"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeStudentModal()">취소</button>
@@ -1294,7 +1297,7 @@ async function saveDayModal(){
 let listFilter='all';
 function setListFilter(f){
   listFilter=f;
-  document.querySelectorAll('.list-filter-tab').forEach((t,i)=>t.classList.toggle('active',['all','done','pending'][i]===f));
+  document.querySelectorAll('.list-filter-tab').forEach((t,i)=>t.classList.toggle('active',['all','paid','unpaid','cancel'][i]===f));
   renderList();
 }
 
@@ -1323,18 +1326,18 @@ async function renderList(){
   const periodVal=document.getElementById('list-period-filter')?.value||'';
   if(searchVal) students=students.filter(s=>s.name?.toLowerCase().includes(searchVal));
   if(periodVal) students=students.filter(s=>s.period===periodVal);
-  if(listFilter==='done') students=students.filter(s=>s.completed);
-  else if(listFilter==='pending') students=students.filter(s=>!s.completed);
+  if(listFilter==='paid') students=students.filter(s=>s.status==='결제');
+  else if(listFilter==='unpaid') students=students.filter(s=>!['결제','결제 후 환불','취소'].includes(s.status));
+  else if(listFilter==='cancel') students=students.filter(s=>['결제 후 환불','취소'].includes(s.status));
   window._studentOrder=students;
   document.getElementById('student-tbody').innerHTML=students.length?students.map((s,i)=>`
-    <tr class="${s.completed?'row-done':''}" draggable="true"
+    <tr class="${s.status==='결제'?'row-paid':['결제 후 환불','취소'].includes(s.status)?s.status==='취소'?'row-cancel':'row-refund':''}" draggable="true"
       ondragstart="stuDragStart(event,${i})"
       ondragover="stuDragOver(event)"
       ondragleave="stuDragLeave(event)"
       ondrop="stuDrop(event,${i})"
       style="cursor:default">
     <td style="text-align:center;color:#ccc;cursor:grab;font-size:14px" title="드래그로 순서변경">⠿</td>
-    <td style="text-align:center"><div class="stu-chk ${s.completed?'done':''}" onclick="toggleStudentDone('${s.id}',${!!s.completed})"></div></td>
     <td><select onchange="updateStudentCategory('${s.id}',this.value)" style="border:1px solid #e8e6e0;border-radius:20px;font-size:11px;font-weight:500;padding:2px 8px;outline:none;background:#fff;cursor:pointer;text-decoration:none">
       ${['','수강생','DB','COD','따즈아'].map(v=>`<option value="${v}" ${v===(s.category||'')?'selected':''}>${v||'미설정'}</option>`).join('')}
     </select></td>
@@ -1342,18 +1345,12 @@ async function renderList(){
     <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','name')" style="cursor:pointer;font-weight:500;display:inline-block">${s.name}</span></td>
     <td><span onclick="editCell(this,'${s.id}','course')" style="cursor:pointer;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:125px">${s.course||'-'}</span></td>
     <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','amount')" style="cursor:pointer;display:inline-block">${s.amount?Number(s.amount).toLocaleString()+'원':'-'}</span></td>
-    <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="border:1px solid #e8e6e0;border-radius:20px;font-size:11px;font-weight:500;padding:2px 8px;outline:none;background:#fff;cursor:pointer;text-decoration:none">
-      ${['연락예정','연락완료','등록완료','보류'].map(v=>`<option ${v===s.status?'selected':''}>${v}</option>`).join('')}
+    <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="border:1px solid ${s.status==='결제'?'#a3d9a5':['결제 후 환불'].includes(s.status)?'#f5c5a0':s.status==='취소'?'#f5c5c5':'#e8e6e0'};border-radius:20px;font-size:11px;font-weight:600;padding:2px 8px;outline:none;background:${s.status==='결제'?'#e8f5e9':s.status==='결제 후 환불'?'#fff3e0':s.status==='취소'?'#fee2e2':'#fff'};color:${s.status==='결제'?'#1a7a3a':s.status==='결제 후 환불'?'#b45309':s.status==='취소'?'#991b1b':'#333'};cursor:pointer">
+      ${['연락예정','연락완료','등록완료','보류','결제','결제 후 환불','취소'].map(v=>`<option ${v===s.status?'selected':''}>${v}</option>`).join('')}
     </select></td>
     <td style="min-width:120px"><span onclick="editCell(this,'${s.id}','memo')" style="cursor:pointer;display:inline-block;font-size:12px;color:#888;white-space:pre-wrap;word-break:break-word;line-height:1.6">${s.memo||'-'}</span></td>
     <td><span onclick="deleteStudent('${s.id}')" style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px">×</span></td></tr>`).join('')
-    :'<tr><td colspan="9" style="text-align:center;color:#bbb;padding:20px">등록된 학생이 없어요</td></tr>';
-}
-
-async function toggleStudentDone(id,current){
-  await sb.from('students').update({completed:!current}).eq('id',id);
-  showToast(!current?'완료 처리됐어요 ✓':'완료 해제됐어요');
-  renderList();
+    :'<tr><td colspan="8" style="text-align:center;color:#bbb;padding:20px">등록된 학생이 없어요</td></tr>';
 }
 
 function editCell(el,id,field){
@@ -1397,7 +1394,7 @@ async function deleteStudent(id){
 }
 
 async function updateStudentCategory(id,val){await sb.from('students').update({category:val}).eq('id',id);showToast('구분 업데이트 완료')}
-async function updateStudentStatus(id,val){await sb.from('students').update({status:val}).eq('id',id);showToast('상태 업데이트 완료')}
+async function updateStudentStatus(id,val){await sb.from('students').update({status:val}).eq('id',id);showToast('상태 업데이트 완료');renderList();}
 
 function closeStudentModal(){
   document.getElementById('student-modal').classList.remove('open');
