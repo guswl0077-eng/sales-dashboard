@@ -408,14 +408,14 @@ tr.row-refund{background:#fff8f0}
       </div>
       <div class="card"><div class="tbl-wrap" style="overflow-x:hidden"><table style="table-layout:fixed;width:100%"><thead><tr>
         <th style="width:20px"></th>
-        <th style="width:72px">구분</th>
-        <th style="width:100px">영업일</th>
-        <th style="width:60px">이름</th>
-        <th style="width:130px">과정</th>
-        <th style="width:110px">금액</th>
-        <th style="width:110px">상태</th>
-        <th style="width:200px">메모</th>
-        <th style="width:24px"></th>
+        <th style="width:68px">구분</th>
+        <th style="width:90px">영업일</th>
+        <th style="width:55px">이름</th>
+        <th style="width:110px">과정</th>
+        <th style="width:100px">금액</th>
+        <th style="width:115px">상태</th>
+        <th>메모</th>
+        <th style="width:20px"></th>
       </tr></thead><tbody id="student-tbody"></tbody></table></div></div>
     </div>
 
@@ -568,7 +568,7 @@ const WORK_BG={'늦출':'#bae6fd','당직':'#fef08a','당직+추당':'#fef08a','
 const WORK_TC={'늦출':'#0369a1','당직':'#854d0e','당직+추당':'#854d0e','주말당직':'#9a3412','주말+추당':'#9a3412','근무':'#fff','휴무':'#991b1b'};
 const DAYS=['일','월','화','수','목','금','토'];
 const fmt=n=>Number(n||0).toLocaleString()+'원';
-const pct=(v,t)=>t>0?Math.min(100,Math.round(v/t*100)):0;
+const pct=(v,t)=>t>0?Math.min(100,Math.round(v/t*10000)/100):0;
 const fillColor=p=>p>=100?'#1a8a50':p>=60?'#f59e0b':'#ef4444';
 const todayKey=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const todayStr=()=>{const d=new Date();return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${DAYS[d.getDay()]})`};
