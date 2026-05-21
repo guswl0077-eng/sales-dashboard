@@ -1384,7 +1384,7 @@ async function renderList(){
     <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="border:1px solid ${s.status==='결제'?'#a3d9a5':['결제 후 환불'].includes(s.status)?'#f5c5a0':s.status==='취소'?'#f5c5c5':'#e8e6e0'};border-radius:20px;font-size:11px;font-weight:600;padding:2px 6px;outline:none;min-width:90px;background:${s.status==='결제'?'#e8f5e9':s.status==='결제 후 환불'?'#fff3e0':s.status==='취소'?'#fee2e2':'#fff'};color:${s.status==='결제'?'#1a7a3a':s.status==='결제 후 환불'?'#b45309':s.status==='취소'?'#991b1b':'#333'};cursor:pointer">
       ${['연락예정','연락완료','등록완료','보류','결제','결제 후 환불','취소'].map(v=>`<option ${v===s.status?'selected':''}>${v}</option>`).join('')}
     </select></td>
-    <td style="min-width:120px"><span onclick="editCell(this,'${s.id}','memo')" style="cursor:pointer;display:inline-block;font-size:12px;color:#888;white-space:pre-wrap;word-break:break-word;line-height:1.6">${s.memo||'-'}</span></td>
+    <td style="width:100px;max-width:100px"><span onclick="editCell(this,'${s.id}','memo')" style="cursor:pointer;display:inline-block;font-size:12px;color:#888;white-space:pre-wrap;word-break:break-word;line-height:1.6;width:100%">${s.memo||'-'}</span></td>
     <td><span onclick="deleteStudent('${s.id}')" style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px">×</span></td></tr>`).join('')
     :'<tr><td colspan="8" style="text-align:center;color:#bbb;padding:20px">등록된 학생이 없어요</td></tr>';
 }
