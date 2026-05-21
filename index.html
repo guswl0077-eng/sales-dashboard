@@ -336,7 +336,7 @@ tr.row-refund{background:#fff8f0}
             </div>
           </div>
           <div class="sec-title">일별 기록</div>
-          <div class="card"><div class="tbl-wrap"><table><thead><tr><th>날짜</th><th>실매출</th><th style="text-align:center">상담잡기</th><th style="text-align:center">블로그</th><th style="text-align:center">콜</th><th style="text-align:center">분</th></tr></thead><tbody id="log-tbody"></tbody></table></div></div>
+          <div class="card"><div class="tbl-wrap"><table><thead><tr><th>날짜</th><th>실매출</th><th style="text-align:center">상담잡기</th><th style="text-align:center">콜</th><th style="text-align:center">분</th></tr></thead><tbody id="log-tbody"></tbody></table></div></div>
         </div>
       </div>
     </div>
@@ -921,7 +921,6 @@ async function renderSales(){
       <td>${e.date}</td>
       <td style="font-weight:600;color:${(e.sales||0)-(e.refund||0)<0?'#c0392b':'#1a1a1a'}">${fmt((e.sales||0)-(e.refund||0))}</td>
       <td style="text-align:center;color:#888">${e.counsel_set||0}건</td>
-      <td style="text-align:center;color:#888">${e.blog||0}건</td>
       <td style="text-align:center;color:#888">${e.calls||0}콜</td>
       <td style="text-align:center;color:#888">${e.mins||0}분</td>
     </tr>`).join('')
