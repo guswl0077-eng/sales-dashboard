@@ -8,9 +8,21 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh}
-.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.auth-card{background:#fff;border-radius:20px;border:1px solid #e8e6e0;padding:40px 36px;width:100%;max-width:380px}
+:root{
+  --bg:#f5f4f0;--bg2:#fff;--bg3:#f9f8f6;
+  --border:#e8e6e0;--border2:#f5f4f0;
+  --text:#1a1a1a;--text2:#888;--text3:#aaa;
+  --card:#fff;--topbar:#fff;--nav:#fff;
+}
+body.dark{
+  --bg:#3c3c3c;--bg2:#424242;--bg3:#3a3a3a;
+  --border:#4a4a4a;--border2:#484848;
+  --text:#f0efed;--text2:#aaa;--text3:#777;
+  --card:#3c3c3c;--topbar:#333;--nav:#333;
+}
+body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.auth-card{background:var(--card);border-radius:20px;border:1px solid var(--border);padding:40px 36px;width:100%;max-width:380px}
 .auth-logo{text-align:center;font-size:32px;margin-bottom:8px}
 .auth-title{text-align:center;font-size:18px;font-weight:700;margin-bottom:4px}
 .auth-sub{text-align:center;font-size:13px;color:#aaa;margin-bottom:28px}
@@ -27,28 +39,28 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:#f5f4f
 .msg{font-size:12px;text-align:center;margin-top:10px;min-height:18px}
 .msg.err{color:#c0392b}.msg.ok{color:#1a8a50}
 .app{display:none}
-.topbar{background:#fff;border-bottom:1px solid #e8e6e0;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.topbar{background:var(--topbar);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
 .logo{font-size:15px;font-weight:700}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .date-badge{font-size:12px;color:#888;background:#f5f4f0;padding:4px 10px;border-radius:20px}
 .user-chip{font-size:12px;font-weight:600;background:#f0eeea;padding:4px 10px;border-radius:20px}
 .admin-chip{font-size:11px;font-weight:600;background:#1a1a1a;color:#fff;padding:3px 8px;border-radius:20px}
 .logout-btn{font-size:12px;color:#aaa;cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid #e8e6e0;background:none}
-.nav-tabs{display:flex;gap:2px;padding:0 20px;background:#fff;border-bottom:1px solid #e8e6e0;overflow-x:auto}
-.tab{padding:12px 14px;font-size:13px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
-.tab.active{color:#1a1a1a;border-bottom-color:#1a1a1a}
+.nav-tabs{display:flex;gap:2px;padding:0 20px;background:var(--nav);border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:12px 14px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
 .content{max-width:1200px;margin:0 auto;padding:20px 16px}
 .sec-title{font-size:11px;font-weight:700;color:#aaa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;margin-top:20px}
 .sec-title:first-child{margin-top:0}
 .metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.metric{background:#fff;border-radius:12px;padding:12px 14px;border:1px solid #e8e6e0}
+.metric{background:var(--card);border-radius:12px;padding:12px 14px;border:1px solid var(--border)}
 .metric-label{font-size:11px;color:#aaa;margin-bottom:4px;font-weight:500}
 .metric-value{font-size:16px;font-weight:700}
 .metric.dark{background:#1a1a1a}.metric.dark .metric-label{color:#666}.metric.dark .metric-value{color:#fff}
 .metric.green .metric-value{color:#1a8a50}
 .metric.red .metric-value{color:#c0392b}
-.card{background:#fff;border-radius:12px;border:1px solid #e8e6e0;padding:16px 18px;margin-bottom:12px}
-.row-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f5f4f0;gap:10px}
+.card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px 18px;margin-bottom:12px}
+.row-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);gap:10px}
 .row-item:last-child{border-bottom:none}
 .row-label{font-size:13px;color:#444;flex:1}
 .row-target{font-size:11px;color:#bbb;min-width:52px;text-align:right}
@@ -88,7 +100,7 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:#f5f4f
 .pbar-wrap{width:100%;height:5px;background:#333;border-radius:3px;overflow:hidden}
 .pbar-wrap .fill{height:100%;background:#fff;border-radius:3px;transition:width .5s}
 .tabs-page{display:none}.tabs-page.active{display:block}
-.report-box{background:#f9f8f6;border-radius:10px;padding:16px;font-size:13px;line-height:1.8;color:#333;white-space:pre-wrap;margin-bottom:12px;min-height:100px}
+.report-box{background:var(--bg3);border-radius:10px;padding:16px;font-size:13px;line-height:1.8;color:#333;white-space:pre-wrap;margin-bottom:12px;min-height:100px}
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:8px 10px;color:#aaa;font-weight:500;border-bottom:1px solid #e8e6e0;white-space:nowrap}
@@ -100,11 +112,11 @@ td{padding:8px 10px;border-bottom:1px solid #f5f4f0;color:#1a1a1a}
 .form-row{display:flex;gap:8px}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
 .modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:16px;padding:24px;width:90%;max-width:440px}
+.modal{background:var(--card);border-radius:16px;padding:24px;width:90%;max-width:440px}
 .modal h3{font-size:15px;font-weight:700;margin-bottom:16px}
 .modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
-.cal-wrap{background:#fff;border-radius:12px;border:1px solid #e8e6e0;overflow:hidden;margin-bottom:14px}
-.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #e8e6e0}
+.cal-wrap{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:14px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
 .cal-title{font-size:15px;font-weight:700}
 .cal-nav{display:flex;gap:8px}
 .cal-nav button{background:none;border:1px solid #e8e6e0;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px}
@@ -114,7 +126,7 @@ td{padding:8px 10px;border-bottom:1px solid #f5f4f0;color:#1a1a1a}
 .cal-dow:first-child{color:#e74c3c}
 .cal-dow:last-child{color:#3498db}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-.cal-cell{min-height:90px;border-right:1px solid #f0eeea;border-bottom:1px solid #f0eeea;padding:6px;cursor:pointer;transition:background .1s;overflow:hidden}
+.cal-cell{min-height:90px;border-right:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:6px;cursor:pointer;transition:background .1s;overflow:hidden}
 .cal-cell:nth-child(7n){border-right:none}
 .cal-cell:hover{filter:brightness(.97)}
 .cal-cell.today{outline:2px solid #1a1a1a;outline-offset:-2px}
@@ -266,7 +278,13 @@ tr.row-refund{background:#fff8f0}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="logo">🌻 영업 대시보드</div>
+      <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
+        <div id="dark-sun" style="padding:3px 10px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
+        <div id="dark-moon" style="padding:3px 10px;border-radius:20px;font-size:11px;color:var(--text2)">🌙</div>
+      </div>
+    </div>
     <div class="topbar-right">
       <span class="date-badge" id="today-label"></span>
       <span class="admin-chip" id="admin-chip" style="display:none">관리자</span>
@@ -580,6 +598,31 @@ let selectedColors={shared:'#fde8e8',personal:'#e8f0fe'};
 let calPeriodIdx=0,allPeriods=[];
 let dayModalDate=null,selectedWorkType=null;
 const isAdmin=()=>currentProfile?.username?.trim()===ADMIN_ID.trim();
+
+function toggleDark(){
+  const isDark=document.body.classList.toggle('dark');
+  localStorage.setItem('darkMode',isDark?'1':'0');
+  updateDarkBtn(isDark);
+}
+function updateDarkBtn(isDark){
+  const sun=document.getElementById('dark-sun');
+  const moon=document.getElementById('dark-moon');
+  if(!sun||!moon)return;
+  if(isDark){
+    sun.style.background='transparent';sun.style.boxShadow='none';sun.style.color='var(--text2)';
+    moon.style.background='var(--card)';moon.style.boxShadow='0 1px 3px rgba(0,0,0,.3)';moon.style.color='var(--text)';
+  } else {
+    sun.style.background='var(--card)';sun.style.boxShadow='0 1px 3px rgba(0,0,0,.1)';sun.style.color='var(--text)';
+    moon.style.background='transparent';moon.style.boxShadow='none';moon.style.color='var(--text2)';
+  }
+}
+// 저장된 다크모드 복원
+(function(){
+  if(localStorage.getItem('darkMode')==='1'){
+    document.body.classList.add('dark');
+    document.addEventListener('DOMContentLoaded',()=>updateDarkBtn(true));
+  }
+})();
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
 
