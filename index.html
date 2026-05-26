@@ -14,6 +14,7 @@
   --text:#1a1a1a;--text2:#888;--text3:#aaa;
   --card:#fff;--topbar:#fff;--nav:#fff;
   --real-color:#1a1a1a;
+  --refund-color:#c0392b;
   --sched-bg:#fff8e8;--sched-border:#ffe0a0;
   --sched-title:#b45309;--sched-text:#333;
   --sched-muted:#888;--sched-today:#fff3cd;
@@ -193,10 +194,12 @@ tr.row-refund{background:#fff8f0}
 .period-field-wrap{position:relative}
 .today-schedule{background:var(--sched-bg);border:1px solid var(--sched-border);border-radius:10px;padding:12px 16px;margin-bottom:12px}
 .today-schedule-title{font-size:12px;font-weight:700;color:var(--sched-title);margin-bottom:6px}
-.notice-box{background:#1a1a1a;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px}
-body:not(.dark) .notice-box{background:#1a1a1a}
+.notice-box{border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px;background:#1a1a1a}
+body:not(.dark) .notice-box{background:#fff;border:1px solid #e8e6e0}
 .notice-date{font-size:11px;font-weight:700;color:#f5c842;margin-bottom:4px}
+body:not(.dark) .notice-date{color:#b45309}
 .notice-text{font-size:13px;color:#f0efed;line-height:1.6}
+body:not(.dark) .notice-text{color:#1a1a1a}
 .schedule-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px}
 .schedule-date-header{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px}
 .schedule-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f5f4f0}
@@ -483,7 +486,6 @@ body:not(.dark) .notice-box{background:#1a1a1a}
         <div class="form-group"><textarea class="form-input" id="notice-input" rows="3" placeholder="업데이트 내용을 입력해주세요..." style="resize:vertical"></textarea></div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary" onclick="saveNotice()">저장</button>
-          <button class="btn btn-outline" onclick="deleteNotice()">삭제</button>
         </div>
       </div>
       <div style="margin-bottom:16px"></div>
@@ -496,8 +498,10 @@ body:not(.dark) .notice-box{background:#1a1a1a}
         </div>
         <button class="btn btn-primary" onclick="savePeriod()">저장</button>
       </div>
+      <div class="sec-title">공지 이력</div>
+      <div class="card"><div id="notice-history"></div></div>
       <div class="sec-title">영업일 이력</div>
-      <div class="card"><div class="tbl-wrap"><table><thead><tr><th>영업일</th><th>기간</th></tr></thead><tbody id="period-tbody"></tbody></table></div></div>
+      <div class="card"><div class="tbl-wrap"><table><thead><tr><th>영업일</th><th>기간</th><th style="width:30px"></th></tr></thead><tbody id="period-tbody"></tbody></table></div></div>
     </div>
 
   </div>
@@ -736,19 +740,48 @@ async function loadTodayLog(){
 }
 
 async function loadNotice(){
-  const {data}=await sb.from('notices').select('*').order('updated_at',{ascending:false}).limit(1).single();
+  const {data:notices}=await sb.from('notices').select('*').order('updated_at',{ascending:false});
   const box=document.getElementById('notice-box');
-  if(!box)return;
-  if(data?.content){
-    const d=new Date(data.updated_at);
-    const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-    box.innerHTML=`<div class="notice-box"><span style="font-size:18px">📢</span><div><div class="notice-date">업데이트 · ${dateStr}</div><div class="notice-text">${data.content.replace(/\n/g,'<br>')}</div></div></div>`;
-    // 영업일 관리 탭 입력칸에도 채우기
-    const input=document.getElementById('notice-input');
-    if(input)input.value=data.content;
-  } else {
-    box.innerHTML='';
+  const history=document.getElementById('notice-history');
+  // 최신 공지 상단 표시
+  const latest=notices?.[0];
+  if(box){
+    if(latest?.content){
+      const d=new Date(latest.updated_at);
+      const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+      box.innerHTML=`<div class="notice-box"><span style="font-size:18px">📢</span><div style="flex:1"><div class="notice-date">업데이트 · ${dateStr}</div><div class="notice-text">${latest.content.replace(/\n/g,'<br>')}</div></div></div>`;
+    } else {
+      box.innerHTML='';
+    }
   }
+  // 공지 이력 표시
+  if(history){
+    if(notices&&notices.length){
+      history.innerHTML=notices.map(n=>{
+        const d=new Date(n.updated_at);
+        const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border2)">
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">${dateStr}</div>
+            <div style="font-size:13px;color:var(--text);white-space:pre-wrap">${n.content}</div>
+          </div>
+          <span onclick="deleteNoticeById('${n.id}')" style="color:#ddd;cursor:pointer;font-size:18px;padding:0 4px;flex-shrink:0">×</span>
+        </div>`;
+      }).join('');
+    } else {
+      history.innerHTML='<div style="font-size:13px;color:var(--text3);padding:4px 0">공지 이력이 없어요</div>';
+    }
+    // 입력칸에 최신 내용
+    const input=document.getElementById('notice-input');
+    if(input) input.value=latest?.content||'';
+  }
+}
+
+async function deleteNoticeById(id){
+  if(!confirm('이 공지를 삭제할까요?'))return;
+  await sb.from('notices').delete().eq('id',id);
+  showToast('삭제됐어요');
+  await loadNotice();
 }
 
 async function saveNotice(){
@@ -1745,7 +1778,14 @@ async function renderPeriod(){
   const {data}=await sb.from('periods').select('*').order('created_at',{ascending:false});
   const periods=data||[];
   if(periods[0]){document.getElementById('p-name').value=periods[0].name||'';document.getElementById('p-start').value=periods[0].start_date||'';document.getElementById('p-end').value=periods[0].end_date||'';}
-  document.getElementById('period-tbody').innerHTML=periods.length?periods.map(p=>`<tr><td style="font-weight:500">${p.name}</td><td style="font-size:12px;color:#aaa">${p.start_date||''}~${p.end_date||''}</td></tr>`).join(''):'<tr><td colspan="2" style="text-align:center;color:#bbb;padding:20px">없어요</td></tr>';
+  document.getElementById('period-tbody').innerHTML=periods.length?periods.map(p=>`<tr><td style="font-weight:500">${p.name}</td><td style="font-size:12px;color:var(--text2)">${p.start_date||''}~${p.end_date||''}</td><td><span onclick="deletePeriod('${p.id}')" style="color:#ddd;cursor:pointer;font-size:18px;padding:0 4px">×</span></td></tr>`).join(''):'<tr><td colspan="2" style="text-align:center;color:#bbb;padding:20px">없어요</td></tr>';
+}
+
+async function deletePeriod(id){
+  if(!confirm('이 영업일을 삭제할까요?'))return;
+  await sb.from('periods').delete().eq('id',id);
+  showToast('삭제됐어요');
+  renderPeriod();
 }
 
 async function savePeriod(){
