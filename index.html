@@ -783,18 +783,23 @@ async function loadNotice(){
   const {data:notices}=await sb.from('notices').select('*').order('updated_at',{ascending:false});
   const box=document.getElementById('notice-box');
   const history=document.getElementById('notice-history');
-  const latest=notices?.[0];
   if(box){
-    if(latest?.content){
-      const d=new Date(latest.updated_at);
+    const toShow=(notices||[]).filter(n=>n.content);
+    // 업데이트/중요 각각 최신 1개씩
+    const latestUpdate=toShow.find(n=>(n.notice_type||'update')==='update');
+    const latestImportant=toShow.find(n=>n.notice_type==='important');
+    let boxHtml='';
+    const makeBox=(n)=>{
+      const d=new Date(n.updated_at);
       const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-      const type=latest.notice_type||'update';
+      const type=n.notice_type||'update';
       const typeLabel=type==='important'?'중요':'업데이트';
-      const noticeHtml=latest.content.split('\n').join('<br>');
-      box.innerHTML=`<div class="notice-box ${type}"><span style="font-size:18px">📢</span><div style="flex:1"><div class="notice-date">${typeLabel} · ${dateStr}</div><div class="notice-text">${noticeHtml}</div></div></div>`;
-    } else {
-      box.innerHTML='';
-    }
+      const html=n.content.split('\n').join('<br>');
+      return `<div class="notice-box ${type}" style="margin-bottom:8px"><span style="font-size:18px">📢</span><div style="flex:1"><div class="notice-date">${typeLabel} · ${dateStr}</div><div class="notice-text">${html}</div></div></div>`;
+    };
+    if(latestImportant) boxHtml+=makeBox(latestImportant);
+    if(latestUpdate) boxHtml+=makeBox(latestUpdate);
+    box.innerHTML=boxHtml;
   }
   if(history){
     if(notices&&notices.length){
@@ -853,7 +858,7 @@ async function loadTodaySchedule(){
   });
   const startStr=dates[0];
   const endStr=dates[6];
-  const {data}=await sb.from('schedules').select('*').gte('date',startStr).lte('date',endStr).order('date').order('title');
+  const {data}=await sb.from('schedules').select('*').gte('date',startStr).lte('date',endStr).order('date').order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
   if(!data||!data.length){box.innerHTML='';return;}
   // 날짜별로 그룹
   const byDate={};
@@ -1297,7 +1302,7 @@ async function renderCalendar(){
 
   const [{data:workData},{data:schedData},{data:logData},{data:dateTagData}]=await Promise.all([
     sb.from('work_schedules').select('*').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr),
-    sb.from('schedules').select('*').gte('date',startStr).lte('date',endStr),
+    sb.from('schedules').select('*').gte('date',startStr).lte('date',endStr).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true}),
     sb.from('daily_logs').select('date,sales,refund,blog').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr),
     sb.from('cal_date_tags').select('*').gte('date',startStr).lte('date',endStr)
   ]);
