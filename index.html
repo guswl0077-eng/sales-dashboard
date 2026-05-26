@@ -93,6 +93,7 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--
 .todo-item:last-child{border-bottom:none}
 .todo-text{flex:1;font-size:13px;color:var(--text)}
 .todo-text.done-text{text-decoration:line-through;color:#bbb}
+.todo-text.cancelled-text{text-decoration:line-through}
 .todo-fixed{font-size:10px;color:#aaa;background:#f5f4f0;padding:1px 6px;border-radius:10px;flex-shrink:0}
 .todo-del{font-size:16px;color:#ddd;cursor:pointer;padding:0 4px}
 .todo-del:hover{color:#c0392b}
@@ -194,12 +195,21 @@ tr.row-refund{background:#fff8f0}
 .period-field-wrap{position:relative}
 .today-schedule{background:var(--sched-bg);border:1px solid var(--sched-border);border-radius:10px;padding:12px 16px;margin-bottom:12px}
 .today-schedule-title{font-size:12px;font-weight:700;color:var(--sched-title);margin-bottom:6px}
-.notice-box{border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px;background:#1a1a1a}
-body:not(.dark) .notice-box{background:#fff;border:1px solid #e8e6e0}
-.notice-date{font-size:11px;font-weight:700;color:#f5c842;margin-bottom:4px}
-body:not(.dark) .notice-date{color:#b45309}
-.notice-text{font-size:13px;color:#f0efed;line-height:1.6}
-body:not(.dark) .notice-text{color:#1a1a1a}
+.notice-box{border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px}
+.notice-box.update{background:#1a1a1a}
+body:not(.dark) .notice-box.update{background:#fff;border:1px solid #e8e6e0}
+.notice-box.important{background:#7c3a00;border:1.5px solid #f59e0b}
+body:not(.dark) .notice-box.important{background:#fff3e0;border:1.5px solid #f59e0b}
+.notice-date{font-size:11px;font-weight:700;margin-bottom:4px}
+.notice-box.update .notice-date{color:#f5c842}
+body:not(.dark) .notice-box.update .notice-date{color:#b45309}
+.notice-box.important .notice-date{color:#fde68a}
+body:not(.dark) .notice-box.important .notice-date{color:#92400e}
+.notice-text{font-size:13px;line-height:1.6}
+.notice-box.update .notice-text{color:#f0efed}
+body:not(.dark) .notice-box.update .notice-text{color:#1a1a1a}
+.notice-box.important .notice-text{color:#fef3c7}
+body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 .schedule-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px}
 .schedule-date-header{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px}
 .schedule-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f5f4f0}
@@ -347,9 +357,16 @@ body:not(.dark) .notice-text{color:#1a1a1a}
           <div class="card">
             <div id="todo-list"></div>
             <div class="todo-add-row">
-              <input class="todo-input" id="todo-text" placeholder="할 일 입력..." onkeydown="if(event.key==='Enter')addTodo(false)">
-              <button class="btn btn-outline btn-sm" onclick="addTodo(true)" title="매일 고정">📌</button>
-              <button class="btn btn-primary btn-sm" onclick="addTodo(false)">추가</button>
+              <input class="todo-input" id="todo-text" placeholder="할 일 입력..." onkeydown="if(event.key==='Enter')addTodo()">
+              <button class="btn btn-primary btn-sm" onclick="addTodo()">추가</button>
+            </div>
+            <div class="todo-add-row" style="margin-top:6px">
+              <input class="todo-input" id="counsel-hour" placeholder="00" style="width:36px;text-align:center;padding:7px 4px;flex:none">
+              <span style="font-size:13px;color:var(--text2)">:</span>
+              <input class="todo-input" id="counsel-min" placeholder="00" style="width:36px;text-align:center;padding:7px 4px;flex:none">
+              <div id="counsel-type-btn" onclick="toggleCounselType()" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">상담</div>
+              <input class="todo-input" id="counsel-text" placeholder="일정 입력..." onkeydown="if(event.key==='Enter')addCounsel()" style="flex:1">
+              <button class="btn btn-primary btn-sm" onclick="addCounsel()">추가</button>
             </div>
           </div>
           <div class="sec-title">메모</div>
@@ -486,8 +503,12 @@ body:not(.dark) .notice-text{color:#1a1a1a}
     <div class="tabs-page" id="tab-period">
       <div class="admin-notice">⚙️ 관리자 전용 — 영업일 설정은 모든 사용자에게 적용돼요</div>
       <div class="card">
-        <div style="font-size:14px;font-weight:600;margin-bottom:14px">📢 업데이트 공지</div>
-        <div class="form-group"><textarea class="form-input" id="notice-input" rows="3" placeholder="업데이트 내용을 입력해주세요..." style="resize:vertical"></textarea></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">📢 공지 (업데이트 / 중요)</div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <div id="notice-type-update" onclick="selectNoticeType('update')" style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer">업데이트</div>
+          <div id="notice-type-important" onclick="selectNoticeType('important')" style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer">중요</div>
+        </div>
+        <div class="form-group"><textarea class="form-input" id="notice-input" rows="3" placeholder="공지 내용을 입력해주세요..." style="resize:vertical"></textarea></div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary" onclick="saveNotice()">저장</button>
         </div>
@@ -743,30 +764,48 @@ async function loadTodayLog(){
   updateBars();
 }
 
+let _noticeType='update';
+function selectNoticeType(type){
+  _noticeType=type;
+  const upBtn=document.getElementById('notice-type-update');
+  const impBtn=document.getElementById('notice-type-important');
+  if(!upBtn||!impBtn)return;
+  if(type==='update'){
+    upBtn.style.cssText='padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer';
+    impBtn.style.cssText='padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer';
+  } else {
+    upBtn.style.cssText='padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer';
+    impBtn.style.cssText='padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:#f59e0b;color:#fff;cursor:pointer';
+  }
+}
+
 async function loadNotice(){
   const {data:notices}=await sb.from('notices').select('*').order('updated_at',{ascending:false});
   const box=document.getElementById('notice-box');
   const history=document.getElementById('notice-history');
-  // 최신 공지 상단 표시
   const latest=notices?.[0];
   if(box){
     if(latest?.content){
       const d=new Date(latest.updated_at);
       const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-      box.innerHTML=`<div class="notice-box"><span style="font-size:18px">📢</span><div style="flex:1"><div class="notice-date">업데이트 · ${dateStr}</div><div class="notice-text">${latest.content.replace(/\n/g,'<br>')}</div></div></div>`;
+      const type=latest.notice_type||'update';
+      const typeLabel=type==='important'?'중요':'업데이트';
+      const noticeHtml=latest.content.split('\n').join('<br>');
+      box.innerHTML=`<div class="notice-box ${type}"><span style="font-size:18px">📢</span><div style="flex:1"><div class="notice-date">${typeLabel} · ${dateStr}</div><div class="notice-text">${noticeHtml}</div></div></div>`;
     } else {
       box.innerHTML='';
     }
   }
-  // 공지 이력 표시
   if(history){
     if(notices&&notices.length){
       history.innerHTML=notices.map(n=>{
         const d=new Date(n.updated_at);
         const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+        const type=n.notice_type||'update';
+        const typeLabel=type==='important'?'🔴 중요':'🔵 업데이트';
         return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border2)">
           <div style="flex:1">
-            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">${dateStr}</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">${typeLabel} · ${dateStr}</div>
             <div style="font-size:13px;color:var(--text);white-space:pre-wrap">${n.content}</div>
           </div>
           <span onclick="deleteNoticeById('${n.id}')" style="color:#ddd;cursor:pointer;font-size:18px;padding:0 4px;flex-shrink:0">×</span>
@@ -788,13 +827,10 @@ async function deleteNoticeById(id){
 async function saveNotice(){
   const content=document.getElementById('notice-input').value.trim();
   if(!content){showToast('내용을 입력해주세요');return;}
-  const {data:existing}=await sb.from('notices').select('id').limit(1).single();
-  if(existing){
-    await sb.from('notices').update({content,updated_at:new Date().toISOString()}).eq('id',existing.id);
-  } else {
-    await sb.from('notices').insert({content});
-  }
+  const notice_type=_noticeType||'update';
+  await sb.from('notices').insert({content,notice_type});
   document.getElementById('notice-input').value='';
+  selectNoticeType('update');
   showToast('공지 저장됐어요 ✓');
   await loadNotice();
 }
@@ -869,10 +905,11 @@ function renderTodos(){
       <span class="todo-drag">⠿</span>
       <div class="chk ${t.done?'done':''}" onclick="toggleTodo('${t.id}',${!!t._fixed})"></div>
       ${t._fixed?'<span class="todo-fixed">고정</span>':''}
-      <span class="todo-text ${t.done?'done-text':''}" style="flex:1;cursor:text"
+      <span class="todo-text ${t.cancelled?'cancelled-text':t.done?'done-text':''}" style="flex:1;cursor:text"
         ondblclick="editTodoInline(this,'${t.id}',${!!t._fixed})"
         title="더블클릭하면 수정">${t.content}</span>
       ${!t.done&&(t.postpone_count||0)>0?`<span style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:500;white-space:nowrap;${(t.postpone_count||0)>=3?'background:#fee2e2;color:#991b1b':'background:#fef3c7;color:#92400e'}">${t.postpone_count}회 미룸</span>`:''}
+      ${!t.done&&(t.category==='상담'||t.category==='면담')?`<button onclick="cancelCounsel('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f5c5c5;background:transparent;color:#c0392b;cursor:pointer;white-space:nowrap">취소</button>`:''}
       ${!t.done?`<button onclick="postponeTodo('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #e8e6e0;background:#fff;color:#888;cursor:pointer;white-space:nowrap">미루기</button>`:''}
       <span class="todo-del" onclick="deleteTodo('${t.id}',${!!t._fixed})">×</span>
     </div>`).join('');
@@ -925,15 +962,37 @@ async function editTodoInline(el,id,isFixed){
   input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape'){input.value=cur;input.blur();}});
 }
 
-async function addTodo(isFixed){
+async function addTodo(){
   const content=document.getElementById('todo-text').value.trim();
   if(!content)return;
-  const {data,error}=await sb.from('todos').insert({user_id:currentUser.id,date:todayKey(),content,category:'일반',done:false,is_fixed:isFixed}).select().single();
+  const {data,error}=await sb.from('todos').insert({user_id:currentUser.id,date:todayKey(),content,category:'일반',done:false,is_fixed:false}).select().single();
   if(error){showToast('추가 실패');return;}
   document.getElementById('todo-text').value='';
-  if(isFixed)fixedTodos.push(data);else todos.push(data);
+  todos.push(data);
   renderTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
+}
+
+let _counselType='상담';
+function toggleCounselType(){
+  _counselType=_counselType==='상담'?'면담':'상담';
+  const btn=document.getElementById('counsel-type-btn');
+  if(btn)btn.textContent=_counselType;
+}
+
+async function addCounsel(){
+  const hour=document.getElementById('counsel-hour').value.trim()||'00';
+  const min=document.getElementById('counsel-min').value.trim()||'00';
+  const text=document.getElementById('counsel-text').value.trim();
+  if(!text){showToast('일정을 입력해주세요');return;}
+  const content=`${hour}:${min} ${_counselType} · ${text}`;
+  const {data,error}=await sb.from('todos').insert({user_id:currentUser.id,date:todayKey(),content,category:_counselType,done:false,is_fixed:false}).select().single();
+  if(error){showToast('추가 실패');return;}
+  document.getElementById('counsel-hour').value='';
+  document.getElementById('counsel-min').value='';
+  document.getElementById('counsel-text').value='';
+  todos.push(data);
+  renderTodos();
 }
 
 async function toggleTodo(id,isFixed){
@@ -945,6 +1004,14 @@ async function toggleTodo(id,isFixed){
   todos.sort((a,b)=>(a.done===b.done)?0:a.done?1:-1);
   renderTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
+}
+
+async function cancelCounsel(id){
+  const list=[...fixedTodos,...todos];
+  const item=list.find(t=>t.id===id);if(!item)return;
+  item.cancelled=!item.cancelled;
+  await sb.from('todos').update({category:item.cancelled?'취소됨':item.category==='취소됨'?'상담':item.category}).eq('id',id);
+  renderTodos();
 }
 
 async function postponeTodo(id){
@@ -1737,7 +1804,7 @@ async function clearAllSchedules(){
 }
 
 async function renderSchedule(){
-  const {data}=await sb.from('schedules').select('*').order('date',{ascending:true}).order('sort_order',{ascending:true,nullsFirst:false}).order('title',{ascending:true});
+  const {data}=await sb.from('schedules').select('*').order('date',{ascending:true}).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
   const el=document.getElementById('schedule-list');
   if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3)">등록된 개강 일정이 없어요</div>';return;}
   const groups={};(data||[]).forEach(s=>{if(!groups[s.date])groups[s.date]=[];groups[s.date].push(s)});
