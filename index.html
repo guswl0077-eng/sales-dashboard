@@ -1430,7 +1430,7 @@ async function openDayModal(dateStr){
   document.getElementById('dm-blog').value=log?.blog||'';
   document.getElementById('dm-memo').value=log?.memo||'';
   // 개강일정 로드
-  const {data:dayScheds}=await sb.from('schedules').select('*').eq('date',dateStr).order('title');
+  const {data:dayScheds}=await sb.from('schedules').select('*').eq('date',dateStr).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
   const schedBox=document.getElementById('dm-schedule-box');
   if(dayScheds&&dayScheds.length){
     schedBox.innerHTML=`<div style="border-top:1px solid #f0eeea;margin:12px 0;padding-top:12px">
