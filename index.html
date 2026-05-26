@@ -911,11 +911,11 @@ function renderTodos(){
       <span class="todo-drag">⠿</span>
       <div class="chk ${t.done?'done':''}" onclick="toggleTodo('${t.id}',${!!t._fixed})"></div>
       ${t._fixed?'<span class="todo-fixed">고정</span>':''}
-      <span class="todo-text ${t.cancelled?'cancelled-text':t.done?'done-text':''}" style="flex:1;cursor:text"
+      <span class="todo-text ${t.category==='취소됨'?'cancelled-text':t.done?'done-text':''}" style="flex:1;cursor:text"
         ondblclick="editTodoInline(this,'${t.id}',${!!t._fixed})"
         title="더블클릭하면 수정">${t.content}</span>
       ${!t.done&&(t.postpone_count||0)>0?`<span style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:500;white-space:nowrap;${(t.postpone_count||0)>=3?'background:#fee2e2;color:#991b1b':'background:#fef3c7;color:#92400e'}">${t.postpone_count}회 미룸</span>`:''}
-      ${!t.done&&(t.category==='상담'||t.category==='면담')?`<button onclick="cancelCounsel('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f5c5c5;background:transparent;color:#c0392b;cursor:pointer;white-space:nowrap">취소</button>`:''}
+      ${(t.category==='상담'||t.category==='면담'||t.category==='취소됨')?`<button onclick="cancelCounsel('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f5c5c5;background:transparent;color:#c0392b;cursor:pointer;white-space:nowrap">${t.category==='취소됨'?'취소해제':'취소'}</button>`:''}
       ${!t.done?`<button onclick="postponeTodo('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #e8e6e0;background:#fff;color:#888;cursor:pointer;white-space:nowrap">미루기</button>`:''}
       <span class="todo-del" onclick="deleteTodo('${t.id}',${!!t._fixed})">×</span>
     </div>`).join('');
