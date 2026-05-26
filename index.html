@@ -1613,12 +1613,33 @@ async function renderSchedule(){
     const isToday=date===today;
     return `<div class="schedule-card" style="${isToday?'border-color:#f59e0b;background:#fffdf5':''}">
       <div class="schedule-date-header" style="${isToday?'color:#b45309':''}">📅 ${label}${isToday?' · 오늘':''}</div>
-      ${items.map(s=>`<div class="schedule-item"><div class="schedule-dot"></div><span class="schedule-title-txt">${s.title}</span><span style="color:#ddd;cursor:pointer;padding:0 4px" onclick="deleteSchedule('${s.id}')">×</span></div>`).join('')}
+      ${items.map(s=>`<div class="schedule-item"><div class="schedule-dot"></div><span class="schedule-title-txt" style="cursor:text" onclick="editScheduleInline(this,'${s.id}','${s.title.replace(/'/g,'\'')}')">${s.title}</span><span style="color:#ddd;cursor:pointer;padding:0 4px" onclick="deleteSchedule('${s.id}')">×</span></div>`).join('')}
     </div>`;
   }).join('');
 }
 
 async function deleteSchedule(id){await sb.from('schedules').delete().eq('id',id);renderSchedule();showToast('삭제됐어요')}
+
+function editScheduleInline(el,id,cur){
+  if(el.querySelector('input'))return;
+  const input=document.createElement('input');
+  input.value=cur;
+  input.style.cssText='flex:1;font-size:13px;border:none;border-bottom:1.5px solid #1a1a1a;outline:none;background:transparent;padding:1px 0;width:100%';
+  el.textContent='';
+  el.appendChild(input);
+  input.focus();
+  const save=async()=>{
+    const val=input.value.trim();
+    if(val&&val!==cur) await sb.from('schedules').update({title:val}).eq('id',id);
+    renderSchedule();
+    if(val!==cur) showToast('수정됐어요 ✓');
+  };
+  input.addEventListener('blur',save);
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter')input.blur();
+    if(e.key==='Escape'){input.value=cur;input.blur();}
+  });
+}
 
 async function renderPeriod(){
   const {data}=await sb.from('periods').select('*').order('created_at',{ascending:false});
