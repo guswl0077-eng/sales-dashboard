@@ -1080,7 +1080,7 @@ async function renderSales(){
   document.getElementById('log-tbody').innerHTML=entries.length?entries.map(e=>`
     <tr>
       <td>${e.date}</td>
-      <td style="font-weight:600;color:${(e.sales||0)-(e.refund||0)<0?'#c0392b':'var(--real-color,#1a1a1a)'}">${fmt((e.sales||0)-(e.refund||0))}</td>
+      <td style="font-weight:600;color:${(e.sales||0)-(e.refund||0)<0?'#c0392b':'var(--text)'}">${fmt((e.sales||0)-(e.refund||0))}</td>
       <td style="text-align:center;color:#888">${e.counsel_set||0}건</td>
       <td style="text-align:center;color:#888">${e.calls||0}콜</td>
       <td style="text-align:center;color:#888">${e.mins||0}분</td>
