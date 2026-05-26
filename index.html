@@ -127,7 +127,7 @@ td{padding:8px 10px;border-top:1px solid var(--border2);border-bottom:1px solid 
 .cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
 .cal-title{font-size:15px;font-weight:700}
 .cal-nav{display:flex;gap:8px}
-.cal-nav button{background:none;border:1px solid #e8e6e0;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px}
+.cal-nav button{background:var(--text);border:1px solid var(--text);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px;color:var(--bg);font-weight:500}
 .cal-period-info{padding:10px 18px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);background:var(--bg3)}
 .cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)}
 .cal-dow{text-align:center;padding:8px 4px;font-size:11px;font-weight:600;color:var(--text2)}
@@ -193,6 +193,10 @@ tr.row-refund{background:#fff8f0}
 .period-field-wrap{position:relative}
 .today-schedule{background:var(--sched-bg);border:1px solid var(--sched-border);border-radius:10px;padding:12px 16px;margin-bottom:12px}
 .today-schedule-title{font-size:12px;font-weight:700;color:var(--sched-title);margin-bottom:6px}
+.notice-box{background:#1a1a1a;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px}
+body:not(.dark) .notice-box{background:#1a1a1a}
+.notice-date{font-size:11px;font-weight:700;color:#f5c842;margin-bottom:4px}
+.notice-text{font-size:13px;color:#f0efed;line-height:1.6}
 .schedule-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px}
 .schedule-date-header{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px}
 .schedule-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f5f4f0}
@@ -312,6 +316,7 @@ tr.row-refund{background:#fff8f0}
     <div class="tabs-page active" id="tab-main">
       <div class="split">
         <div>
+          <div id="notice-box"></div>
           <div id="today-schedule-box"></div>
           <div class="sec-title">근무 유형</div>
           <div class="card" style="padding:12px 14px">
@@ -473,6 +478,15 @@ tr.row-refund{background:#fff8f0}
     <!-- 영업일 관리 -->
     <div class="tabs-page" id="tab-period">
       <div class="admin-notice">⚙️ 관리자 전용 — 영업일 설정은 모든 사용자에게 적용돼요</div>
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px">📢 업데이트 공지</div>
+        <div class="form-group"><textarea class="form-input" id="notice-input" rows="3" placeholder="업데이트 내용을 입력해주세요..." style="resize:vertical"></textarea></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveNotice()">저장</button>
+          <button class="btn btn-outline" onclick="deleteNotice()">삭제</button>
+        </div>
+      </div>
+      <div style="margin-bottom:16px"></div>
       <div class="card">
         <div style="font-size:14px;font-weight:600;margin-bottom:14px">영업일 설정</div>
         <div class="form-group"><label class="form-label">영업일 이름</label><input class="form-input" id="p-name" placeholder="예: 5월 영업일"></div>
@@ -703,7 +717,7 @@ function enterApp(){
     document.querySelectorAll('.admin-only').forEach(el=>el.style.display='block');
     document.getElementById('shared-tag-add').style.display='flex';
   }
-  loadTodayLog();loadTodos();loadTodaySchedule();renderSales();loadPeriodsForPicker();loadTodayWorkType();
+  loadTodayLog();loadTodos();loadTodaySchedule();renderSales();loadPeriodsForPicker();loadTodayWorkType();loadNotice();
 }
 
 async function loadTodayLog(){
@@ -719,6 +733,43 @@ async function loadTodayLog(){
     document.getElementById('f-memo').value=data.memo||'';
   }
   updateBars();
+}
+
+async function loadNotice(){
+  const {data}=await sb.from('notices').select('*').order('updated_at',{ascending:false}).limit(1).single();
+  const box=document.getElementById('notice-box');
+  if(!box)return;
+  if(data?.content){
+    const d=new Date(data.updated_at);
+    const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+    box.innerHTML=`<div class="notice-box"><span style="font-size:18px">📢</span><div><div class="notice-date">업데이트 · ${dateStr}</div><div class="notice-text">${data.content.replace(/\n/g,'<br>')}</div></div></div>`;
+    // 영업일 관리 탭 입력칸에도 채우기
+    const input=document.getElementById('notice-input');
+    if(input)input.value=data.content;
+  } else {
+    box.innerHTML='';
+  }
+}
+
+async function saveNotice(){
+  const content=document.getElementById('notice-input').value.trim();
+  if(!content){showToast('내용을 입력해주세요');return;}
+  const {data:existing}=await sb.from('notices').select('id').limit(1).single();
+  if(existing){
+    await sb.from('notices').update({content,updated_at:new Date().toISOString()}).eq('id',existing.id);
+  } else {
+    await sb.from('notices').insert({content});
+  }
+  showToast('공지 저장됐어요 ✓');
+  await loadNotice();
+}
+
+async function deleteNotice(){
+  if(!confirm('공지를 삭제할까요?'))return;
+  await sb.from('notices').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  document.getElementById('notice-input').value='';
+  document.getElementById('notice-box').innerHTML='';
+  showToast('공지 삭제됐어요');
 }
 
 async function loadTodaySchedule(){
@@ -967,7 +1018,7 @@ function switchTab(name){
   if(name==='calendar'){loadTags();renderCalendar();}
   if(name==='list'){renderList();loadPeriodsForPicker();}
   if(name==='schedule')renderSchedule();
-  if(name==='period')renderPeriod();
+  if(name==='period'){renderPeriod();loadNotice();}
 }
 
 async function renderSales(){
