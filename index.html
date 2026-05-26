@@ -1120,7 +1120,7 @@ async function renderCalendar(){
     // D-day 계산
     const dDay=inPeriod?Math.round((new Date(endStr+'T00:00:00')-new Date(dateStr+'T00:00:00'))/(1000*60*60*24)):null;
     const dDayLabel=dDay===null?'':dDay===0?'D-0':`D-${dDay}`;
-    const dDayStyle=dDay===null?'':dDay===0?'background:#1a1a1a;color:#fff':dDay===1?'background:#fee2e2;color:#991b1b':isToday?'background:#fef3c7;color:#92400e':'background:#e8f0fe;color:#1a56db';
+    const dDayStyle=dDay===null?'':dDay===0?'color:#1a1a1a;font-weight:700':dDay===1?'color:#991b1b;font-weight:700':isToday?'color:#92400e;font-weight:700':'color:#1a56db;font-weight:600';
 
     html+=`<div class="cal-cell ${isToday?'today':''} ${!inPeriod?'out-period':''}"
       onclick="${inPeriod?`onCalCellClick('${dateStr}')`:''}"
