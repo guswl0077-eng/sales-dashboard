@@ -771,9 +771,6 @@ async function loadNotice(){
     } else {
       history.innerHTML='<div style="font-size:13px;color:var(--text3);padding:4px 0">공지 이력이 없어요</div>';
     }
-    // 입력칸에 최신 내용
-    const input=document.getElementById('notice-input');
-    if(input) input.value=latest?.content||'';
   }
 }
 
@@ -793,6 +790,7 @@ async function saveNotice(){
   } else {
     await sb.from('notices').insert({content});
   }
+  document.getElementById('notice-input').value='';
   showToast('공지 저장됐어요 ✓');
   await loadNotice();
 }
