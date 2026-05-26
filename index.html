@@ -364,7 +364,8 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
               <input class="todo-input" id="counsel-hour" placeholder="00" style="width:36px;text-align:center;padding:7px 4px;flex:none">
               <span style="font-size:13px;color:var(--text2)">:</span>
               <input class="todo-input" id="counsel-min" placeholder="00" style="width:36px;text-align:center;padding:7px 4px;flex:none">
-              <div id="counsel-type-btn" onclick="toggleCounselType()" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">상담</div>
+              <div id="counsel-type-sangdam" onclick="selectCounselType('상담')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">상담</div>
+              <div id="counsel-type-myundam" onclick="selectCounselType('면담')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">면담</div>
               <input class="todo-input" id="counsel-text" placeholder="일정 입력..." onkeydown="if(event.key==='Enter')addCounsel()" style="flex:1">
               <button class="btn btn-primary btn-sm" onclick="addCounsel()">추가</button>
             </div>
@@ -979,10 +980,18 @@ async function addTodo(){
 }
 
 let _counselType='상담';
-function toggleCounselType(){
-  _counselType=_counselType==='상담'?'면담':'상담';
-  const btn=document.getElementById('counsel-type-btn');
-  if(btn)btn.textContent=_counselType;
+function selectCounselType(type){
+  _counselType=type;
+  const s=document.getElementById('counsel-type-sangdam');
+  const m=document.getElementById('counsel-type-myundam');
+  if(!s||!m)return;
+  if(type==='상담'){
+    s.style.cssText='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
+    m.style.cssText='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
+  } else {
+    s.style.cssText='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
+    m.style.cssText='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
+  }
 }
 
 async function addCounsel(){
