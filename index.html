@@ -203,6 +203,10 @@ body:not(.dark) .notice-text{color:#1a1a1a}
 .schedule-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px}
 .schedule-date-header{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px}
 .schedule-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f5f4f0}
+.schedule-item.dragging{opacity:.4}
+.schedule-item.drag-over{border-top:2px solid #1a1a1a}
+.sched-drag{cursor:grab;color:#ccc;font-size:14px;padding:0 2px;user-select:none;flex-shrink:0}
+.sched-drag:active{cursor:grabbing}
 .schedule-item:last-child{border-bottom:none}
 .schedule-dot{width:6px;height:6px;border-radius:50%;background:#1a1a1a;flex-shrink:0}
 .schedule-title-txt{flex:1;font-size:13px;color:var(--text)}
@@ -1733,10 +1737,11 @@ async function clearAllSchedules(){
 }
 
 async function renderSchedule(){
-  const {data}=await sb.from('schedules').select('*').order('date',{ascending:true}).order('title',{ascending:true});
+  const {data}=await sb.from('schedules').select('*').order('date',{ascending:true}).order('sort_order',{ascending:true,nullsFirst:false}).order('title',{ascending:true});
   const el=document.getElementById('schedule-list');
-  if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:#bbb">등록된 개강 일정이 없어요</div>';return;}
+  if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3)">등록된 개강 일정이 없어요</div>';return;}
   const groups={};(data||[]).forEach(s=>{if(!groups[s.date])groups[s.date]=[];groups[s.date].push(s)});
+  window._schedGroups=groups;
   const today=todayKey();
   el.innerHTML=Object.entries(groups).map(([date,items])=>{
     const d=new Date(date+'T00:00:00');
@@ -1744,12 +1749,42 @@ async function renderSchedule(){
     const isToday=date===today;
     return `<div class="schedule-card" style="${isToday?'border-color:#f59e0b;background:#fffdf5':''}">
       <div class="schedule-date-header" style="${isToday?'color:#b45309':''}">📅 ${label}${isToday?' · 오늘':''}</div>
-      ${items.map(s=>`<div class="schedule-item"><div class="schedule-dot"></div><span class="schedule-title-txt" style="cursor:text" onclick="editScheduleInline(this,'${s.id}','${s.title.replace(/'/g,'\'')}')">${s.title}</span><span style="color:#ddd;cursor:pointer;padding:0 4px" onclick="deleteSchedule('${s.id}')">×</span></div>`).join('')}
+      ${items.map((s,i)=>`<div class="schedule-item" draggable="true" data-id="${s.id}" data-date="${date}" data-idx="${i}"
+        ondragstart="schedDragStart(event,'${date}',${i})"
+        ondragover="schedDragOver(event)"
+        ondragleave="schedDragLeave(event)"
+        ondrop="schedDrop(event,'${date}',${i})">
+        <span class="sched-drag">⠿</span>
+        <div class="schedule-dot"></div>
+        <span class="schedule-title-txt" style="cursor:text" onclick="editScheduleInline(this,'${s.id}','${s.title.replace(/'/g,"\'")}')">${s.title}</span>
+        <span style="color:#ddd;cursor:pointer;padding:0 4px" onclick="deleteSchedule('${s.id}')">×</span>
+      </div>`).join('')}
     </div>`;
   }).join('');
 }
 
 async function deleteSchedule(id){await sb.from('schedules').delete().eq('id',id);renderSchedule();showToast('삭제됐어요')}
+
+let _schedDragDate=null,_schedDragIdx=null;
+function schedDragStart(e,date,idx){
+  _schedDragDate=date;_schedDragIdx=idx;
+  e.currentTarget.classList.add('dragging');
+}
+function schedDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function schedDragLeave(e){e.currentTarget.classList.remove('drag-over');}
+async function schedDrop(e,date,toIdx){
+  e.currentTarget.classList.remove('drag-over');
+  document.querySelectorAll('.schedule-item').forEach(el=>{el.classList.remove('dragging','drag-over');});
+  if(!_schedDragDate||_schedDragDate!==date||_schedDragIdx===null||_schedDragIdx===toIdx){_schedDragDate=null;_schedDragIdx=null;return;}
+  const items=[...(window._schedGroups[date]||[])];
+  const moved=items.splice(_schedDragIdx,1)[0];
+  items.splice(toIdx,0,moved);
+  _schedDragDate=null;_schedDragIdx=null;
+  try{
+    await Promise.all(items.map((s,i)=>sb.from('schedules').update({sort_order:i}).eq('id',s.id)));
+  }catch(err){console.warn('sort_order 저장 실패:',err);}
+  await renderSchedule();
+}
 
 function editScheduleInline(el,id,cur){
   if(el.querySelector('input'))return;
