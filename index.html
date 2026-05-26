@@ -1023,8 +1023,11 @@ async function toggleTodo(id,isFixed){
 async function cancelCounsel(id){
   const list=[...fixedTodos,...todos];
   const item=list.find(t=>t.id===id);if(!item)return;
-  item.cancelled=!item.cancelled;
-  await sb.from('todos').update({category:item.cancelled?'취소됨':item.category==='취소됨'?'상담':item.category}).eq('id',id);
+  const isCancelled=item.category==='취소됨';
+  const prevCategory=item._origCategory||(isCancelled?'상담':item.category);
+  if(!isCancelled) item._origCategory=item.category;
+  item.category=isCancelled?prevCategory:'취소됨';
+  await sb.from('todos').update({category:item.category}).eq('id',id);
   renderTodos();
 }
 
