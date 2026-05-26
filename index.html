@@ -42,15 +42,15 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--
 .topbar{background:var(--topbar);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
 .logo{font-size:15px;font-weight:700}
 .topbar-right{display:flex;align-items:center;gap:10px}
-.date-badge{font-size:12px;color:#888;background:#f5f4f0;padding:4px 10px;border-radius:20px}
-.user-chip{font-size:12px;font-weight:600;background:#f0eeea;padding:4px 10px;border-radius:20px}
+.date-badge{font-size:12px;color:var(--text2);background:var(--bg);padding:4px 10px;border-radius:20px}
+.user-chip{font-size:12px;font-weight:600;background:var(--bg);padding:4px 10px;border-radius:20px;color:var(--text)}
 .admin-chip{font-size:11px;font-weight:600;background:#1a1a1a;color:#fff;padding:3px 8px;border-radius:20px}
-.logout-btn{font-size:12px;color:#aaa;cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid #e8e6e0;background:none}
+.logout-btn{font-size:12px;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:none}
 .nav-tabs{display:flex;gap:2px;padding:0 20px;background:var(--nav);border-bottom:1px solid var(--border);overflow-x:auto}
 .tab{padding:12px 14px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
 .tab.active{color:var(--text);border-bottom-color:var(--text)}
 .content{max-width:1200px;margin:0 auto;padding:20px 16px}
-.sec-title{font-size:11px;font-weight:700;color:#aaa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;margin-top:20px}
+.sec-title{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;margin-top:20px}
 .sec-title:first-child{margin-top:0}
 .metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .metric{background:var(--card);border-radius:12px;padding:12px 14px;border:1px solid var(--border)}
@@ -62,55 +62,55 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--
 .card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px 18px;margin-bottom:12px}
 .row-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);gap:10px}
 .row-item:last-child{border-bottom:none}
-.row-label{font-size:13px;color:#444;flex:1}
-.row-target{font-size:11px;color:#bbb;min-width:52px;text-align:right}
+.row-label{font-size:13px;color:var(--text);flex:1}
+.row-target{font-size:11px;color:var(--text3);min-width:52px;text-align:right}
 .pbar{height:4px;background:#f0eeea;border-radius:2px;overflow:hidden;flex:1;min-width:40px}
 .pbar-fill{height:100%;border-radius:2px;transition:width .3s}
-.num-input{width:70px;font-size:13px;text-align:right;border:1px solid #e8e6e0;border-radius:8px;padding:5px 8px;background:#f9f8f6;color:#1a1a1a;outline:none}
+.num-input{width:70px;font-size:13px;text-align:right;border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--bg3);color:var(--text);outline:none}
 .num-input:focus{border-color:#1a1a1a;background:#fff}
-.money-input{width:110px;font-size:13px;text-align:right;border:1px solid #e8e6e0;border-radius:8px;padding:5px 8px;background:#f9f8f6;color:#1a1a1a;outline:none}
+.money-input{width:110px;font-size:13px;text-align:right;border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--bg3);color:var(--text);outline:none}
 .money-input:focus{border-color:#1a1a1a;background:#fff}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
 .btn-primary{background:#1a1a1a;color:#fff}.btn-primary:hover{background:#333}
-.btn-outline{background:#fff;color:#1a1a1a;border:1px solid #ddd}.btn-outline:hover{background:#f5f4f0}
+.btn-outline{background:var(--card);color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:#f5f4f0}
 .btn-danger{background:#fff;color:#c0392b;border:1px solid #f5c5c5}
 .btn-sm{padding:5px 10px;font-size:12px}
-.todo-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f5f4f0;transition:background .1s;border-radius:6px;cursor:default}
+.todo-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border2);transition:background .1s;border-radius:6px;cursor:default}
 .todo-item.dragging{opacity:.4;background:#f9f8f6}
 .todo-item.drag-over{border-top:2px solid #1a1a1a}
 .todo-drag{cursor:grab;color:#ccc;font-size:14px;padding:0 2px;user-select:none;flex-shrink:0}
 .todo-drag:active{cursor:grabbing}
 .todo-edit-input{flex:1;border:none;border-bottom:1.5px solid #1a1a1a;outline:none;font-size:13px;background:transparent;padding:1px 0}
 .todo-item:last-child{border-bottom:none}
-.todo-text{flex:1;font-size:13px;color:#333}
+.todo-text{flex:1;font-size:13px;color:var(--text)}
 .todo-text.done-text{text-decoration:line-through;color:#bbb}
 .todo-fixed{font-size:10px;color:#aaa;background:#f5f4f0;padding:1px 6px;border-radius:10px;flex-shrink:0}
 .todo-del{font-size:16px;color:#ddd;cursor:pointer;padding:0 4px}
 .todo-del:hover{color:#c0392b}
 .todo-add-row{display:flex;gap:8px;margin-top:10px;align-items:center}
-.todo-input{flex:1;padding:7px 10px;border:1px solid #e8e6e0;border-radius:8px;font-size:13px;outline:none}
+.todo-input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--bg2);color:var(--text)}
 .todo-input:focus{border-color:#1a1a1a}
 .chk{width:20px;height:20px;border-radius:6px;border:1.5px solid #ddd;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .chk.done{background:#1a1a1a;border-color:#1a1a1a}
 .chk.done::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
 .period-bar{background:#1a1a1a;color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .period-name{font-size:14px;font-weight:700}
-.period-dates{font-size:11px;color:#888}
+.period-dates{font-size:11px;color:var(--text2)}
 .period-goal-txt{font-size:12px;color:#aaa}.period-goal-txt span{color:#fff;font-weight:700}
 .pbar-wrap{width:100%;height:5px;background:#333;border-radius:3px;overflow:hidden}
 .pbar-wrap .fill{height:100%;background:#fff;border-radius:3px;transition:width .5s}
 .tabs-page{display:none}.tabs-page.active{display:block}
 .report-box{background:var(--bg3);border-radius:10px;padding:16px;font-size:13px;line-height:1.8;color:#333;white-space:pre-wrap;margin-bottom:12px;min-height:100px}
 .tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:8px 10px;color:#aaa;font-weight:500;border-bottom:1px solid #e8e6e0;white-space:nowrap}
-td{padding:8px 10px;border-bottom:1px solid #f5f4f0;color:#1a1a1a}
+table{width:100%;border-collapse:collapse;font-size:13px;color:var(--text)}
+th{text-align:left;padding:8px 10px;color:var(--text2);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--border2);color:var(--text)}
 .form-group{margin-bottom:12px}
-.form-label{font-size:12px;color:#888;font-weight:500;margin-bottom:4px;display:block}
-.form-input{width:100%;padding:8px 12px;border:1px solid #e8e6e0;border-radius:8px;font-size:13px;color:#1a1a1a;outline:none}
+.form-label{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:4px;display:block}
+.form-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--bg2);outline:none}
 .form-input:focus{border-color:#1a1a1a}
 .form-row{display:flex;gap:8px}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
 .modal-bg.open{display:flex}
 .modal{background:var(--card);border-radius:16px;padding:24px;width:90%;max-width:440px}
 .modal h3{font-size:15px;font-weight:700;margin-bottom:16px}
@@ -120,9 +120,9 @@ td{padding:8px 10px;border-bottom:1px solid #f5f4f0;color:#1a1a1a}
 .cal-title{font-size:15px;font-weight:700}
 .cal-nav{display:flex;gap:8px}
 .cal-nav button{background:none;border:1px solid #e8e6e0;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px}
-.cal-period-info{padding:10px 18px;font-size:12px;color:#888;border-bottom:1px solid #e8e6e0;background:#fafaf9}
-.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid #e8e6e0}
-.cal-dow{text-align:center;padding:8px 4px;font-size:11px;font-weight:600;color:#aaa}
+.cal-period-info{padding:10px 18px;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);background:var(--bg3)}
+.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border)}
+.cal-dow{text-align:center;padding:8px 4px;font-size:11px;font-weight:600;color:var(--text2)}
 .cal-dow:first-child{color:#e74c3c}
 .cal-dow:last-child{color:#3498db}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
@@ -143,7 +143,7 @@ td{padding:8px 10px;border-bottom:1px solid #f5f4f0;color:#1a1a1a}
 .work-근무{background:#166534;color:#fff}
 .work-휴무{background:#fee2e2;color:#991b1b}
 .work-기타{background:#e8f0fe;color:#1a56db}
-.tag-palette{background:#fff;border-radius:12px;border:1px solid #e8e6e0;padding:16px;margin-bottom:14px}
+.tag-palette{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px;margin-bottom:14px}
 .tag-palette-title{font-size:12px;font-weight:700;color:#888;margin-bottom:10px}
 .tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .tag-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none}
@@ -159,7 +159,7 @@ td{padding:8px 10px;border-bottom:1px solid #f5f4f0;color:#1a1a1a}
 .palette-more{font-size:11px;color:#aaa;cursor:pointer;text-align:center;padding:2px}
 /* 결제리스트 탭 */
 .list-filter-tabs{display:flex;gap:6px;margin-bottom:12px}
-.list-filter-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e8e6e0;background:#fff;color:#888;transition:all .15s}
+.list-filter-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s}
 .list-filter-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
 .list-filter-tab.tab-cancel{color:#c0392b;border-color:#f5c5c5}
 .list-filter-tab.tab-cancel.active{background:#fee2e2;border-color:#f5c5c5;color:#991b1b}
@@ -185,12 +185,12 @@ tr.row-refund{background:#fff8f0}
 .period-field-wrap{position:relative}
 .today-schedule{background:#fff8e8;border:1px solid #ffe0a0;border-radius:10px;padding:12px 16px;margin-bottom:12px}
 .today-schedule-title{font-size:12px;font-weight:700;color:#b45309;margin-bottom:6px}
-.schedule-card{background:#fff;border-radius:10px;border:1px solid #e8e6e0;padding:12px 14px;margin-bottom:10px}
-.schedule-date-header{font-size:12px;font-weight:700;color:#888;margin-bottom:6px}
+.schedule-card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px}
+.schedule-date-header{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px}
 .schedule-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f5f4f0}
 .schedule-item:last-child{border-bottom:none}
 .schedule-dot{width:6px;height:6px;border-radius:50%;background:#1a1a1a;flex-shrink:0}
-.schedule-title-txt{flex:1;font-size:13px}
+.schedule-title-txt{flex:1;font-size:13px;color:var(--text)}
 .admin-notice{background:#fff8e8;border:1px solid #ffe0a0;border-radius:10px;padding:12px 16px;font-size:12px;color:#b45309;margin-bottom:14px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .3s;z-index:300;pointer-events:none}
 .toast.show{opacity:1}
