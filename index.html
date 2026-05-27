@@ -325,7 +325,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <div class="tab active" onclick="switchTab('main')">오늘 활동</div>
     <div class="tab" onclick="switchTab('calendar')">달력</div>
     <div class="tab" onclick="switchTab('list')">결제 리스트</div>
-    <div class="tab" onclick="switchTab('report')">리포트</div>
+    <div class="tab" onclick="switchTab('report')">영업일 리포트</div>
     <div class="tab admin-only" onclick="switchTab('schedule')" style="display:none">개강 일정</div>
     <div class="tab admin-only" onclick="switchTab('period')" style="display:none">영업일 관리</div>
   </div>
@@ -475,15 +475,21 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       </tr></thead><tbody id="student-tbody"></tbody></table></div></div>
     </div>
 
-    <!-- 리포트 -->
+    <!-- 영업일 리포트 -->
     <div class="tabs-page" id="tab-report">
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="genDaily()">데일리 리포트</button>
-        <button class="btn btn-outline" onclick="genWeekly()">주간 리포트</button>
+      <!-- 서브탭 -->
+      <div style="display:flex;gap:6px;margin-bottom:20px">
+        <div id="report-sub-daily" onclick="switchReportSub('daily')" style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:1px solid var(--border);cursor:pointer">데일리 리포트</div>
+        <div id="report-sub-yearly" onclick="switchReportSub('yearly')" style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer">26년 영업일</div>
       </div>
-      <div class="report-box" id="report-out">리포트 버튼을 눌러 생성하세요.</div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <button class="btn btn-outline" onclick="copyReport()">복사하기</button>
+      <!-- 데일리 리포트 -->
+      <div id="report-daily-view">
+        <div class="sec-title" id="report-daily-period-label"></div>
+        <div id="report-daily-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+      </div>
+      <!-- 26년 영업일 -->
+      <div id="report-yearly-view" style="display:none">
+        <div id="report-yearly-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
       </div>
     </div>
 
@@ -1162,6 +1168,7 @@ function switchTab(name){
   if(name==='calendar'){loadTags();renderCalendar();}
   if(name==='list'){renderList();loadPeriodsForPicker();}
   if(name==='schedule'){renderSchedule();setTimeout(initSchedColorPopup,100);}
+  if(name==='report'){renderReportDaily();}
   if(name==='period'){renderPeriod();loadNotice();}
 }
 
@@ -2087,50 +2094,161 @@ ${d.memo||'없음'}`;
   document.getElementById('report-out').textContent=reportText;
 }
 
-async function genWeekly(){
-  const {data:logs}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).order('date',{ascending:true});
-  const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:true});
-  const today2=todayKey();
-  const period=periods?.find(p=>p.start_date<=today2&&p.end_date>=today2)||periods?.[periods.length-1]||{};
-  const entries=logs||[];
-  if(!entries.length){document.getElementById('report-out').textContent='저장된 기록이 없어요.';return;}
-  // 이번 영업일 할일 미루기 통계
-  const {data:allTodos}=await sb.from('todos').select('content,done,postpone_count,postpone_period').eq('user_id',currentUser.id);
-  const periodName=period.name||'';
-  const postponed=(allTodos||[]).filter(t=>t.postpone_period===periodName&&(t.postpone_count||0)>0)
-    .sort((a,b)=>(b.postpone_count||0)-(a.postpone_count||0));
-  const totalPostpone=postponed.reduce((s,t)=>s+(t.postpone_count||0),0);
-  const top3=postponed.slice(0,3).map(t=>`  · ${t.content} (${t.postpone_count}회)`).join('\n')||'  없음';
-  const totalSales=entries.reduce((s,e)=>s+(e.sales||0),0);
-  const totalRefund=entries.reduce((s,e)=>s+(e.refund||0),0);
-  const realSales=totalSales-totalRefund;
-  const goal=Number(currentProfile?.goal)||0;
-  const n=entries.length;
-  const reportText=
-`📊 주간 리포트 — ${todayStr()} 기준
-영업일: ${periodName}
+// ── 영업일 리포트 ──────────────────────────────
+let _reportSub='daily';
 
-💰 매출 현황
-총 매출:  ${fmt(totalSales)}
-총 환불:  ${fmt(totalRefund)}
-실매출:   ${fmt(realSales)}
-내 목표:  ${fmt(goal)}
-잔여:     ${fmt(Math.max(0,goal-realSales))} (달성 ${pct(realSales,goal)}%)
-
-📊 영업 / 상담 (${n}일 합산)
-총 상담잡기: ${entries.reduce((s,e)=>s+(e.counsel_set||0),0)}건
-총 콜 수:    ${entries.reduce((s,e)=>s+(e.calls||0),0)}콜
-총 분 수:    ${entries.reduce((s,e)=>s+(e.mins||0),0)}분
-총 블로그:   ${entries.reduce((s,e)=>s+(e.blog||0),0)}건
-
-⏭️ 미루기 현황 (이번 영업일)
-총 미루기: ${totalPostpone}회 / ${postponed.length}개 항목
-많이 미룬 할일:
-${top3}`;
-  document.getElementById('report-out').textContent=reportText;
+function switchReportSub(sub){
+  _reportSub=sub;
+  const daily=document.getElementById('report-daily-view');
+  const yearly=document.getElementById('report-yearly-view');
+  const btnD=document.getElementById('report-sub-daily');
+  const btnY=document.getElementById('report-sub-yearly');
+  if(sub==='daily'){
+    daily.style.display='';yearly.style.display='none';
+    btnD.style.cssText='padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:1px solid var(--border);cursor:pointer';
+    btnY.style.cssText='padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer';
+    renderReportDaily();
+  } else {
+    daily.style.display='none';yearly.style.display='';
+    btnY.style.cssText='padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:1px solid var(--border);cursor:pointer';
+    btnD.style.cssText='padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer';
+    renderReportYearly();
+  }
 }
 
-function copyReport(){navigator.clipboard.writeText(document.getElementById('report-out').textContent).then(()=>showToast('복사됐어요 ✓'))}
+function reportCard(dateStr, log, todoTotal, todoDone){
+  const today=todayKey();
+  const isToday=dateStr===today;
+  const d=new Date(dateStr+'T00:00:00');
+  const DAYS=['일','월','화','수','목','금','토'];
+  const label=`${String(d.getMonth()+1).padStart(2,'0')}월 ${String(d.getDate()).padStart(2,'0')}일 (${DAYS[d.getDay()]})`;
+  const sales=log?.sales||0;
+  const refund=log?.refund||0;
+  const real=sales-refund;
+  const cs=log?.counsel_set||0;
+  const cd=log?.counsel_done||0;
+  const calls=log?.calls||0;
+  const mins=log?.mins||0;
+  const blog=log?.blog||0;
+  const pctTodo=todoTotal>0?Math.round(todoDone/todoTotal*100):0;
+  const barColor=pctTodo>=80?'#1a8a50':pctTodo>=50?'#b45309':'#c0392b';
+  const badgeCls=pctTodo>=80?'background:#dcfce7;color:#166534':pctTodo>=50?'background:#fef3c7;color:#92400e':'background:#fee2e2;color:#991b1b';
+  return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px${isToday?';border-color:#f59e0b':''
+}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span style="font-size:13px;font-weight:600;color:var(--text)">${label}</span>
+      ${isToday?'<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e;font-weight:600">오늘</span>':''}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px">
+      ${[
+        ['총매출', fmt(sales)],
+        ['실매출', fmt(real)],
+        ['환불', fmt(refund)],
+        ['상담잡기', cs+'건'],
+        ['상담완료', cd+'건'],
+        ['콜', calls+'콜'],
+        ['분', mins+'분'],
+        ['블로그', blog+'건'],
+      ].map(([l,v])=>`<div style="background:var(--bg3);border-radius:7px;padding:6px 8px">
+        <div style="font-size:10px;color:var(--text2)">${l}</div>
+        <div style="font-size:12px;font-weight:600;margin-top:2px;color:var(--text)">${v}</div>
+      </div>`).join('')}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)">
+      할 일
+      <div style="flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
+        <div style="width:${pctTodo}%;height:100%;border-radius:2px;background:${barColor}"></div>
+      </div>
+      <span style="font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap;${badgeCls}">${todoDone}/${todoTotal} · ${pctTodo}%</span>
+    </div>
+  </div>`;
+}
+
+async function renderReportDaily(){
+  // 현재 영업일 찾기
+  const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:false});
+  const today=todayKey();
+  const period=(periods||[]).find(p=>p.start_date<=today&&p.end_date>=today)||(periods||[])[0];
+  if(!period){document.getElementById('report-daily-grid').innerHTML='<div style="color:var(--text2);font-size:13px">영업일 설정이 없어요</div>';return;}
+  document.getElementById('report-daily-period-label').textContent=period.name||'';
+  // 날짜 목록 생성 (영업일 start~end, 오늘까지만)
+  const start=new Date(period.start_date+'T00:00:00');
+  const end=new Date(Math.min(new Date(period.end_date+'T00:00:00'),new Date(today+'T00:00:00')));
+  const dates=[];
+  for(let d=new Date(end);d>=start;d.setDate(d.getDate()-1)){
+    dates.push(d.toISOString().slice(0,10));
+  }
+  if(!dates.length){document.getElementById('report-daily-grid').innerHTML='<div style="color:var(--text2);font-size:13px">기록이 없어요</div>';return;}
+  // 데이터 조회
+  const [logsRes, todosRes]=await Promise.all([
+    sb.from('daily_logs').select('*').eq('user_id',currentUser.id).gte('date',period.start_date).lte('date',today),
+    sb.from('todos').select('date,done').eq('user_id',currentUser.id).gte('date',period.start_date).lte('date',today).eq('is_fixed',false)
+  ]);
+  const logMap={};(logsRes.data||[]).forEach(l=>{logMap[l.date]=l;});
+  const todoMap={};(todosRes.data||[]).forEach(t=>{
+    if(!todoMap[t.date])todoMap[t.date]={total:0,done:0};
+    todoMap[t.date].total++;
+    if(t.done)todoMap[t.date].done++;
+  });
+  document.getElementById('report-daily-grid').innerHTML=dates.map(d=>{
+    const tm=todoMap[d]||{total:0,done:0};
+    return reportCard(d,logMap[d],tm.total,tm.done);
+  }).join('');
+}
+
+async function renderReportYearly(){
+  const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:false});
+  if(!periods||!periods.length){document.getElementById('report-yearly-grid').innerHTML='<div style="color:var(--text2);font-size:13px">영업일 기록이 없어요</div>';return;}
+  const today=todayKey();
+  // 각 영업일별 합산
+  const cards=await Promise.all(periods.map(async p=>{
+    const [logsRes,todosRes]=await Promise.all([
+      sb.from('daily_logs').select('sales,refund,counsel_set,counsel_done,calls,mins,blog').eq('user_id',currentUser.id).gte('date',p.start_date).lte('date',p.end_date||today),
+      sb.from('todos').select('done').eq('user_id',currentUser.id).gte('date',p.start_date).lte('date',p.end_date||today).eq('is_fixed',false)
+    ]);
+    const logs=logsRes.data||[];
+    const todos=todosRes.data||[];
+    const totalSales=logs.reduce((s,l)=>s+(l.sales||0),0);
+    const totalRefund=logs.reduce((s,l)=>s+(l.refund||0),0);
+    const real=totalSales-totalRefund;
+    const cs=logs.reduce((s,l)=>s+(l.counsel_set||0),0);
+    const cd=logs.reduce((s,l)=>s+(l.counsel_done||0),0);
+    const calls=logs.reduce((s,l)=>s+(l.calls||0),0);
+    const mins=logs.reduce((s,l)=>s+(l.mins||0),0);
+    const blog=logs.reduce((s,l)=>s+(l.blog||0),0);
+    const todoDone=todos.filter(t=>t.done).length;
+    const todoTotal=todos.length;
+    const pctTodo=todoTotal>0?Math.round(todoDone/todoTotal*100):0;
+    const barColor=pctTodo>=80?'#1a8a50':pctTodo>=50?'#b45309':'#c0392b';
+    const badgeCls=pctTodo>=80?'background:#dcfce7;color:#166534':pctTodo>=50?'background:#fef3c7;color:#92400e':'background:#fee2e2;color:#991b1b';
+    const isActive=p.start_date<=today&&(!p.end_date||p.end_date>=today);
+    return `<div style="background:var(--card);border:1px solid var(--border)${isActive?';border-color:#f59e0b':''};border-radius:12px;padding:14px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${p.name||'영업일'}</span>
+        ${isActive?'<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e;font-weight:600">진행중</span>':''}
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px">${p.start_date||''} ~ ${p.end_date||''}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">
+        <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">총매출</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:var(--text)">${fmt(totalSales)}</div></div>
+        <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">실매출</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:#1a8a50">${fmt(real)}</div></div>
+        <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">환불</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:#c0392b">${totalRefund?'-'+fmt(totalRefund):'0원'}</div></div>
+      </div>
+      <div style="font-size:12px">
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">상담잡기</span><span style="font-weight:600;color:var(--text)">${cs}건</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">상담완료</span><span style="font-weight:600;color:var(--text)">${cd}건</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">콜 수</span><span style="font-weight:600;color:var(--text)">${calls}콜</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">총 분 수</span><span style="font-weight:600;color:var(--text)">${mins}분</span></div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">블로그</span><span style="font-weight:600;color:var(--text)">${blog}건</span></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11px;color:var(--text2)">
+          할 일
+          <div style="flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden"><div style="width:${pctTodo}%;height:100%;border-radius:2px;background:${barColor}"></div></div>
+          <span style="font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;${badgeCls}">${todoDone}/${todoTotal} · ${pctTodo}%</span>
+        </div>
+      </div>
+    </div>`;
+  }));
+  document.getElementById('report-yearly-grid').innerHTML=cards.join('');
+}
 
 sb.auth.getSession().then(({data:{session}})=>{
   if(session){currentUser=session.user;loadProfile().then(()=>enterApp());}
