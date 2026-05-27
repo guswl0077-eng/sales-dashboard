@@ -1864,11 +1864,18 @@ function showSchedColorPopup(id, el){
   const popup=document.getElementById('sched-color-popup');
   popup.style.display='flex';
   const rect=el.getBoundingClientRect();
-  const pw=popup.offsetWidth||230;
+  const ph=popup.offsetHeight||44;
+  const pw=popup.offsetWidth||240;
+  // 좌우
   let left=rect.left+window.scrollX;
   left=Math.max(8,Math.min(left,window.innerWidth-pw-8));
+  // 아래 공간 부족하면 위로
+  const spaceBelow=window.innerHeight-(rect.bottom);
+  const top=spaceBelow>ph+8
+    ? rect.bottom+window.scrollY+4
+    : rect.top+window.scrollY-ph-4;
   popup.style.left=left+'px';
-  popup.style.top=(rect.bottom+window.scrollY+4)+'px';
+  popup.style.top=top+'px';
 }
 
 function hideSchedColorPopup(){
