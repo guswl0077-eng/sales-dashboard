@@ -85,7 +85,7 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--
 .btn-danger{background:#fff;color:#c0392b;border:1px solid #f5c5c5}
 .btn-sm{padding:5px 10px;font-size:12px}
 .todo-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border2);transition:background .1s;border-radius:6px;cursor:default}
-.todo-item.dragging{opacity:.4;background:#f9f8f6}
+.todo-item.dragging{opacity:.4;background:var(--bg2)}
 .todo-item.drag-over{border-top:2px solid #1a1a1a}
 .todo-drag{cursor:grab;color:#ccc;font-size:14px;padding:0 2px;user-select:none;flex-shrink:0}
 .todo-drag:active{cursor:grabbing}
@@ -94,11 +94,11 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--
 .todo-text{flex:1;font-size:13px;color:var(--text)}
 .todo-text.done-text{text-decoration:line-through;color:#bbb}
 .todo-text.cancelled-text{text-decoration:line-through}
-.todo-fixed{font-size:10px;color:#aaa;background:#f5f4f0;padding:1px 6px;border-radius:10px;flex-shrink:0}
+.todo-fixed{font-size:10px;color:var(--text2);background:var(--bg);padding:1px 6px;border-radius:10px;flex-shrink:0}
 .todo-del{font-size:16px;color:#ddd;cursor:pointer;padding:0 4px}
 .todo-del:hover{color:#c0392b}
 .todo-add-row{display:flex;gap:8px;margin-top:10px;align-items:center}
-.todo-input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--bg2);color:var(--text)}
+.todo-input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none;background:var(--bg3);color:var(--text)}
 .todo-input:focus{border-color:#1a1a1a}
 .chk{width:20px;height:20px;border-radius:6px;border:1.5px solid #ddd;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .chk.done{background:#1a1a1a;border-color:#1a1a1a}
@@ -900,7 +900,7 @@ function renderTodos(){
   const undone=[...fixedTodos.map(t=>({...t,_fixed:true})),...todos].filter(t=>!t.done);
   const done=[...fixedTodos.map(t=>({...t,_fixed:true})),...todos].filter(t=>t.done);
   const all=[...undone,...done];
-  if(!all.length){el.innerHTML='<div style="font-size:13px;color:#ccc;padding:4px 0">할 일을 추가해보세요</div>';return;}
+  if(!all.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:4px 0">할 일을 추가해보세요</div>';return;}
   el.innerHTML=all.map((t,i)=>`
     <div class="todo-item" draggable="true"
       data-id="${t.id}" data-fixed="${!!t._fixed}" data-idx="${i}"
