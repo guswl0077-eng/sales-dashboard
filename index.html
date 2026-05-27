@@ -1963,9 +1963,9 @@ async function renderSchedule(){
         ondrop="schedDrop(event,'${date}',${i})">
         <span class="sched-drag">⠿</span>
         <div class="schedule-dot"></div>
-        <span class="schedule-title-txt" style="cursor:text" onclick="editScheduleInline(this,'${safeId}')">${s.title}</span>
-        <span title="색상" style="color:#ccc;cursor:pointer;padding:0 3px;font-size:13px" onclick="event.stopPropagation();showSchedColorPopup('${safeId}',this)">🎨</span>
-        <span style="color:#ddd;cursor:pointer;padding:0 4px" onclick="event.stopPropagation();deleteSchedule('${safeId}')">×</span>
+        <span class="schedule-title-txt" onclick="editScheduleInline(this,'${safeId}')" style="cursor:text;flex:1;overflow:hidden">${s.title}</span>
+        <span title="색상" onclick="event.stopPropagation();showSchedColorPopup('${safeId}',this)" style="flex-shrink:0;color:#ccc;cursor:pointer;padding:0 4px;font-size:13px">🎨</span>
+        <span onclick="event.stopPropagation();deleteSchedule('${safeId}')" style="flex-shrink:0;color:#ddd;cursor:pointer;padding:0 4px">×</span>
       </div>`;}).join('')}
     </div>`;
   }).join('');
