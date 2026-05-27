@@ -1912,18 +1912,27 @@ function initSchedColorPopup(){
 }
 
 async function bulkAddSchedule(){
-  const text=document.getElementById('bulk-input').value.trim();
+  // 복붙 시 특수 공백·보이지 않는 문자 제거
+  const raw=document.getElementById('bulk-input').value;
+  const text=raw.replace(/[\u00a0\u200b\u200c\u200d\ufeff]/g,' ').trim();
   if(!text){showToast('내용을 입력해주세요');return;}
   const rows=[];
-  for(const line of text.split('\n').filter(l=>l.trim())){
-    const idx=line.indexOf(':');if(idx<0)continue;
-    const date=parseKorDate(line.slice(0,idx));if(!date)continue;
-    for(const title of line.slice(idx+1).split('/').map(t=>t.trim()).filter(Boolean))
+  for(const rawLine of text.split('\n')){
+    const line=rawLine.trim();
+    if(!line)continue;
+    // "월"과 "일" 포함한 날짜가 있는지 먼저 확인
+    if(!/\d+월\s*\d+일/.test(line))continue;
+    // ':' 위치: 날짜 부분 이후 첫 번째 ':'
+    const dateMatch=line.match(/^(.*?\d+월\s*\d+일[^:]*?):\s*(.+)$/);
+    if(!dateMatch)continue;
+    const date=parseKorDate(dateMatch[1]);
+    if(!date)continue;
+    for(const title of dateMatch[2].split('/').map(t=>t.trim()).filter(Boolean))
       rows.push({title,date,description:''});
   }
-  if(!rows.length){showToast('파싱된 일정이 없어요');return;}
+  if(!rows.length){showToast('파싱된 일정이 없어요\n형식: 05월 15일 (금) : 강의명');return;}
   const {error}=await sb.from('schedules').insert(rows);
-  if(error){showToast('등록 실패 😢');return;}
+  if(error){showToast('등록 실패 😢');console.error(error);return;}
   document.getElementById('bulk-input').value='';
   showToast(`${rows.length}개 등록됐어요 ✓`);renderSchedule();
 }
@@ -1955,8 +1964,8 @@ async function renderSchedule(){
         <span class="sched-drag">⠿</span>
         <div class="schedule-dot"></div>
         <span class="schedule-title-txt" style="cursor:text" onclick="editScheduleInline(this,'${safeId}')">${s.title}</span>
-        <span title="색상" style="color:#ccc;cursor:pointer;padding:0 3px;font-size:13px" onclick="showSchedColorPopup('${safeId}',this)">🎨</span>
-        <span style="color:#ddd;cursor:pointer;padding:0 4px" onclick="deleteSchedule('${safeId}')">×</span>
+        <span title="색상" style="color:#ccc;cursor:pointer;padding:0 3px;font-size:13px" onclick="event.stopPropagation();showSchedColorPopup('${safeId}',this)">🎨</span>
+        <span style="color:#ddd;cursor:pointer;padding:0 4px" onclick="event.stopPropagation();deleteSchedule('${safeId}')">×</span>
       </div>`;}).join('')}
     </div>`;
   }).join('');
