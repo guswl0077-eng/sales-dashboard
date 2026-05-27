@@ -492,8 +492,31 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <div class="card">
         <div style="font-size:14px;font-weight:600;margin-bottom:6px">개강 일정 일괄 입력</div>
         <div style="font-size:12px;color:#aaa;margin-bottom:10px">형식: <code style="background:#f5f4f0;padding:2px 6px;border-radius:4px">05월 15일 (금) : 한식기능사 개강 / 시그니처일식 개강</code></div>
-        <div class="form-group"><textarea class="form-input" id="bulk-input" rows="6" placeholder="붙여넣기..." style="resize:vertical;line-height:1.6"></textarea></div>
-        <div style="display:flex;gap:8px">
+        <!-- 색상 팔레트 -->
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text2)">색상</span>
+          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#e74c3c&#39;)" title="빨강" style="width:22px;height:22px;border-radius:50%;background:#e74c3c;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
+          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#e67e22&#39;)" title="주황" style="width:22px;height:22px;border-radius:50%;background:#e67e22;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
+          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#f1c40f&#39;)" title="노랑" style="width:22px;height:22px;border-radius:50%;background:#f1c40f;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
+          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#27ae60&#39;)" title="초록" style="width:22px;height:22px;border-radius:50%;background:#27ae60;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
+          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#2980b9&#39;)" title="파랑" style="width:22px;height:22px;border-radius:50%;background:#2980b9;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
+          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#8e44ad&#39;)" title="보라" style="width:22px;height:22px;border-radius:50%;background:#8e44ad;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
+          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#e91e8c&#39;)" title="핑크" style="width:22px;height:22px;border-radius:50%;background:#e91e8c;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
+          <button onmousedown="event.preventDefault()" onclick="applySchedColor(null)" title="색상 제거" style="width:22px;height:22px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;">✕</button>
+        </div>
+        <!-- contenteditable 입력창 -->
+        <div id="bulk-input"
+          contenteditable="true"
+          spellcheck="false"
+          data-placeholder="붙여넣기..."
+          style="min-height:120px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.8;color:var(--text);background:var(--bg3);outline:none;white-space:pre-wrap;word-break:break-all;cursor:text;font-family:inherit"
+          onfocus="this.style.borderColor=&#39;var(--text)&#39;;this.style.background=&#39;var(--bg2)&#39;"
+          onblur="this.style.borderColor=&#39;var(--border)&#39;;this.style.background=&#39;var(--bg3)&#39;"
+        ></div>
+        <style>
+          #bulk-input:empty:before{content:attr(data-placeholder);color:var(--text3);pointer-events:none}
+        </style>
+        <div style="display:flex;gap:8px;margin-top:10px">
           <button class="btn btn-primary" onclick="bulkAddSchedule()">일괄 등록</button>
           <button class="btn btn-danger btn-sm" onclick="clearAllSchedules()">전체 삭제</button>
         </div>
@@ -1842,20 +1865,81 @@ function parseKorDate(str){
   return `${new Date().getFullYear()}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
 }
 
+function applySchedColor(color){
+  const sel=window.getSelection();
+  if(!sel||sel.rangeCount===0||sel.isCollapsed){showToast('색상을 적용할 텍스트를 먼저 드래그하세요');return;}
+  const range=sel.getRangeAt(0);
+  const box=document.getElementById('bulk-input');
+  if(!box.contains(range.commonAncestorContainer)){showToast('입력창 안의 텍스트를 선택해주세요');return;}
+  document.execCommand('styleWithCSS',false,true);
+  if(color===null){
+    document.execCommand('removeFormat',false,null);
+  } else {
+    document.execCommand('foreColor',false,color);
+  }
+  sel.removeAllRanges();
+}
+
 async function bulkAddSchedule(){
-  const text=document.getElementById('bulk-input').value.trim();
+  const box=document.getElementById('bulk-input');
+  const text=box.innerText.trim();
   if(!text){showToast('내용을 입력해주세요');return;}
   const rows=[];
-  for(const line of text.split('\n').filter(l=>l.trim())){
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const htmlLines=getHtmlLines(box);
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];
     const idx=line.indexOf(':');if(idx<0)continue;
     const date=parseKorDate(line.slice(0,idx));if(!date)continue;
-    for(const title of line.slice(idx+1).split('/').map(t=>t.trim()).filter(Boolean)) rows.push({title,date,description:''});
+    const lineHtml=htmlLines[i]||line;
+    const htmlAfterColon=lineHtml.slice(lineHtml.indexOf(':')+1);
+    const htmlParts=splitHtmlBySlash(htmlAfterColon);
+    const textParts=line.slice(idx+1).split('/').map(t=>t.trim()).filter(Boolean);
+    for(let j=0;j<textParts.length;j++){
+      const title=htmlParts[j]?htmlParts[j].trim():textParts[j];
+      if(title)rows.push({title,date,description:''});
+    }
   }
   if(!rows.length){showToast('파싱된 일정이 없어요');return;}
   const {error}=await sb.from('schedules').insert(rows);
   if(error){showToast('등록 실패 😢');return;}
-  document.getElementById('bulk-input').value='';
+  box.innerHTML='';
   showToast(`${rows.length}개 등록됐어요 ✓`);renderSchedule();
+}
+
+function getHtmlLines(box){
+  const lines=[];
+  box.childNodes.forEach(node=>{
+    if(node.nodeType===3){
+      // 순수 텍스트 노드: \n으로 줄 분리
+      node.textContent.split('\n').forEach(t=>{lines.push(t);});
+    } else if(node.nodeName==='DIV'||node.nodeName==='P'){
+      // div/p: 내부 HTML 그대로 (색상 span 포함)
+      const inner=node.innerHTML.replace(/<br\s*\/?>/gi,'\n');
+      inner.split('\n').forEach(l=>lines.push(l));
+    } else if(node.nodeName==='SPAN'){
+      lines.push(node.outerHTML);
+    } else if(node.nodeName==='BR'){
+      // br은 줄 구분자 역할만
+    } else {
+      lines.push(node.outerHTML||node.textContent);
+    }
+  });
+  return lines;
+}
+
+function splitHtmlBySlash(html){
+  const parts=[];
+  let cur='',depth=0;
+  for(let i=0;i<html.length;i++){
+    const c=html[i];
+    if(c==='<')depth++;
+    else if(c==='>'){depth--;cur+=c;continue;}
+    if(c==='/'&&depth===0){parts.push(cur.trim());cur='';}
+    else cur+=c;
+  }
+  if(cur.trim())parts.push(cur.trim());
+  return parts;
 }
 
 async function clearAllSchedules(){
@@ -1877,16 +1961,16 @@ async function renderSchedule(){
     const isToday=date===today;
     return `<div class="schedule-card" style="${isToday?'border-color:#f59e0b;background:#fffdf5':''}">
       <div class="schedule-date-header" style="${isToday?'color:#b45309':''}">📅 ${label}${isToday?' · 오늘':''}</div>
-      ${items.map((s,i)=>`<div class="schedule-item" draggable="true" data-id="${s.id}" data-date="${date}" data-idx="${i}"
+      ${items.map((s,i)=>{const safeId=s.id;return `<div class="schedule-item" draggable="true" data-id="${s.id}" data-date="${date}" data-idx="${i}"
         ondragstart="schedDragStart(event,'${date}',${i})"
         ondragover="schedDragOver(event)"
         ondragleave="schedDragLeave(event)"
         ondrop="schedDrop(event,'${date}',${i})">
         <span class="sched-drag">⠿</span>
         <div class="schedule-dot"></div>
-        <span class="schedule-title-txt" style="cursor:text" onclick="editScheduleInline(this,'${s.id}','${s.title.replace(/'/g,"\'")}')">${s.title}</span>
-        <span style="color:#ddd;cursor:pointer;padding:0 4px" onclick="deleteSchedule('${s.id}')">×</span>
-      </div>`).join('')}
+        <span class="schedule-title-txt" style="cursor:text" onclick="editScheduleInline(this,'${safeId}')">${s.title}</span>
+        <span style="color:#ddd;cursor:pointer;padding:0 4px" onclick="deleteSchedule('${safeId}')">×</span>
+      </div>`;}).join('')}
     </div>`;
   }).join('');
 }
@@ -1914,24 +1998,26 @@ async function schedDrop(e,date,toIdx){
   await renderSchedule();
 }
 
-function editScheduleInline(el,id,cur){
-  if(el.querySelector('input'))return;
-  const input=document.createElement('input');
-  input.value=cur;
-  input.style.cssText='flex:1;font-size:13px;border:none;border-bottom:1.5px solid #1a1a1a;outline:none;background:transparent;padding:1px 0;width:100%';
-  el.textContent='';
-  el.appendChild(input);
-  input.focus();
+function editScheduleInline(el,id){
+  if(el.getAttribute('contenteditable')==='true')return;
+  const cur=el.innerHTML;
+  el.setAttribute('contenteditable','true');
+  el.style.cssText='flex:1;font-size:13px;border:none;border-bottom:1.5px solid #1a1a1a;outline:none;background:transparent;padding:1px 0;width:100%;cursor:text';
+  el.focus();
+  // 커서를 끝으로
+  const range=document.createRange();range.selectNodeContents(el);range.collapse(false);
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
   const save=async()=>{
-    const val=input.value.trim();
-    if(val&&val!==cur) await sb.from('schedules').update({title:val}).eq('id',id);
+    const val=el.innerHTML.trim();
+    const txt=el.innerText.trim();
+    if(txt&&val!==cur) await sb.from('schedules').update({title:val}).eq('id',id);
     renderSchedule();
     if(val!==cur) showToast('수정됐어요 ✓');
   };
-  input.addEventListener('blur',save);
-  input.addEventListener('keydown',e=>{
-    if(e.key==='Enter')input.blur();
-    if(e.key==='Escape'){input.value=cur;input.blur();}
+  el.addEventListener('blur',save,{once:true});
+  el.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();el.blur();}
+    if(e.key==='Escape'){el.innerHTML=cur;el.blur();}
   });
 }
 
