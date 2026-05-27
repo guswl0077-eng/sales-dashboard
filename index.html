@@ -1219,7 +1219,7 @@ async function renderSales(){
   document.getElementById('my-goal').value=goal||'';
   document.getElementById('sales-metrics').innerHTML=`
     <div class="metric"><div class="metric-label">총 매출</div><div class="metric-value">${fmt(totalSales)}</div></div>
-    <div class="metric red"><div class="metric-label">총 환불</div><div class="metric-value" style="color:#e74c3c">${fmt(totalRefund)}</div></div>
+    <div class="metric red"><div class="metric-label">총 환불</div><div class="metric-value" style="color:#e74c3c">${fmt(totalRefund)}${totalSales>0&&totalRefund>0?` <span style="font-size:12px;font-weight:400">(${Math.round(totalRefund/totalSales*100)}%)</span>`:''}</div></div>
     <div class="metric dark"><div class="metric-label">실매출</div><div class="metric-value" style="color:var(--real-color,#fff)">${fmt(realSales)}</div></div>
     <div class="metric green"><div class="metric-label">달성률</div><div class="metric-value">${p}%</div></div>`;
   document.getElementById('log-tbody').innerHTML=entries.length?entries.map(e=>`
@@ -2179,7 +2179,7 @@ function reportCard(dateStr, log, todoTotal, todoDone){
       ${[
         ['총매출', fmt(sales), ''],
         ['실매출', fmt(real), real<0?'#c0392b':''],
-        ['환불', fmt(refund), '#c0392b'],
+        ['환불', fmt(refund)+(sales>0&&refund>0?` (${Math.round(refund/sales*100)}%)`:''), '#c0392b'],
         ['상담잡기', cs+'건', ''],
         ['상담완료', cd+'건', ''],
         ['콜', calls+'콜', ''],
@@ -2270,7 +2270,7 @@ async function renderReportYearly(){
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">
         <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">총매출</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:var(--text)">${fmt(totalSales)}</div></div>
         <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">실매출</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:${real<0?'#c0392b':'#1a8a50'}">${fmt(real)}</div></div>
-        <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">환불</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:#c0392b">${fmt(totalRefund)}</div></div>
+        <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">환불</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:#c0392b">${fmt(totalRefund)}${totalSales>0&&totalRefund>0?` <span style="font-size:11px;font-weight:400">(${Math.round(totalRefund/totalSales*100)}%)</span>`:''}</div></div>
       </div>
       <div style="font-size:12px">
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">상담잡기</span><span style="font-weight:600;color:var(--text)">${cs}건</span></div>
