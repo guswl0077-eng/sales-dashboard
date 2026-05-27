@@ -347,7 +347,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
             <div class="row-item"><span class="row-label">상담잡기</span><input class="num-input" type="number" min="0" id="f-cs" placeholder="0" oninput="updateBars();triggerAutoSave()"><span class="row-target">목표 2건</span><div class="pbar"><div class="pbar-fill" id="pb-cs"></div></div></div>
             <div class="row-item"><span class="row-label">상담하기</span><input class="num-input" type="number" min="0" id="f-cd" placeholder="0" oninput="triggerAutoSave()"></div>
             <div class="row-item"><span class="row-label">매출</span><input class="money-input" type="number" min="0" id="f-sale" placeholder="0" oninput="triggerAutoSave()"><span style="font-size:12px;color:#bbb">원</span></div>
-            <div class="row-item"><span class="row-label">환불</span><input class="money-input" type="number" min="0" id="f-refund" placeholder="0" oninput="triggerAutoSave()"><span style="font-size:12px;color:#bbb">원</span></div>
+            <div class="row-item"><span class="row-label" style="color:#c0392b">환불</span><input class="money-input" type="number" min="0" id="f-refund" placeholder="0" oninput="updateRefundRate();triggerAutoSave()"><span style="font-size:12px;color:#bbb">원</span><span id="f-refund-rate" style="font-size:11px;color:#c0392b;min-width:36px;text-align:right"></span></div>
           </div>
           <div class="sec-title">할 일</div>
           <div class="card">
@@ -567,7 +567,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <div style="border-top:1px solid var(--border2);margin:12px 0;padding-top:12px">
       <div class="form-row">
         <div class="form-group" style="flex:1"><label class="form-label">매출</label><input class="form-input" type="number" id="dm-sale" placeholder="0"></div>
-        <div class="form-group" style="flex:1"><label class="form-label">환불</label><input class="form-input" type="number" id="dm-refund" placeholder="0"></div>
+        <div class="form-group" style="flex:1"><label class="form-label" style="color:#c0392b">환불</label><input class="form-input" type="number" id="dm-refund" placeholder="0" oninput="updateDmRefundRate()"><div id="dm-refund-rate" style="font-size:11px;color:#c0392b;margin-top:3px"></div></div>
       </div>
       <div class="form-row">
         <div class="form-group" style="flex:1"><label class="form-label">콜 수</label><input class="form-input" type="number" id="dm-calls" placeholder="0"></div>
@@ -1088,6 +1088,30 @@ async function deleteTodo(id,isFixed){
   else todos=todos.filter(t=>t.id!==id);
   renderTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
+}
+
+function updateRefundRate(){
+  const sale=Number(document.getElementById('f-sale').value)||0;
+  const refund=Number(document.getElementById('f-refund').value)||0;
+  const el=document.getElementById('f-refund-rate');
+  if(!el)return;
+  if(refund>0&&sale>0){
+    el.textContent='('+Math.round(refund/sale*100)+'%)';
+  } else {
+    el.textContent='';
+  }
+}
+
+function updateDmRefundRate(){
+  const sale=Number(document.getElementById('dm-sale').value)||0;
+  const refund=Number(document.getElementById('dm-refund').value)||0;
+  const el=document.getElementById('dm-refund-rate');
+  if(!el)return;
+  if(refund>0&&sale>0){
+    el.textContent='환불률 '+Math.round(refund/sale*100)+'%';
+  } else {
+    el.textContent='';
+  }
 }
 
 function updateBars(){
@@ -2151,17 +2175,17 @@ function reportCard(dateStr, log, todoTotal, todoDone){
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px">
       ${[
-        ['총매출', fmt(sales)],
-        ['실매출', fmt(real)],
-        ['환불', fmt(refund)],
-        ['상담잡기', cs+'건'],
-        ['상담완료', cd+'건'],
-        ['콜', calls+'콜'],
-        ['분', mins+'분'],
-        ['블로그', blog+'건'],
-      ].map(([l,v])=>`<div style="background:var(--bg3);border-radius:7px;padding:6px 8px">
+        ['총매출', fmt(sales), ''],
+        ['실매출', fmt(real), ''],
+        ['환불', fmt(refund), '#c0392b'],
+        ['상담잡기', cs+'건', ''],
+        ['상담완료', cd+'건', ''],
+        ['콜', calls+'콜', ''],
+        ['분', mins+'분', ''],
+        ['블로그', blog+'건', ''],
+      ].map(([l,v,c])=>`<div style="background:var(--bg3);border-radius:7px;padding:6px 8px">
         <div style="font-size:10px;color:var(--text2)">${l}</div>
-        <div style="font-size:12px;font-weight:600;margin-top:2px;color:var(--text)">${v}</div>
+        <div style="font-size:12px;font-weight:600;margin-top:2px;color:${c||'var(--text)'}">${v}</div>
       </div>`).join('')}
     </div>
     <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)">
@@ -2244,7 +2268,7 @@ async function renderReportYearly(){
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">
         <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">총매출</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:var(--text)">${fmt(totalSales)}</div></div>
         <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">실매출</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:#1a8a50">${fmt(real)}</div></div>
-        <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">환불</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:#c0392b">${totalRefund?'-'+fmt(totalRefund):'0원'}</div></div>
+        <div style="background:var(--bg3);border-radius:7px;padding:8px 10px"><div style="font-size:10px;color:var(--text2)">환불</div><div style="font-size:14px;font-weight:600;margin-top:2px;color:#c0392b">${fmt(totalRefund)}</div></div>
       </div>
       <div style="font-size:12px">
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">상담잡기</span><span style="font-weight:600;color:var(--text)">${cs}건</span></div>
