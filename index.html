@@ -492,26 +492,24 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <div class="card">
         <div style="font-size:14px;font-weight:600;margin-bottom:6px">개강 일정 일괄 입력</div>
         <div style="font-size:12px;color:#aaa;margin-bottom:10px">형식: <code style="background:#f5f4f0;padding:2px 6px;border-radius:4px">05월 15일 (금) : 한식기능사 개강 / 시그니처일식 개강</code></div>
-        <!-- 색상 팔레트 -->
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-          <span style="font-size:11px;color:var(--text2)">색상</span>
-          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#e74c3c&#39;)" title="빨강" style="width:22px;height:22px;border-radius:50%;background:#e74c3c;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
-          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#e67e22&#39;)" title="주황" style="width:22px;height:22px;border-radius:50%;background:#e67e22;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
-          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#f1c40f&#39;)" title="노랑" style="width:22px;height:22px;border-radius:50%;background:#f1c40f;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
-          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#27ae60&#39;)" title="초록" style="width:22px;height:22px;border-radius:50%;background:#27ae60;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
-          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#2980b9&#39;)" title="파랑" style="width:22px;height:22px;border-radius:50%;background:#2980b9;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
-          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#8e44ad&#39;)" title="보라" style="width:22px;height:22px;border-radius:50%;background:#8e44ad;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
-          <button onmousedown="event.preventDefault()" onclick="applySchedColor(&#39;#e91e8c&#39;)" title="핑크" style="width:22px;height:22px;border-radius:50%;background:#e91e8c;border:2px solid transparent;cursor:pointer;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;"></button>
-          <button onmousedown="event.preventDefault()" onclick="applySchedColor(null)" title="색상 제거" style="width:22px;height:22px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:transform .1s" onmouseover="this.style.transform=&#39;scale(1.2)&#39;" onmouseout="this.style.transform=&#39;scale(1)&#39;">✕</button>
+        <!-- 플로팅 색상 팝업 -->
+        <div id="sched-color-popup" style="display:none;position:fixed;z-index:9999;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:8px 10px;box-shadow:0 4px 20px rgba(0,0,0,.18);align-items:center;gap:6px;flex-wrap:nowrap">
+          <span style="font-size:10px;color:var(--text2);white-space:nowrap">색상</span>
+          <div onmousedown="event.preventDefault();applySchedColor('#e74c3c')" style="width:20px;height:20px;border-radius:50%;background:#e74c3c;cursor:pointer;flex-shrink:0"></div>
+          <div onmousedown="event.preventDefault();applySchedColor('#e67e22')" style="width:20px;height:20px;border-radius:50%;background:#e67e22;cursor:pointer;flex-shrink:0"></div>
+          <div onmousedown="event.preventDefault();applySchedColor('#f1c40f')" style="width:20px;height:20px;border-radius:50%;background:#f1c40f;cursor:pointer;flex-shrink:0"></div>
+          <div onmousedown="event.preventDefault();applySchedColor('#27ae60')" style="width:20px;height:20px;border-radius:50%;background:#27ae60;cursor:pointer;flex-shrink:0"></div>
+          <div onmousedown="event.preventDefault();applySchedColor('#2980b9')" style="width:20px;height:20px;border-radius:50%;background:#2980b9;cursor:pointer;flex-shrink:0"></div>
+          <div onmousedown="event.preventDefault();applySchedColor('#8e44ad')" style="width:20px;height:20px;border-radius:50%;background:#8e44ad;cursor:pointer;flex-shrink:0"></div>
+          <div onmousedown="event.preventDefault();applySchedColor('#e91e8c')" style="width:20px;height:20px;border-radius:50%;background:#e91e8c;cursor:pointer;flex-shrink:0"></div>
+          <div onmousedown="event.preventDefault();applySchedColor(null)" style="width:20px;height:20px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</div>
         </div>
         <!-- contenteditable 입력창 -->
         <div id="bulk-input"
           contenteditable="true"
           spellcheck="false"
-          data-placeholder="붙여넣기..."
+          data-placeholder="텍스트 입력 후 드래그하면 색상 팝업이 나타나요"
           style="min-height:120px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.8;color:var(--text);background:var(--bg3);outline:none;white-space:pre-wrap;word-break:break-all;cursor:text;font-family:inherit"
-          onfocus="this.style.borderColor=&#39;var(--text)&#39;;this.style.background=&#39;var(--bg2)&#39;"
-          onblur="this.style.borderColor=&#39;var(--border)&#39;;this.style.background=&#39;var(--bg3)&#39;"
         ></div>
         <style>
           #bulk-input:empty:before{content:attr(data-placeholder);color:var(--text3);pointer-events:none}
@@ -1170,7 +1168,7 @@ function switchTab(name){
   if(name==='main')renderSales();
   if(name==='calendar'){loadTags();renderCalendar();}
   if(name==='list'){renderList();loadPeriodsForPicker();}
-  if(name==='schedule')renderSchedule();
+  if(name==='schedule'){renderSchedule();setTimeout(initSchedColorPopup,100);}
   if(name==='period'){renderPeriod();loadNotice();}
 }
 
@@ -1865,12 +1863,21 @@ function parseKorDate(str){
   return `${new Date().getFullYear()}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
 }
 
+// 저장된 selection range (팝업 클릭 시 복원용)
+let _savedSchedRange=null;
+
 function applySchedColor(color){
-  const sel=window.getSelection();
-  if(!sel||sel.rangeCount===0||sel.isCollapsed){showToast('색상을 적용할 텍스트를 먼저 드래그하세요');return;}
-  const range=sel.getRangeAt(0);
   const box=document.getElementById('bulk-input');
-  if(!box.contains(range.commonAncestorContainer)){showToast('입력창 안의 텍스트를 선택해주세요');return;}
+  // 저장된 range 복원
+  if(_savedSchedRange){
+    const sel=window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(_savedSchedRange);
+  }
+  const sel=window.getSelection();
+  if(!sel||sel.rangeCount===0||sel.isCollapsed){hideSchedColorPopup();return;}
+  const range=sel.getRangeAt(0);
+  if(!box.contains(range.commonAncestorContainer)){hideSchedColorPopup();return;}
   document.execCommand('styleWithCSS',false,true);
   if(color===null){
     document.execCommand('removeFormat',false,null);
@@ -1878,6 +1885,46 @@ function applySchedColor(color){
     document.execCommand('foreColor',false,color);
   }
   sel.removeAllRanges();
+  _savedSchedRange=null;
+  hideSchedColorPopup();
+}
+
+function hideSchedColorPopup(){
+  const p=document.getElementById('sched-color-popup');
+  if(p)p.style.display='none';
+}
+
+function initSchedColorPopup(){
+  const box=document.getElementById('bulk-input');
+  if(!box)return;
+  // mouseup 시 selection 확인 후 팝업 표시
+  box.addEventListener('mouseup',function(e){
+    setTimeout(()=>{
+      const sel=window.getSelection();
+      if(!sel||sel.isCollapsed||sel.rangeCount===0){hideSchedColorPopup();return;}
+      const range=sel.getRangeAt(0);
+      if(!box.contains(range.commonAncestorContainer)){hideSchedColorPopup();return;}
+      // range 저장
+      _savedSchedRange=range.cloneRange();
+      // 팝업 위치: 선택 영역 바로 위
+      const rect=range.getBoundingClientRect();
+      const popup=document.getElementById('sched-color-popup');
+      popup.style.display='flex';
+      const pw=popup.offsetWidth||220;
+      let left=rect.left+window.scrollX+(rect.width/2)-(pw/2);
+      left=Math.max(8,Math.min(left,window.innerWidth-pw-8));
+      popup.style.left=left+'px';
+      popup.style.top=(rect.top+window.scrollY-44)+'px';
+    },10);
+  });
+  // 입력창 밖 클릭 시 팝업 닫기
+  document.addEventListener('mousedown',function(e){
+    const popup=document.getElementById('sched-color-popup');
+    if(popup&&!popup.contains(e.target)&&e.target.id!=='bulk-input'){
+      hideSchedColorPopup();
+      _savedSchedRange=null;
+    }
+  });
 }
 
 async function bulkAddSchedule(){
