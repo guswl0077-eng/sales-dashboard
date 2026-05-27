@@ -558,9 +558,18 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <div style="border-top:1px solid var(--border2);margin:12px 0;padding-top:12px">
       <div class="form-label" style="font-size:12px;color:#888;font-weight:500;margin-bottom:8px">할 일</div>
       <div id="dm-todo-list" style="margin-bottom:8px"></div>
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:6px;margin-bottom:6px">
         <input class="form-input" id="dm-todo-input" placeholder="할 일 입력..." style="font-size:13px" onkeydown="if(event.key==='Enter')addDmTodo()">
         <button class="btn btn-outline btn-sm" onclick="addDmTodo()">추가</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input class="form-input" id="dm-counsel-hour" placeholder="00" style="width:36px;text-align:center;padding:6px 4px;font-size:13px;flex:none">
+        <span style="font-size:13px;color:var(--text2)">:</span>
+        <input class="form-input" id="dm-counsel-min" placeholder="00" style="width:36px;text-align:center;padding:6px 4px;font-size:13px;flex:none">
+        <div id="dm-counsel-sangdam" onclick="selectDmCounselType('상담')" style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">상담</div>
+        <div id="dm-counsel-myundam" onclick="selectDmCounselType('면담')" style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">면담</div>
+        <input class="form-input" id="dm-counsel-text" placeholder="일정 입력..." style="font-size:13px;flex:1" onkeydown="if(event.key==='Enter')addDmCounsel()">
+        <button class="btn btn-outline btn-sm" onclick="addDmCounsel()">추가</button>
       </div>
     </div>
     <div style="border-top:1px solid var(--border2);margin:12px 0;padding-top:12px">
@@ -1496,6 +1505,37 @@ function renderDmTodoList(){
       <span style="flex:1;font-size:13px;${t.done?'text-decoration:line-through;color:#bbb':'color:var(--text)'}">${t.content}</span>
       <span style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px" onclick="deleteDmTodo('${t.id}')">×</span>
     </div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:4px 0">할 일을 추가해보세요</div>';
+}
+
+let _dmCounselType='상담';
+function selectDmCounselType(type){
+  _dmCounselType=type;
+  const s=document.getElementById('dm-counsel-sangdam');
+  const m=document.getElementById('dm-counsel-myundam');
+  if(!s||!m)return;
+  if(type==='상담'){
+    s.style.cssText='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
+    m.style.cssText='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
+  } else {
+    s.style.cssText='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
+    m.style.cssText='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
+  }
+}
+
+async function addDmCounsel(){
+  const hour=document.getElementById('dm-counsel-hour').value.trim()||'00';
+  const min=document.getElementById('dm-counsel-min').value.trim()||'00';
+  const text=document.getElementById('dm-counsel-text').value.trim();
+  if(!text||!dayModalDate){showToast('일정을 입력해주세요');return;}
+  const counselContent=`${hour}:${min} ${_dmCounselType} · ${text}`;
+  const {data,error}=await sb.from('todos').insert({user_id:currentUser.id,date:dayModalDate,content:counselContent,category:_dmCounselType,done:false,is_fixed:false}).select().single();
+  if(error){showToast('추가 실패');return;}
+  document.getElementById('dm-counsel-hour').value='';
+  document.getElementById('dm-counsel-min').value='';
+  document.getElementById('dm-counsel-text').value='';
+  dmTodos.push(data);
+  renderDmTodoList();
+  if(dayModalDate===todayKey())loadTodos();
 }
 
 async function addDmTodo(){
