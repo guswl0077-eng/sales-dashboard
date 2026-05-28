@@ -905,7 +905,7 @@ async function loadTodaySchedule(){
       :`<div style="font-size:10px;color:var(--sched-muted)">${DAYS_KR[dt.getDay()]}</div>`;
     const items=byDate[d];
     const itemHtml=items.length
-      ?items.map(t=>`<div style="font-size:9px;color:var(--sched-text);font-weight:${isToday?'700':'400'};line-height:1.5;word-break:break-all">· ${t}</div>`).join('')
+      ?items.map(t=>`<div style="font-size:11px;color:var(--sched-text);font-weight:${isToday?'600':'400'};line-height:1.5;word-break:break-all">${t}</div>`).join('')
       :`<div style="font-size:11px;color:var(--sched-muted)">-</div>`;
     return `<div style="text-align:center;${isToday?'background:var(--sched-today);border-radius:6px;padding:3px 2px':'padding:3px 2px'}">
       ${dayLabel}
