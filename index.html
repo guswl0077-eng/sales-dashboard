@@ -68,8 +68,8 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--
 .metric.dark{background:#1a1a1a}.metric.dark .metric-label{color:#888}.metric.dark .metric-value{color:var(--real-color,#fff)}
 .metric.green .metric-value{color:#1a8a50}
 .metric.red .metric-value{color:#c0392b}
-.card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px 18px;margin-bottom:12px}
-.row-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);gap:10px}
+.card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px 18px;margin-bottom:12px;max-width:100%}
+.row-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);gap:10px;flex-wrap:wrap}
 .row-item:last-child{border-bottom:none}
 .row-label{font-size:13px;color:var(--text);flex:1}
 .row-target{font-size:11px;color:var(--text3);min-width:52px;text-align:right}
@@ -195,11 +195,12 @@ tr.row-refund{background:#fff8f0}
 .period-picker-item .ppi-dates{font-size:11px;color:#aaa;margin-top:2px}
 .period-picker-item.selected .ppi-dates{color:#aaa}
 .period-field-wrap{position:relative}
-.today-schedule{background:var(--sched-bg);border:1px solid var(--sched-border);border-radius:10px;padding:12px 16px;margin-bottom:12px}
+.today-schedule{background:var(--sched-bg);border:1px solid var(--sched-border);border-radius:10px;padding:12px 16px;margin-bottom:12px;max-width:100%;overflow:hidden}
 .today-schedule-title{font-size:12px;font-weight:700;color:var(--sched-title);margin-bottom:6px}
 .sched-day{font-size:10px;margin-bottom:2px}
 .sched-item{font-size:11px;line-height:1.5;word-break:break-all}
-.notice-box{border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px}
+.notice-box{border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px;max-width:100%}
+.notice-box>*{min-width:0}
 .notice-box.update{background:#1e3a5f;border:1.5px solid #3b82f6}
 body:not(.dark) .notice-box.update{background:#e8f0fe;border:1.5px solid #c7d7f5}
 .notice-box.important{background:#7c3a00;border:1.5px solid #f59e0b}
@@ -209,7 +210,7 @@ body:not(.dark) .notice-box.important{background:#fff3e0;border:1.5px solid #f59
 body:not(.dark) .notice-box.update .notice-date{color:#1a56db}
 .notice-box.important .notice-date{color:#fde68a}
 body:not(.dark) .notice-box.important .notice-date{color:#92400e}
-.notice-text{font-size:13px;line-height:1.6}
+.notice-text{font-size:13px;line-height:1.6;word-break:break-word;overflow-wrap:break-word;white-space:pre-wrap;min-width:0}
 .notice-box.update .notice-text{color:#bfdbfe}
 body:not(.dark) .notice-box.update .notice-text{color:#1e3a8a}
 .notice-box.important .notice-text{color:#fef3c7}
