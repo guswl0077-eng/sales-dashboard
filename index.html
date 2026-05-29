@@ -29,7 +29,7 @@ body.dark{color-scheme:dark;
   --sched-title:#8ab4d4;--sched-text:#a8c8e0;
   --sched-muted:#6a8aa0;--sched-today:#3d4f63;
 }
-body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s;overflow-x:hidden;max-width:100vw}
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
 .auth-card{background:var(--card);border-radius:20px;border:1px solid var(--border);padding:40px 36px;width:100%;max-width:380px}
 .auth-logo{text-align:center;font-size:32px;margin-bottom:8px}
@@ -55,7 +55,7 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--
 .user-chip{font-size:12px;font-weight:600;background:var(--bg);padding:4px 10px;border-radius:20px;color:var(--text)}
 .admin-chip{font-size:11px;font-weight:600;background:#1a1a1a;color:#fff;padding:3px 8px;border-radius:20px}
 .logout-btn{font-size:12px;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:none}
-.nav-tabs{display:flex;gap:2px;padding:0 20px;background:var(--nav);border-bottom:1px solid var(--border);overflow-x:auto}
+.nav-tabs{display:flex;gap:2px;padding:0 20px;background:var(--nav);border-bottom:1px solid var(--border);overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
 .tab{padding:12px 14px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
 .tab.active{color:var(--text);border-bottom-color:var(--text)}
 .content{max-width:1200px;margin:0 auto;padding:20px 16px}
