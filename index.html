@@ -29,7 +29,7 @@ body.dark{color-scheme:dark;
   --sched-title:#8ab4d4;--sched-text:#a8c8e0;
   --sched-muted:#6a8aa0;--sched-today:#3d4f63;
 }
-body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s;overflow-x:hidden}
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
 .auth-card{background:var(--card);border-radius:20px;border:1px solid var(--border);padding:40px 36px;width:100%;max-width:380px}
 .auth-logo{text-align:center;font-size:32px;margin-bottom:8px}
@@ -197,6 +197,8 @@ tr.row-refund{background:#fff8f0}
 .period-field-wrap{position:relative}
 .today-schedule{background:var(--sched-bg);border:1px solid var(--sched-border);border-radius:10px;padding:12px 16px;margin-bottom:12px}
 .today-schedule-title{font-size:12px;font-weight:700;color:var(--sched-title);margin-bottom:6px}
+.sched-day{font-size:10px;margin-bottom:2px}
+.sched-item{font-size:11px;line-height:1.5;word-break:break-all}
 .notice-box{border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px}
 .notice-box.update{background:#1e3a5f;border:1.5px solid #3b82f6}
 body:not(.dark) .notice-box.update{background:#e8f0fe;border:1.5px solid #c7d7f5}
@@ -248,6 +250,9 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .cal-date{font-size:11px}
   .cal-work-badge{font-size:9px;padding:1px 4px}
   .cal-grid div>div{font-size:9px}
+  .sched-item{font-size:8.5px;line-height:1.4}
+  .sched-day{font-size:9px}
+  .today-schedule{padding:10px 8px}
   .report-grid{grid-template-columns:1fr}
   .content{padding:10px 8px}
   .topbar{height:48px;padding:0 12px}
@@ -903,12 +908,12 @@ async function loadTodaySchedule(){
   const cols=dates.map(d=>{
     const dt=new Date(d+'T00:00:00');
     const isToday=d===todayKey();
-    const dayLabel=isToday?`<div style="font-size:10px;font-weight:700;color:var(--sched-title)">오늘</div>`
-      :`<div style="font-size:10px;color:var(--sched-muted)">${DAYS_KR[dt.getDay()]}</div>`;
+    const dayLabel=isToday?`<div class="sched-day" style="font-weight:700;color:var(--sched-title)">오늘</div>`
+      :`<div class="sched-day" style="color:var(--sched-muted)">${DAYS_KR[dt.getDay()]}</div>`;
     const items=byDate[d];
     const itemHtml=items.length
-      ?items.map(t=>`<div style="font-size:11px;color:var(--sched-text);font-weight:${isToday?'600':'400'};line-height:1.5;word-break:break-all">${t}</div>`).join('')
-      :`<div style="font-size:11px;color:var(--sched-muted)">-</div>`;
+      ?items.map(t=>`<div class="sched-item" style="color:var(--sched-text);font-weight:${isToday?'600':'400'}">${t}</div>`).join('')
+      :`<div class="sched-item" style="color:var(--sched-muted)">-</div>`;
     return `<div style="text-align:center;${isToday?'background:var(--sched-today);border-radius:6px;padding:3px 2px':'padding:3px 2px'}">
       ${dayLabel}
       ${itemHtml}
