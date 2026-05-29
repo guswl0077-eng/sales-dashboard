@@ -8,6 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:hidden}
+.tabs-page{max-width:100%;overflow-x:hidden}
 :root{
   --bg:#f5f4f0;--bg2:#fff;--bg3:#f9f8f6;
   --border:#e8e6e0;--border2:#f5f4f0;
@@ -58,7 +60,7 @@ body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--
 .nav-tabs{display:flex;gap:2px;padding:0 20px;background:var(--nav);border-bottom:1px solid var(--border);overflow-x:auto}
 .tab{padding:12px 14px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
 .tab.active{color:var(--text);border-bottom-color:var(--text)}
-.content{max-width:1200px;margin:0 auto;padding:20px 16px}
+.content{max-width:1200px;margin:0 auto;padding:20px 16px;width:100%;overflow-x:hidden}
 .sec-title{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;margin-top:20px}
 .sec-title:first-child{margin-top:0}
 .metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
@@ -250,9 +252,10 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .cal-date{font-size:11px}
   .cal-work-badge{font-size:9px;padding:1px 4px}
   .cal-grid div>div{font-size:9px}
-  .sched-item{font-size:8.5px;line-height:1.4}
-  .sched-day{font-size:9px}
-  .today-schedule{padding:10px 8px}
+  .sched-item{font-size:8px;line-height:1.35}
+  .sched-day{font-size:8.5px}
+  .today-schedule{padding:10px 6px}
+  .today-schedule>div:last-child{gap:2px!important}
   .report-grid{grid-template-columns:1fr}
   .content{padding:10px 8px}
   .topbar{height:48px;padding:0 12px}
