@@ -457,10 +457,10 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <div class="tabs-page" id="tab-list">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <div class="list-filter-tabs">
-          <div class="list-filter-tab active" onclick="setListFilter('all')">전체</div>
+          <div class="list-filter-tab active" onclick="setListFilter('unpaid')">미결제</div>
           <div class="list-filter-tab" onclick="setListFilter('paid')">결제</div>
-          <div class="list-filter-tab" onclick="setListFilter('unpaid')">미결제</div>
           <div class="list-filter-tab tab-cancel" onclick="setListFilter('cancel')">취소</div>
+          <div class="list-filter-tab" onclick="setListFilter('all')">전체</div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline" onclick="loadPeriodsForPicker();document.getElementById('bulk-student-modal').classList.add('open')">+ 일괄 입력</button>
@@ -1681,10 +1681,10 @@ async function saveDayModal(){
   if(dayModalDate===todayKey())loadTodayLog();
 }
 
-let listFilter='all';
+let listFilter='unpaid';
 function setListFilter(f){
   listFilter=f;
-  document.querySelectorAll('.list-filter-tab').forEach((t,i)=>t.classList.toggle('active',['all','paid','unpaid','cancel'][i]===f));
+  document.querySelectorAll('.list-filter-tab').forEach((t,i)=>t.classList.toggle('active',['unpaid','paid','cancel','all'][i]===f));
   renderList();
 }
 
