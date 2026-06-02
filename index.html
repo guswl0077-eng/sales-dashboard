@@ -225,6 +225,32 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 .schedule-item:last-child{border-bottom:none}
 .report-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 .schedule-dot{width:6px;height:6px;border-radius:50%;background:#1a1a1a;flex-shrink:0}
+.std-chip{padding:4px 13px;border-radius:16px;font-size:12px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;transition:all .15s}
+.std-chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.std-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.std-name{font-size:15px;font-weight:600;color:var(--text)}
+.std-id{font-size:12px;color:var(--text2);margin-left:8px}
+.std-cat{font-size:11px;color:var(--text2);background:var(--bg3);display:inline-block;padding:2px 8px;border-radius:6px;margin-top:3px}
+.std-parent{font-size:12px;color:#6b9fd4;margin-top:4px}
+.std-subj-table{width:100%;border-collapse:collapse;font-size:12px;margin:10px 0 6px}
+.std-subj-table th{background:var(--bg3);color:var(--text2);font-weight:500;padding:6px 8px;text-align:left;font-size:11px;border-bottom:1px solid var(--border)}
+.std-subj-table th:not(:first-child){text-align:center}
+.std-subj-table td{padding:7px 8px;border-bottom:1px solid var(--border2);color:var(--text2);font-size:12px;text-align:center;vertical-align:middle}
+.std-subj-table td:first-child{text-align:left;font-weight:500;color:var(--text);font-size:12px}
+.std-subj-table tr:last-child td{border-bottom:none}
+.std-badge{font-size:11px;padding:2px 8px;border-radius:8px;font-weight:600;display:inline-block}
+.sb-active{background:#f0fdf4;color:#166534}.dark .sb-active{background:#1a5c36;color:#a7f3c4}
+.sb-assigned{background:#dcfce7;color:#14532d}.dark .sb-assigned{background:#166534;color:#bbf7d0}
+.sb-wait{background:#fff0e0;color:#c2410c}.dark .sb-wait{background:#7c2d12;color:#fed7aa}
+.sb-standby{background:#f1f5f9;color:#475569}.dark .sb-standby{background:#334155;color:#cbd5e1}
+.sb-done{background:#e8e7e2;color:#555}.dark .sb-done{background:#4b5563;color:#d1d5db}
+.sb-refund{background:#ef4444;color:#fef08a}.dark .sb-refund{background:#b91c1c;color:#fef08a}
+.sb-cod{background:#fef08a;color:#dc2626}.dark .sb-cod{background:#a16207;color:#fef08a}
+.sb-leave{background:#fff7ed;color:#9a3412}.dark .sb-leave{background:#7c3a0e;color:#fdba74}
+.std-counsel-row{display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--border2);align-items:center}
+.std-counsel-row:last-child{border-bottom:none}
+.std-counsel-date{font-size:12px;color:var(--text2);white-space:nowrap;min-width:40px}
+.std-counsel-text{font-size:13px;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1}
 .schedule-title-txt{flex:1;font-size:13px;color:var(--text)}
 .admin-notice{background:#fff8e8;border:1px solid #ffe0a0;border-radius:10px;padding:12px 16px;font-size:12px;color:#b45309;margin-bottom:14px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .3s;z-index:300;pointer-events:none}
@@ -335,6 +361,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   <div class="nav-tabs">
     <div class="tab active" onclick="switchTab('main')">오늘 활동</div>
     <div class="tab" onclick="switchTab('calendar')">달력</div>
+    <div class="tab" onclick="switchTab('students')">수강생 목록</div>
     <div class="tab" onclick="switchTab('list')">결제 리스트</div>
     <div class="tab" onclick="switchTab('report')">영업일 리포트</div>
     <div class="tab admin-only" onclick="switchTab('schedule')" style="display:none">개강 일정</div>
@@ -451,6 +478,24 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         <div class="cal-grid" id="cal-body"></div>
       </div>
       <div style="font-size:12px;color:#aaa;text-align:center;margin-top:8px">태그 선택 후 날짜 클릭 = 적용 · 다시 클릭 = 해제</div>
+    </div>
+
+    <!-- 수강생 목록 -->
+    <div class="tabs-page" id="tab-students">
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="student-cat-chips">
+        <div class="std-chip active" onclick="setStudentCat('전체')">전체</div>
+        <div class="std-chip" onclick="setStudentCat('요리정복')">요리정복</div>
+        <div class="std-chip" onclick="setStudentCat('조리')">조리</div>
+        <div class="std-chip" onclick="setStudentCat('제과제빵')">제과제빵</div>
+        <div class="std-chip" onclick="setStudentCat('바리스타')">바리스타</div>
+        <div class="std-chip" onclick="setStudentCat('입시')">입시</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+        <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 검색" oninput="renderStudents()" style="flex:1;min-width:160px">
+        <button class="btn btn-primary" onclick="openStudentAddModal()">＋ 수강생 추가</button>
+        <button class="btn btn-outline" onclick="openStudentExcelModal()">↑ 엑셀 일괄</button>
+      </div>
+      <div id="student-list"></div>
     </div>
 
     <!-- 결제 리스트 -->
@@ -1204,6 +1249,7 @@ function switchTab(name){
   if(name==='calendar'){loadTags();renderCalendar();}
   if(name==='list'){renderList();loadPeriodsForPicker();}
   if(name==='schedule'){renderSchedule();setTimeout(initSchedColorPopup,100);}
+  if(name==='students'){renderStudents();}
   if(name==='report'){renderReportDaily();}
   if(name==='period'){renderPeriod();loadNotice();}
 }
@@ -1991,6 +2037,226 @@ async function clearAllSchedules(){
   renderSchedule();showToast('전체 삭제됐어요');
 }
 
+// ── 수강생 목록 ──────────────────────────────
+let _studentCat='전체';
+const SB_STATUS_CLASS={
+  '개강':'sb-active','배정완료':'sb-assigned','미배정':'sb-wait',
+  '대기':'sb-standby','종강':'sb-done','환불':'sb-refund',
+  'COD':'sb-cod','휴학':'sb-leave','수강포기':'sb-done','포기':'sb-done'
+};
+
+function setStudentCat(cat){
+  _studentCat=cat;
+  document.querySelectorAll('.std-chip').forEach(c=>c.classList.toggle('active',c.textContent===cat));
+  renderStudents();
+}
+
+async function renderStudents(){
+  const el=document.getElementById('student-list');
+  if(!el)return;
+  el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:20px 0;text-align:center">불러오는 중...</div>';
+  const q=document.getElementById('student-search')?.value?.trim()||'';
+  let query=sb.from('students').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  if(_studentCat!=='전체')query=query.eq('category',_studentCat);
+  const {data:students,error}=await query;
+  if(error){el.innerHTML='<div style="color:var(--text2)">불러오기 실패</div>';return;}
+  let list=students||[];
+  if(q)list=list.filter(s=>(s.name||'').includes(q)||(s.student_no||'').includes(q)||(s.phone||'').includes(q));
+  if(!list.length){el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:20px 0;text-align:center">수강생이 없어요</div>';return;}
+  // 과목+면담 가져오기
+  const ids=list.map(s=>s.id);
+  const [{data:subjects},{data:counsels}]=await Promise.all([
+    sb.from('student_subjects').select('*').in('student_id',ids),
+    sb.from('student_counsels').select('*').in('student_id',ids).order('date',{ascending:false})
+  ]);
+  const subjMap={};(subjects||[]).forEach(s=>{if(!subjMap[s.student_id])subjMap[s.student_id]=[];subjMap[s.student_id].push(s);});
+  const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
+  el.innerHTML=list.map(s=>{
+    const subjs=subjMap[s.id]||[];
+    const couns=counMap[s.id]||[];
+    const subjRows=subjs.map(sub=>`<tr>
+      <td style="text-align:left;font-weight:500;color:var(--text)">${sub.subject||'-'}</td>
+      <td>${sub.day||'-'}</td>
+      <td>${sub.start_date||'-'}</td>
+      <td>${sub.end_date||'-'}</td>
+      <td>${sub.class_time||'-'}</td>
+      <td><span class="std-badge ${SB_STATUS_CLASS[sub.status]||'sb-standby'}">${sub.status||'미배정'}</span></td>
+    </tr>`).join('');
+    const counselRows=couns.slice(0,3).map(c=>`<div class="std-counsel-row">
+      <span class="std-counsel-date">${(c.date||'').slice(5).replace('-','.')}</span>
+      <span class="std-counsel-text">${c.content||''}</span>
+    </div>`).join('');
+    const moreBtn=couns.length>3?`<span style="font-size:12px;color:#6b9fd4;cursor:pointer" onclick="openStudentCounselModal('${s.id}','${(s.name||'').replace(/'/g,"\'")}','${s.student_no||''}')">전체 보기 (${couns.length}) →</span>`:'';
+    return `<div class="std-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <span class="std-name">${s.name||''}</span>
+          <span class="std-id">${s.student_no||''} · ${s.phone||''}</span>
+          <div><span class="std-cat">${s.category||''}</span></div>
+          ${s.parent_mom?`<div class="std-parent">☎ 모 ${s.parent_mom}${s.parent_dad?' &nbsp;☎ 부 '+s.parent_dad:''}</div>`:s.parent_dad?`<div class="std-parent">☎ 부 ${s.parent_dad}</div>`:''}
+        </div>
+        <button onclick="openStudentEditModal('${s.id}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">수정</button>
+      </div>
+      <table class="std-subj-table">
+        <thead><tr><th style="width:32%">등록과목</th><th style="width:10%">요일</th><th style="width:13%">개강일</th><th style="width:13%">종강일</th><th style="width:13%">수업시간</th><th style="width:10%">진행</th></tr></thead>
+        <tbody>${subjRows||'<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:10px">과목 없음</td></tr>'}</tbody>
+      </table>
+      <div style="font-size:12px;color:var(--text2);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:4px" onclick="openSubjectAddRow('${s.id}')">＋ 과목 추가</div>
+      <div style="border-top:1px solid var(--border2);margin:10px 0"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--text3)">면담 기록</span>
+        ${moreBtn}
+      </div>
+      ${counselRows||'<div style="font-size:13px;color:var(--text3);padding:4px 0">면담 기록 없음</div>'}
+    </div>`;
+  }).join('');
+}
+
+function openStudentAddModal(){
+  document.getElementById('std-add-modal').style.display='flex';
+  ['std-m-name','std-m-no','std-m-phone','std-m-mom','std-m-dad'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('std-m-cat').value='요리정복';
+}
+function closeStudentAddModal(){document.getElementById('std-add-modal').style.display='none';}
+
+async function saveStudentAdd(){
+  const name=document.getElementById('std-m-name').value.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  const row={
+    user_id:currentUser.id,
+    name,
+    student_no:document.getElementById('std-m-no').value.trim(),
+    phone:document.getElementById('std-m-phone').value.trim(),
+    parent_mom:document.getElementById('std-m-mom').value.trim(),
+    parent_dad:document.getElementById('std-m-dad').value.trim(),
+    category:document.getElementById('std-m-cat').value
+  };
+  const {error}=await sb.from('students').insert(row);
+  if(error){showToast('저장 실패 😢');return;}
+  closeStudentAddModal();showToast('수강생 추가됐어요 ✓');renderStudents();
+}
+
+async function openStudentEditModal(id){
+  const {data}=await sb.from('students').select('*').eq('id',id).single();
+  if(!data)return;
+  document.getElementById('std-edit-id').value=id;
+  document.getElementById('std-e-name').value=data.name||'';
+  document.getElementById('std-e-no').value=data.student_no||'';
+  document.getElementById('std-e-phone').value=data.phone||'';
+  document.getElementById('std-e-mom').value=data.parent_mom||'';
+  document.getElementById('std-e-dad').value=data.parent_dad||'';
+  document.getElementById('std-e-cat').value=data.category||'요리정복';
+  document.getElementById('std-edit-modal').style.display='flex';
+}
+function closeStudentEditModal(){document.getElementById('std-edit-modal').style.display='none';}
+
+async function saveStudentEdit(){
+  const id=document.getElementById('std-edit-id').value;
+  const row={
+    name:document.getElementById('std-e-name').value.trim(),
+    student_no:document.getElementById('std-e-no').value.trim(),
+    phone:document.getElementById('std-e-phone').value.trim(),
+    parent_mom:document.getElementById('std-e-mom').value.trim(),
+    parent_dad:document.getElementById('std-e-dad').value.trim(),
+    category:document.getElementById('std-e-cat').value
+  };
+  await sb.from('students').update(row).eq('id',id);
+  closeStudentEditModal();showToast('수정됐어요 ✓');renderStudents();
+}
+
+async function deleteStudent(){
+  const id=document.getElementById('std-edit-id').value;
+  if(!confirm('이 수강생을 삭제할까요?'))return;
+  await sb.from('students').delete().eq('id',id);
+  closeStudentEditModal();showToast('삭제됐어요');renderStudents();
+}
+
+function openSubjectAddRow(studentId){
+  // 해당 카드 찾아서 테이블에 입력 행 추가
+  renderStudents().then?.(()=>{});
+  // 간단하게: 별도 모달로 처리
+  document.getElementById('std-subj-student-id').value=studentId;
+  ['std-subj-name','std-subj-day','std-subj-start','std-subj-end','std-subj-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('std-subj-status').value='미배정';
+  document.getElementById('std-subj-modal').style.display='flex';
+}
+function closeSubjModal(){document.getElementById('std-subj-modal').style.display='none';}
+async function saveSubject(){
+  const sid=document.getElementById('std-subj-student-id').value;
+  const row={
+    student_id:sid,
+    subject:document.getElementById('std-subj-name').value.trim(),
+    day:document.getElementById('std-subj-day').value.trim(),
+    start_date:document.getElementById('std-subj-start').value||null,
+    end_date:document.getElementById('std-subj-end').value||null,
+    class_time:document.getElementById('std-subj-time').value.trim(),
+    status:document.getElementById('std-subj-status').value
+  };
+  if(!row.subject){showToast('과목명을 입력해주세요');return;}
+  await sb.from('student_subjects').insert(row);
+  closeSubjModal();showToast('과목 추가됐어요 ✓');renderStudents();
+}
+
+function openStudentCounselModal(studentId, name, no){
+  document.getElementById('std-counsel-student-id').value=studentId;
+  document.getElementById('std-counsel-title').textContent=`면담 기록 — ${name} · ${no}`;
+  document.getElementById('std-counsel-input').value='';
+  loadStudentCounsels(studentId);
+  document.getElementById('std-counsel-modal').style.display='flex';
+}
+function closeStudentCounselModal(){document.getElementById('std-counsel-modal').style.display='none';}
+async function loadStudentCounsels(sid){
+  const {data}=await sb.from('student_counsels').select('*').eq('student_id',sid).order('date',{ascending:false});
+  const el=document.getElementById('std-counsel-list');
+  if(!data||!data.length){el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">면담 기록 없음</div>';return;}
+  el.innerHTML=data.map(c=>`<div style="padding:10px 0;border-bottom:1px solid var(--border2)">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span style="font-size:12px;color:var(--text2)">${c.date||''}</span>
+      <span style="font-size:11px;color:#e74c3c;cursor:pointer" onclick="deleteStudentCounsel('${c.id}','${sid}')">삭제</span>
+    </div>
+    <div style="font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.6">${c.content||''}</div>
+  </div>`).join('');
+}
+async function addStudentCounsel(){
+  const sid=document.getElementById('std-counsel-student-id').value;
+  const content=document.getElementById('std-counsel-input').value.trim();
+  if(!content){showToast('내용을 입력해주세요');return;}
+  await sb.from('student_counsels').insert({student_id:sid,content,date:todayKey()});
+  document.getElementById('std-counsel-input').value='';
+  loadStudentCounsels(sid);renderStudents();showToast('면담 기록 추가됐어요 ✓');
+}
+async function deleteStudentCounsel(id,sid){
+  if(!confirm('삭제할까요?'))return;
+  await sb.from('student_counsels').delete().eq('id',id);
+  loadStudentCounsels(sid);renderStudents();
+}
+
+function openStudentExcelModal(){
+  document.getElementById('std-excel-modal').style.display='flex';
+  document.getElementById('std-excel-input').value='';
+}
+function closeStudentExcelModal(){document.getElementById('std-excel-modal').style.display='none';}
+async function bulkAddStudents(){
+  const text=document.getElementById('std-excel-input').value.trim();
+  if(!text){showToast('내용을 입력해주세요');return;}
+  const rows=[];
+  for(const line of text.split('\n').filter(l=>l.trim())){
+    const parts=line.split('\t');
+    if(parts.length<2)continue;
+    rows.push({
+      user_id:currentUser.id,
+      category:parts[0]?.trim()||'',
+      student_no:parts[1]?.trim()||'',
+      name:parts[2]?.trim()||'',
+      phone:parts[3]?.trim()||''
+    });
+  }
+  if(!rows.length){showToast('파싱된 데이터가 없어요');return;}
+  const {error}=await sb.from('students').insert(rows);
+  if(error){showToast('저장 실패 😢');return;}
+  closeStudentExcelModal();showToast(`${rows.length}명 추가됐어요 ✓`);renderStudents();
+}
+
 async function renderSchedule(){
   const {data}=await sb.from('schedules').select('*').order('date',{ascending:true}).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
   const el=document.getElementById('schedule-list');
@@ -2305,5 +2571,114 @@ sb.auth.getSession().then(({data:{session}})=>{
   else{document.getElementById('auth-wrap').style.display='flex';}
 });
 </script>
+
+  <!-- 수강생 추가 모달 -->
+  <div id="std-add-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:var(--card);border-radius:14px;padding:24px;width:400px;max-width:95vw;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:15px;font-weight:600;color:var(--text)">수강생 추가</span>
+        <button onclick="closeStudentAddModal()" style="font-size:20px;background:none;border:none;cursor:pointer;color:var(--text2)">×</button>
+      </div>
+      <div class="form-group"><label class="form-label">이름 *</label><input class="form-input" id="std-m-name" placeholder="이름"></div>
+      <div class="form-group"><label class="form-label">원서번호</label><input class="form-input" id="std-m-no" placeholder="원서번호"></div>
+      <div class="form-group"><label class="form-label">전화번호</label><input class="form-input" id="std-m-phone" placeholder="010-0000-0000"></div>
+      <div class="form-group"><label class="form-label">어머니 전화</label><input class="form-input" id="std-m-mom" placeholder="010-0000-0000"></div>
+      <div class="form-group"><label class="form-label">아버지 전화</label><input class="form-input" id="std-m-dad" placeholder="010-0000-0000"></div>
+      <div class="form-group"><label class="form-label">구분</label>
+        <select class="form-input" id="std-m-cat">
+          <option>요리정복</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-outline" onclick="closeStudentAddModal()" style="flex:1">취소</button>
+        <button class="btn btn-primary" onclick="saveStudentAdd()" style="flex:1">추가</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 수강생 수정 모달 -->
+  <div id="std-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:var(--card);border-radius:14px;padding:24px;width:400px;max-width:95vw;max-height:90vh;overflow-y:auto">
+      <input type="hidden" id="std-edit-id">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:15px;font-weight:600;color:var(--text)">수강생 수정</span>
+        <button onclick="closeStudentEditModal()" style="font-size:20px;background:none;border:none;cursor:pointer;color:var(--text2)">×</button>
+      </div>
+      <div class="form-group"><label class="form-label">이름</label><input class="form-input" id="std-e-name"></div>
+      <div class="form-group"><label class="form-label">원서번호</label><input class="form-input" id="std-e-no"></div>
+      <div class="form-group"><label class="form-label">전화번호</label><input class="form-input" id="std-e-phone"></div>
+      <div class="form-group"><label class="form-label">어머니 전화</label><input class="form-input" id="std-e-mom"></div>
+      <div class="form-group"><label class="form-label">아버지 전화</label><input class="form-input" id="std-e-dad"></div>
+      <div class="form-group"><label class="form-label">구분</label>
+        <select class="form-input" id="std-e-cat">
+          <option>요리정복</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-outline" onclick="deleteStudent()" style="color:#e74c3c;border-color:#e74c3c">삭제</button>
+        <button class="btn btn-outline" onclick="closeStudentEditModal()" style="flex:1">취소</button>
+        <button class="btn btn-primary" onclick="saveStudentEdit()" style="flex:1">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 과목 추가 모달 -->
+  <div id="std-subj-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:var(--card);border-radius:14px;padding:24px;width:400px;max-width:95vw">
+      <input type="hidden" id="std-subj-student-id">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:15px;font-weight:600;color:var(--text)">과목 추가</span>
+        <button onclick="closeSubjModal()" style="font-size:20px;background:none;border:none;cursor:pointer;color:var(--text2)">×</button>
+      </div>
+      <div class="form-group"><label class="form-label">과목명 *</label><input class="form-input" id="std-subj-name" placeholder="과목명"></div>
+      <div class="form-group"><label class="form-label">요일</label><input class="form-input" id="std-subj-day" placeholder="월~금, 화목 등"></div>
+      <div style="display:flex;gap:8px">
+        <div class="form-group" style="flex:1"><label class="form-label">개강일</label><input class="form-input" type="date" id="std-subj-start"></div>
+        <div class="form-group" style="flex:1"><label class="form-label">종강일</label><input class="form-input" type="date" id="std-subj-end"></div>
+      </div>
+      <div class="form-group"><label class="form-label">수업시간</label><input class="form-input" id="std-subj-time" placeholder="19:00"></div>
+      <div class="form-group"><label class="form-label">진행상태</label>
+        <select class="form-input" id="std-subj-status">
+          <option>미배정</option><option>대기</option><option>배정완료</option><option>개강</option><option>종강</option><option>환불</option><option>COD</option><option>휴학</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-outline" onclick="closeSubjModal()" style="flex:1">취소</button>
+        <button class="btn btn-primary" onclick="saveSubject()" style="flex:1">추가</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 면담 기록 모달 -->
+  <div id="std-counsel-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:var(--card);border-radius:14px;width:480px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)">
+        <span id="std-counsel-title" style="font-size:15px;font-weight:600;color:var(--text)">면담 기록</span>
+        <button onclick="closeStudentCounselModal()" style="font-size:20px;background:none;border:none;cursor:pointer;color:var(--text2)">×</button>
+      </div>
+      <input type="hidden" id="std-counsel-student-id">
+      <div id="std-counsel-list" style="flex:1;overflow-y:auto;padding:4px 20px"></div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px">
+        <textarea id="std-counsel-input" class="form-input" rows="3" placeholder="면담 내용 입력..." style="resize:none;line-height:1.6"></textarea>
+        <button class="btn btn-primary" onclick="addStudentCounsel()" style="align-self:flex-end">추가</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 엑셀 일괄 모달 -->
+  <div id="std-excel-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:var(--card);border-radius:14px;padding:24px;width:480px;max-width:95vw">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:15px;font-weight:600;color:var(--text)">엑셀 일괄 입력</span>
+        <button onclick="closeStudentExcelModal()" style="font-size:20px;background:none;border:none;cursor:pointer;color:var(--text2)">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">형식: 구분 [탭] 원서번호 [탭] 이름 [탭] 전화번호</div>
+      <textarea id="std-excel-input" class="form-input" rows="8" placeholder="엑셀에서 복사 후 붙여넣기..." style="resize:vertical;line-height:1.6"></textarea>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-outline" onclick="closeStudentExcelModal()" style="flex:1">취소</button>
+        <button class="btn btn-primary" onclick="bulkAddStudents()" style="flex:1">일괄 등록</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
