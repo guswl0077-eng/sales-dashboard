@@ -483,12 +483,12 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <!-- 수강생 목록 -->
     <div class="tabs-page" id="tab-students">
       <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="student-cat-chips">
-        <div class="std-chip active" onclick="setStudentCat('전체')">전체</div>
-        <div class="std-chip" onclick="setStudentCat('요리정복')">요리정복</div>
+        <div class="std-chip active" onclick="setStudentCat('원데이')">원데이</div>
         <div class="std-chip" onclick="setStudentCat('조리')">조리</div>
         <div class="std-chip" onclick="setStudentCat('제과제빵')">제과제빵</div>
         <div class="std-chip" onclick="setStudentCat('바리스타')">바리스타</div>
         <div class="std-chip" onclick="setStudentCat('입시')">입시</div>
+        <div class="std-chip" onclick="setStudentCat('전체')">전체</div>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 검색" oninput="renderStudents()" style="flex:1;min-width:160px">
@@ -2038,7 +2038,7 @@ async function clearAllSchedules(){
 }
 
 // ── 수강생 목록 ──────────────────────────────
-let _studentCat='전체';
+let _studentCat='원데이';
 const SB_STATUS_CLASS={
   '개강':'sb-active','배정완료':'sb-assigned','미배정':'sb-wait',
   '대기':'sb-standby','종강':'sb-done','환불':'sb-refund',
@@ -2056,7 +2056,7 @@ async function renderStudents(){
   if(!el)return;
   el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:20px 0;text-align:center">불러오는 중...</div>';
   const q=document.getElementById('student-search')?.value?.trim()||'';
-  let query=sb.from('students').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  let query=sb.from('student_profiles').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
   if(_studentCat!=='전체')query=query.eq('category',_studentCat);
   const {data:students,error}=await query;
   if(error){el.innerHTML='<div style="color:var(--text2)">불러오기 실패</div>';return;}
@@ -2131,13 +2131,13 @@ async function saveStudentAdd(){
     parent_dad:document.getElementById('std-m-dad').value.trim(),
     category:document.getElementById('std-m-cat').value
   };
-  const {error}=await sb.from('students').insert(row);
+  const {error}=await sb.from('student_profiles').insert(row);
   if(error){showToast('저장 실패 😢');return;}
   closeStudentAddModal();showToast('수강생 추가됐어요 ✓');renderStudents();
 }
 
 async function openStudentEditModal(id){
-  const {data}=await sb.from('students').select('*').eq('id',id).single();
+  const {data}=await sb.from('student_profiles').select('*').eq('id',id).single();
   if(!data)return;
   document.getElementById('std-edit-id').value=id;
   document.getElementById('std-e-name').value=data.name||'';
@@ -2160,14 +2160,14 @@ async function saveStudentEdit(){
     parent_dad:document.getElementById('std-e-dad').value.trim(),
     category:document.getElementById('std-e-cat').value
   };
-  await sb.from('students').update(row).eq('id',id);
+  await sb.from('student_profiles').update(row).eq('id',id);
   closeStudentEditModal();showToast('수정됐어요 ✓');renderStudents();
 }
 
 async function deleteStudent(){
   const id=document.getElementById('std-edit-id').value;
   if(!confirm('이 수강생을 삭제할까요?'))return;
-  await sb.from('students').delete().eq('id',id);
+  await sb.from('student_profiles').delete().eq('id',id);
   closeStudentEditModal();showToast('삭제됐어요');renderStudents();
 }
 
@@ -2252,7 +2252,7 @@ async function bulkAddStudents(){
     });
   }
   if(!rows.length){showToast('파싱된 데이터가 없어요');return;}
-  const {error}=await sb.from('students').insert(rows);
+  const {error}=await sb.from('student_profiles').insert(rows);
   if(error){showToast('저장 실패 😢');return;}
   closeStudentExcelModal();showToast(`${rows.length}명 추가됐어요 ✓`);renderStudents();
 }
@@ -2586,7 +2586,7 @@ sb.auth.getSession().then(({data:{session}})=>{
       <div class="form-group"><label class="form-label">아버지 전화</label><input class="form-input" id="std-m-dad" placeholder="010-0000-0000"></div>
       <div class="form-group"><label class="form-label">구분</label>
         <select class="form-input" id="std-m-cat">
-          <option>요리정복</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
+          <option>원데이</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px">
@@ -2611,7 +2611,7 @@ sb.auth.getSession().then(({data:{session}})=>{
       <div class="form-group"><label class="form-label">아버지 전화</label><input class="form-input" id="std-e-dad"></div>
       <div class="form-group"><label class="form-label">구분</label>
         <select class="form-input" id="std-e-cat">
-          <option>요리정복</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
+          <option>원데이</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px">
