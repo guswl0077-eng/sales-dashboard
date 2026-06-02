@@ -313,6 +313,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   th,td{padding:6px 8px}
 }
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -493,7 +494,8 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 검색" oninput="renderStudents()" style="flex:1;min-width:160px">
         <button class="btn btn-primary" onclick="openStudentAddModal()">＋ 수강생 추가</button>
-        <button class="btn btn-outline" onclick="openStudentExcelModal()">↑ 엑셀 일괄</button>
+        <button class="btn btn-outline" onclick="downloadStudentTemplate()">↓ 양식 다운로드</button>
+        <label class="btn btn-outline" style="cursor:pointer">↑ 파일 업로드<input type="file" id="student-excel-file" accept=".xlsx,.xls" style="display:none" onchange="uploadStudentExcel(this)"></label>
       </div>
       <div id="student-list"></div>
     </div>
@@ -2231,30 +2233,61 @@ async function deleteStudentCounsel(id,sid){
   loadStudentCounsels(sid);renderStudents();
 }
 
-function openStudentExcelModal(){
-  document.getElementById('std-excel-modal').style.display='flex';
-  document.getElementById('std-excel-input').value='';
+function downloadStudentTemplate(){
+  const b64='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';
+  const bin=atob(b64);
+  const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+  const blob=new Blob([arr],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='수강생목록_양식.xlsx';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
-function closeStudentExcelModal(){document.getElementById('std-excel-modal').style.display='none';}
-async function bulkAddStudents(){
-  const text=document.getElementById('std-excel-input').value.trim();
-  if(!text){showToast('내용을 입력해주세요');return;}
-  const rows=[];
-  for(const line of text.split('\n').filter(l=>l.trim())){
-    const parts=line.split('\t');
-    if(parts.length<2)continue;
-    rows.push({
-      user_id:currentUser.id,
-      category:parts[0]?.trim()||'',
-      student_no:parts[1]?.trim()||'',
-      name:parts[2]?.trim()||'',
-      phone:parts[3]?.trim()||''
+
+async function uploadStudentExcel(input){
+  const file=input.files[0];
+  if(!file){return;}
+  if(typeof XLSX==='undefined'){showToast('엑셀 라이브러리 로딩 중...');return;}
+  const data=await file.arrayBuffer();
+  const wb=XLSX.read(data,{type:'array',cellDates:true});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows_raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:false});
+  // 첫 행은 헤더, 두 번째 행부터 데이터
+  const dataRows=rows_raw.slice(1).filter(r=>r[2]&&String(r[2]).trim());
+  if(!dataRows.length){showToast('데이터가 없어요');input.value='';return;}
+  const toInsert=[];
+  const subjToInsert=[];
+  for(const r of dataRows){
+    const name=String(r[2]||'').trim();
+    if(!name)continue;
+    const sid=crypto.randomUUID();
+    toInsert.push({
+      id:sid,user_id:currentUser.id,
+      category:String(r[0]||'').trim(),
+      student_no:String(r[1]||'').trim(),
+      name,
+      phone:String(r[8]||'').trim()
     });
+    const subject=String(r[3]||'').trim();
+    if(subject){
+      subjToInsert.push({
+        student_id:sid,
+        subject,
+        day:String(r[4]||'').trim(),
+        start_date:r[5]?String(r[5]).slice(0,10):null,
+        end_date:r[6]?String(r[6]).slice(0,10):null,
+        class_time:String(r[7]||'').trim(),
+        status:String(r[9]||'미배정').trim()
+      });
+    }
   }
-  if(!rows.length){showToast('파싱된 데이터가 없어요');return;}
-  const {error}=await sb.from('student_profiles').insert(rows);
-  if(error){showToast('저장 실패 😢');return;}
-  closeStudentExcelModal();showToast(`${rows.length}명 추가됐어요 ✓`);renderStudents();
+  const {error}=await sb.from('student_profiles').insert(toInsert);
+  if(error){showToast('저장 실패 😢 '+error.message);input.value='';return;}
+  if(subjToInsert.length)await sb.from('student_subjects').insert(subjToInsert);
+  input.value='';
+  showToast(`${toInsert.length}명 추가됐어요 ✓`);renderStudents();
 }
 
 async function renderSchedule(){
@@ -2665,20 +2698,6 @@ sb.auth.getSession().then(({data:{session}})=>{
     </div>
   </div>
 
-  <!-- 엑셀 일괄 모달 -->
-  <div id="std-excel-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
-    <div style="background:var(--card);border-radius:14px;padding:24px;width:480px;max-width:95vw">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:15px;font-weight:600;color:var(--text)">엑셀 일괄 입력</span>
-        <button onclick="closeStudentExcelModal()" style="font-size:20px;background:none;border:none;cursor:pointer;color:var(--text2)">×</button>
-      </div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">형식: 구분 [탭] 원서번호 [탭] 이름 [탭] 전화번호</div>
-      <textarea id="std-excel-input" class="form-input" rows="8" placeholder="엑셀에서 복사 후 붙여넣기..." style="resize:vertical;line-height:1.6"></textarea>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn btn-outline" onclick="closeStudentExcelModal()" style="flex:1">취소</button>
-        <button class="btn btn-primary" onclick="bulkAddStudents()" style="flex:1">일괄 등록</button>
-      </div>
-    </div>
-  </div>
+
 </body>
 </html>
