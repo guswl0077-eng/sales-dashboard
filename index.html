@@ -656,7 +656,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <div class="form-group"><label class="form-label">이름</label><input class="form-input" id="m-name" placeholder="홍길동"></div>
     <div class="form-group"><label class="form-label">과정</label><input class="form-input" id="m-course" placeholder="F&B, 로스팅 LV.1 등"></div>
     <div class="form-group"><label class="form-label">금액 (원)</label><input class="form-input" type="number" id="m-amount" placeholder="4800000"></div>
-    <div class="form-group"><label class="form-label">상태</label><select class="form-input" id="m-status"><option>연락예정</option><option>연락완료</option><option>등록완료</option><option>보류</option><option>결제</option><option>결제 후 환불</option><option>취소</option></select></div>
+    <div class="form-group"><label class="form-label">상태</label><select class="form-input" id="m-status"><option>연락예정</option><option>연락완료</option><option>면담예정</option><option>면담완료</option><option>결제</option><option>결제 후 환불</option><option>취소</option></select></div>
     <div class="form-group"><label class="form-label">메모</label><input class="form-input" id="m-memo" placeholder="메모"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeStudentModal()">취소</button>
@@ -1739,7 +1739,7 @@ async function renderList(){
     <td><span onclick="editCell(this,'${s.id}','course')" style="cursor:pointer;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:125px">${s.course||'-'}</span></td>
     <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','amount')" style="cursor:pointer;display:inline-block">${s.amount?Number(s.amount).toLocaleString()+'원':'-'}</span></td>
     <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="border:1px solid ${s.status==='결제'?'#a3d9a5':['결제 후 환불'].includes(s.status)?'#f5c5a0':s.status==='취소'?'#f5c5c5':'#e8e6e0'};border-radius:20px;font-size:11px;font-weight:600;padding:2px 6px;outline:none;min-width:100px;background:${s.status==='결제'?'#e8f5e9':s.status==='결제 후 환불'?'#fff3e0':s.status==='취소'?'#fee2e2':'#fff'};color:${s.status==='결제'?'#1a7a3a':s.status==='결제 후 환불'?'#b45309':s.status==='취소'?'#991b1b':'#333'};cursor:pointer">
-      ${['연락예정','연락완료','등록완료','보류','결제','결제 후 환불','취소'].map(v=>`<option ${v===s.status?'selected':''}>${v}</option>`).join('')}
+      ${['연락예정','연락완료','면담예정','면담완료','결제','결제 후 환불','취소'].map(v=>`<option ${v===s.status?'selected':''}>${v}</option>`).join('')}
     </select></td>
     <td style="width:100px;max-width:100px"><span onclick="editCell(this,'${s.id}','memo')" style="cursor:pointer;display:inline-block;font-size:12px;color:#888;white-space:pre-wrap;word-break:break-word;line-height:1.6;width:100%">${s.memo||'-'}</span></td>
     <td><span onclick="deleteStudent('${s.id}')" style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px">×</span></td></tr>`).join('')
