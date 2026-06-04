@@ -312,6 +312,12 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   table{font-size:12px}
   th,td{padding:6px 8px}
 }
+
+.sched-divider{border-top:0.5px dashed var(--sched-border);margin:4px 0;}
+.sched-stu{font-size:10px;line-height:1.7;text-align:left;display:flex;align-items:center;gap:2px;overflow:hidden;}
+.sched-stu-g{color:#185FA5;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sched-stu-r{color:#993C1D;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+@media(max-width:480px){.sched-courses,.sched-divider{display:none;}}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -372,10 +378,10 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 
     <!-- 오늘 활동 -->
     <div class="tabs-page active" id="tab-main">
+      <div id="today-schedule-box"></div>
       <div class="split">
         <div>
           <div id="notice-box"></div>
-          <div id="today-schedule-box"></div>
           <div class="sec-title">근무 유형</div>
           <div class="card" style="padding:12px 14px">
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px" id="today-work-type-btns"></div>
@@ -950,7 +956,6 @@ async function deleteNotice(){
 
 async function loadTodaySchedule(){
   const box=document.getElementById('today-schedule-box');
-  // 오늘부터 7일치 날짜 생성
   const today=new Date();
   const dates=Array.from({length:7},(_,i)=>{
     const d=new Date(today);d.setDate(today.getDate()+i);
@@ -958,33 +963,61 @@ async function loadTodaySchedule(){
   });
   const startStr=dates[0];
   const endStr=dates[6];
-  const {data}=await sb.from('schedules').select('*').gte('date',startStr).lte('date',endStr).order('date').order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
-  if(!data||!data.length){box.innerHTML='';return;}
-  // 날짜별로 그룹
+  const {data:schedData}=await sb.from('schedules').select('*').gte('date',startStr).lte('date',endStr).order('date').order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
+  const {data:profiles}=await sb.from('student_profiles').select('id,name').eq('user_id',currentUser.id);
+  const studentIds=(profiles||[]).map(p=>p.id);
+  const nameMap={};(profiles||[]).forEach(p=>nameMap[p.id]=p.name);
+  let gaegangData=[],jonggangData=[];
+  if(studentIds.length){
+    const [gr,jr]=await Promise.all([
+      sb.from('student_subjects').select('subject,start_date,student_id').in('student_id',studentIds).gte('start_date',startStr).lte('start_date',endStr),
+      sb.from('student_subjects').select('subject,end_date,student_id').in('student_id',studentIds).gte('end_date',startStr).lte('end_date',endStr)
+    ]);
+    gaegangData=gr.data||[];jonggangData=jr.data||[];
+  }
   const byDate={};
-  dates.forEach(d=>byDate[d]=[]);
-  (data||[]).forEach(s=>{if(byDate[s.date])byDate[s.date].push(s.title);});
+  dates.forEach(d=>byDate[d]={courses:[],gaegang:[],jonggang:[]});
+  (schedData||[]).forEach(s=>{if(byDate[s.date])byDate[s.date].courses.push(s.title);});
+  gaegangData.forEach(s=>{if(byDate[s.start_date])byDate[s.start_date].gaegang.push({name:nameMap[s.student_id]||'?',subject:s.subject||''});});
+  jonggangData.forEach(s=>{if(byDate[s.end_date])byDate[s.end_date].jonggang.push({name:nameMap[s.student_id]||'?',subject:s.subject||''});});
   const DAYS_KR=['일','월','화','수','목','금','토'];
   const cols=dates.map(d=>{
     const dt=new Date(d+'T00:00:00');
     const isToday=d===todayKey();
-    const dayLabel=isToday?`<div class="sched-day" style="font-weight:700;color:var(--sched-title)">오늘</div>`
+    const data=byDate[d];
+    const dayLabel=isToday
+      ?`<div class="sched-day" style="font-weight:700;color:var(--sched-title)">오늘</div>`
       :`<div class="sched-day" style="color:var(--sched-muted)">${DAYS_KR[dt.getDay()]}</div>`;
-    const items=byDate[d];
-    const itemHtml=items.length
-      ?items.map(t=>`<div class="sched-item" style="color:var(--sched-text);font-weight:${isToday?'600':'400'}">${t}</div>`).join('')
-      :`<div class="sched-item" style="color:var(--sched-muted)">-</div>`;
+    const coursesHtml=`<div class="sched-courses">${
+      data.courses.length
+        ?data.courses.map(t=>`<div class="sched-item" style="color:var(--sched-text);font-weight:${isToday?'600':'400'}">${t}</div>`).join('')
+        :`<div class="sched-item" style="color:var(--sched-muted)">-</div>`
+    }</div>`;
+    const hasStu=data.gaegang.length||data.jonggang.length;
+    const dividerHtml=hasStu?`<div class="sched-divider"></div>`:'';
+    const stuHtml=[
+      ...data.gaegang.map(s=>`<div class="sched-stu"><span style="color:#378ADD;font-size:7px;flex-shrink:0">&#9679;</span><span class="sched-stu-g">${s.name}(개강) - ${s.subject}</span></div>`),
+      ...data.jonggang.map(s=>`<div class="sched-stu"><span style="color:#D85A30;font-size:7px;flex-shrink:0">&#9679;</span><span class="sched-stu-r">${s.name}(종강) - ${s.subject}</span></div>`)
+    ].join('');
     return `<div style="text-align:center;${isToday?'background:var(--sched-today);border-radius:6px;padding:3px 2px':'padding:3px 2px'}">
       ${dayLabel}
-      ${itemHtml}
+      ${coursesHtml}
+      ${dividerHtml}
+      ${stuHtml}
     </div>`;
   }).join('');
+  if(!box)return;
   box.innerHTML=`<div class="today-schedule">
-    <div class="today-schedule-title">📅 이번 주 개강 일정</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="today-schedule-title">&#128197; 이번 주 개강 일정</div>
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--sched-muted)">
+        <span style="display:flex;align-items:center;gap:2px"><span style="color:#D85A30;font-size:8px">&#9679;</span>종강</span>
+        <span style="display:flex;align-items:center;gap:2px"><span style="color:#378ADD;font-size:8px">&#9679;</span>개강</span>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cols}</div>
   </div>`;
 }
-
 async function loadTodos(){
   const {data}=await sb.from('todos').select('*').eq('user_id',currentUser.id).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at');
   const today=todayKey();
