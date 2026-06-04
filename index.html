@@ -1250,8 +1250,10 @@ async function saveMyGoal(){
 }
 
 function switchTab(name){
-  const tabs=['main','calendar','students','list','report','schedule','period'];
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===name));
+  document.querySelectorAll('.tab').forEach(t=>{
+    const m=t.getAttribute('onclick')?.match(/switchTab\('([^']+)'\)/);
+    t.classList.toggle('active', m&&m[1]===name);
+  });
   document.querySelectorAll('.tabs-page').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if(name==='main')renderSales();
