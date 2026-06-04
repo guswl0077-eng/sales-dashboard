@@ -353,7 +353,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v41</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v42</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -510,6 +510,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         <input type="checkbox" id="student-check-all" onchange="toggleAllStudents(this)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
         <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 검색" style="flex:1" onkeydown="if(event.key==='Enter')renderStudents()">
         <button class="btn btn-primary" onclick="renderStudents()" style="flex-shrink:0">검색</button>
+        <button class="btn btn-outline" onclick="mergeDuplicateStudents()" style="flex-shrink:0;color:#1a56db;border-color:#1a56db">중복 정리</button>
         <button class="btn btn-outline" onclick="deleteSelectedStudents()" style="flex-shrink:0;color:#e74c3c;border-color:#e74c3c">선택 삭제</button>
       </div>
       <div id="student-list"></div>
@@ -2142,9 +2143,35 @@ async function deleteSelectedStudents(){
   const checked=[...document.querySelectorAll('.student-check:checked')].map(c=>c.value);
   if(!checked.length){showToast('삭제할 수강생을 선택해주세요');return;}
   if(!confirm(`선택한 ${checked.length}명을 삭제할까요?`))return;
-  await sb.from('student_profiles').delete().in('id',checked);
+  await sb.from('student_subjects').delete().in('student_id',checked);
+  await sb.from('student_counsels').delete().in('student_id',checked);
+  const {error}=await sb.from('student_profiles').delete().in('id',checked);
+  if(error){showToast('삭제 실패: '+error.message);return;}
   document.getElementById('student-check-all').checked=false;
   showToast(`${checked.length}명 삭제됐어요`);renderStudents();
+}
+
+async function mergeDuplicateStudents(){
+  if(!confirm('같은 이름+원서번호 중복 카드를 1개로 합칠까요?'))return;
+  const {data:students}=await sb.from('student_profiles').select('*').eq('user_id',currentUser.id);
+  if(!students||!students.length){showToast('수강생이 없어요');return;}
+  const groups={};
+  students.forEach(s=>{const key=(s.student_no||'')+'|'+(s.name||'');if(!groups[key])groups[key]=[];groups[key].push(s);});
+  let merged=0;
+  for(const key in groups){
+    const dups=groups[key];
+    if(dups.length<=1)continue;
+    const keep=dups[0];
+    const removeIds=dups.slice(1).map(d=>d.id);
+    for(const rmId of removeIds){
+      await sb.from('student_subjects').update({student_id:keep.id}).eq('student_id',rmId);
+      await sb.from('student_counsels').update({student_id:keep.id}).eq('student_id',rmId);
+    }
+    await sb.from('student_profiles').delete().in('id',removeIds);
+    merged+=removeIds.length;
+  }
+  showToast(merged>0?`중복 ${merged}개 정리됐어요 ✓`:'중복 없음 ✓');
+  renderStudents();
 }
 
 function setStudentCat(cat){
@@ -2394,9 +2421,6 @@ async function uploadStudentExcel(input){
     const {data:dbStudents=[]}=await sb.from('student_profiles').select('id,name,student_no').eq('user_id',currentUser.id);
     const dbKeys=new Set(dbStudents.map(s=>(s.student_no||s.name)));
 
-    // 파싱 결과 확인 (INSERT 전에 보여줌)
-    const _info=[...parsed.values()].map(s=>s.name+'('+s.subjects.length+')').join('\n');
-    if(!confirm('[v41 확인] 고유 학생 '+parsed.size+'명:\n'+_info+'\n\n계속?'))return;
     // 4) 새 학생만 INSERT
     let added=0,skipped=0;
     for(const [key,stu] of parsed){
