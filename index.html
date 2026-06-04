@@ -2315,11 +2315,23 @@ async function uploadStudentExcel(input){
       });
     }
   }
-  const {error}=await sb.from('student_profiles').insert(toInsert);
-  if(error){showToast('저장 실패 😢 '+error.message);input.value='';return;}
-  if(subjToInsert.length)await sb.from('student_subjects').insert(subjToInsert);
+  // 수강생 한 명씩 저장 → 실제 id로 과목 저장
+  let successCount=0;
+  for(let i=0;i<toInsert.length;i++){
+    const {data:inserted,error}=await sb.from('student_profiles').insert(toInsert[i]).select('id').single();
+    if(error){showToast('저장 실패: '+toInsert[i].name+' - '+error.message);continue;}
+    successCount++;
+    // 해당 수강생 과목 찾아서 실제 id로 저장
+    const realId=inserted.id;
+    const mySubjs=subjToInsert.filter(s=>s.student_id===toInsert[i].id);
+    if(mySubjs.length){
+      const subjsWithRealId=mySubjs.map(s=>({...s,student_id:realId}));
+      const {error:se}=await sb.from('student_subjects').insert(subjsWithRealId);
+      if(se)console.error('과목 저장 실패:',se.message);
+    }
+  }
   input.value='';
-  showToast(`${toInsert.length}명 추가됐어요 ✓`);renderStudents();
+  showToast(`${successCount}명 추가됐어요 ✓`);renderStudents();
 }
 
 async function renderSchedule(){
