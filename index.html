@@ -2062,6 +2062,45 @@ const SB_STATUS_CLASS={
   'COD':'sb-cod','휴학':'sb-leave','수강포기':'sb-done','포기':'sb-done'
 };
 
+function addExtraPhone(containerId){
+  const wrap=document.getElementById(containerId);
+  if(!wrap)return;
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;gap:6px;margin-bottom:6px;align-items:center';
+  row.innerHTML=`<input class="form-input" placeholder="누구(어머니 등)" style="width:80px;flex-shrink:0">
+    <input class="form-input" placeholder="010-0000-0000" style="flex:1">
+    <span onclick="this.parentElement.remove()" style="cursor:pointer;color:#ccc;font-size:18px;flex-shrink:0">×</span>`;
+  wrap.appendChild(row);
+}
+
+function getExtraPhones(containerId){
+  const wrap=document.getElementById(containerId);
+  if(!wrap)return'';
+  const rows=[...wrap.querySelectorAll('div')];
+  return rows.map(r=>{
+    const inputs=r.querySelectorAll('input');
+    const who=(inputs[0]?.value||'').trim();
+    const phone=(inputs[1]?.value||'').trim();
+    return who&&phone?`${who}:${phone}`:'';
+  }).filter(Boolean).join('|');
+}
+
+function setExtraPhones(containerId, val){
+  const wrap=document.getElementById(containerId);
+  if(!wrap)return;
+  wrap.innerHTML='';
+  if(!val)return;
+  val.split('|').forEach(item=>{
+    const [who,phone]=(item||'').split(':');
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:6px;margin-bottom:6px;align-items:center';
+    row.innerHTML=`<input class="form-input" placeholder="누구(어머니 등)" style="width:80px;flex-shrink:0" value="${who||''}">
+      <input class="form-input" placeholder="010-0000-0000" style="flex:1" value="${phone||''}">
+      <span onclick="this.parentElement.remove()" style="cursor:pointer;color:#ccc;font-size:18px;flex-shrink:0">×</span>`;
+    wrap.appendChild(row);
+  });
+}
+
 function toggleAllStudents(cb){
   document.querySelectorAll('.student-check').forEach(c=>c.checked=cb.checked);
 }
@@ -2125,7 +2164,7 @@ async function renderStudents(){
           <span class="std-name">${s.name||''}</span>
           <span class="std-id">${s.student_no||''} · ${s.phone||''}</span>
           <div><span class="std-cat">${s.category||''}</span></div>
-          ${s.parent_mom?`<div class="std-parent">☎ 모 ${s.parent_mom}${s.parent_dad?' &nbsp;☎ 부 '+s.parent_dad:''}</div>`:s.parent_dad?`<div class="std-parent">☎ 부 ${s.parent_dad}</div>`:''}
+          ${s.parent_mom?(s.parent_mom.split('|').map(item=>{const[w,p]=(item||'').split(':');return w&&p?`<span class="std-parent">☎ ${w} ${p}</span>`:''}).join(' &nbsp;')):'' }
           </div>
         </div>
         <button onclick="openStudentEditModal('${s.id}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">수정</button>
@@ -2147,7 +2186,9 @@ async function renderStudents(){
 
 function openStudentAddModal(){
   document.getElementById('std-add-modal').style.display='flex';
-  ['std-m-name','std-m-no','std-m-phone','std-m-mom','std-m-dad'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['std-m-name','std-m-no','std-m-phone'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const ep=document.getElementById('std-m-extra-phones');
+  if(ep)ep.innerHTML='<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input class="form-input" placeholder="누구(어머니 등)" style="width:80px;flex-shrink:0"><input class="form-input" placeholder="010-0000-0000" style="flex:1"><span onclick="this.parentElement.remove()" style="cursor:pointer;color:#ccc;font-size:18px;flex-shrink:0">×</span></div>';
   document.getElementById('std-m-cat').value='요리정복';
 }
 function closeStudentAddModal(){document.getElementById('std-add-modal').style.display='none';}
@@ -2160,8 +2201,7 @@ async function saveStudentAdd(){
     name,
     student_no:document.getElementById('std-m-no').value.trim(),
     phone:document.getElementById('std-m-phone').value.trim(),
-    parent_mom:document.getElementById('std-m-mom').value.trim(),
-    parent_dad:document.getElementById('std-m-dad').value.trim(),
+    parent_mom:getExtraPhones('std-m-extra-phones'),
     category:document.getElementById('std-m-cat').value
   };
   const {error}=await sb.from('student_profiles').insert(row);
@@ -2176,8 +2216,7 @@ async function openStudentEditModal(id){
   document.getElementById('std-e-name').value=data.name||'';
   document.getElementById('std-e-no').value=data.student_no||'';
   document.getElementById('std-e-phone').value=data.phone||'';
-  document.getElementById('std-e-mom').value=data.parent_mom||'';
-  document.getElementById('std-e-dad').value=data.parent_dad||'';
+  setExtraPhones('std-e-extra-phones', data.parent_mom||'');
   document.getElementById('std-e-cat').value=data.category||'요리정복';
   document.getElementById('std-edit-modal').style.display='flex';
 }
@@ -2189,8 +2228,7 @@ async function saveStudentEdit(){
     name:document.getElementById('std-e-name').value.trim(),
     student_no:document.getElementById('std-e-no').value.trim(),
     phone:document.getElementById('std-e-phone').value.trim(),
-    parent_mom:document.getElementById('std-e-mom').value.trim(),
-    parent_dad:document.getElementById('std-e-dad').value.trim(),
+    parent_mom:getExtraPhones('std-e-extra-phones'),
     category:document.getElementById('std-e-cat').value
   };
   await sb.from('student_profiles').update(row).eq('id',id);
@@ -2659,8 +2697,17 @@ sb.auth.getSession().then(({data:{session}})=>{
       <div class="form-group"><label class="form-label">이름 *</label><input class="form-input" id="std-m-name" placeholder="이름"></div>
       <div class="form-group"><label class="form-label">원서번호</label><input class="form-input" id="std-m-no" placeholder="원서번호"></div>
       <div class="form-group"><label class="form-label">전화번호</label><input class="form-input" id="std-m-phone" placeholder="010-0000-0000"></div>
-      <div class="form-group"><label class="form-label">어머니 전화</label><input class="form-input" id="std-m-mom" placeholder="010-0000-0000"></div>
-      <div class="form-group"><label class="form-label">아버지 전화</label><input class="form-input" id="std-m-dad" placeholder="010-0000-0000"></div>
+      <div class="form-group">
+        <label class="form-label">기타 전화번호</label>
+        <div id="std-m-extra-phones">
+          <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
+            <input class="form-input" placeholder="누구(어머니 등)" style="width:80px;flex-shrink:0">
+            <input class="form-input" placeholder="010-0000-0000" style="flex:1">
+            <span onclick="this.parentElement.remove()" style="cursor:pointer;color:#ccc;font-size:18px;flex-shrink:0">×</span>
+          </div>
+        </div>
+        <div onclick="addExtraPhone('std-m-extra-phones')" style="font-size:12px;color:#999;cursor:pointer;margin-top:4px">＋ 전화번호 추가</div>
+      </div>
       <div class="form-group"><label class="form-label">구분</label>
         <select class="form-input" id="std-m-cat">
           <option>원데이</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
@@ -2684,8 +2731,11 @@ sb.auth.getSession().then(({data:{session}})=>{
       <div class="form-group"><label class="form-label">이름</label><input class="form-input" id="std-e-name"></div>
       <div class="form-group"><label class="form-label">원서번호</label><input class="form-input" id="std-e-no"></div>
       <div class="form-group"><label class="form-label">전화번호</label><input class="form-input" id="std-e-phone"></div>
-      <div class="form-group"><label class="form-label">어머니 전화</label><input class="form-input" id="std-e-mom"></div>
-      <div class="form-group"><label class="form-label">아버지 전화</label><input class="form-input" id="std-e-dad"></div>
+      <div class="form-group">
+        <label class="form-label">기타 전화번호</label>
+        <div id="std-e-extra-phones"></div>
+        <div onclick="addExtraPhone('std-e-extra-phones')" style="font-size:12px;color:#999;cursor:pointer;margin-top:4px">＋ 전화번호 추가</div>
+      </div>
       <div class="form-group"><label class="form-label">구분</label>
         <select class="form-input" id="std-e-cat">
           <option>원데이</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
