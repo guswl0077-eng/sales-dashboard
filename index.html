@@ -486,12 +486,12 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <!-- 1줄: 카테고리 칩 + 버튼들 -->
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
         <div id="student-cat-chips" style="display:flex;gap:6px;flex-wrap:wrap">
-          <div class="std-chip active" onclick="setStudentCat('원데이')">원데이</div>
+          <div class="std-chip" onclick="setStudentCat('원데이')">원데이</div>
           <div class="std-chip" onclick="setStudentCat('조리')">조리</div>
           <div class="std-chip" onclick="setStudentCat('제과제빵')">제과제빵</div>
           <div class="std-chip" onclick="setStudentCat('바리스타')">바리스타</div>
           <div class="std-chip" onclick="setStudentCat('입시')">입시</div>
-          <div class="std-chip" onclick="setStudentCat('전체')">전체</div>
+          <div class="std-chip active" onclick="setStudentCat('전체')">전체</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
           <button class="btn btn-primary" onclick="openStudentAddModal()">＋ 수강생 추가</button>
@@ -2055,7 +2055,7 @@ async function clearAllSchedules(){
 }
 
 // ── 수강생 목록 ──────────────────────────────
-let _studentCat='원데이';
+let _studentCat='전체';
 const SB_STATUS_CLASS={
   '개강':'sb-active','배정완료':'sb-assigned','미배정':'sb-wait',
   '대기':'sb-standby','종강':'sb-done','환불':'sb-refund',
@@ -2155,7 +2155,7 @@ async function renderStudents(){
       <span class="std-counsel-date">${(c.date||'').slice(5).replace('-','.')}</span>
       <span class="std-counsel-text">${c.content||''}</span>
     </div>`).join('');
-    const moreBtn=couns.length>3?`<span style="font-size:12px;color:#6b9fd4;cursor:pointer" onclick="openStudentCounselModal('${s.id}','${(s.name||'').replace(/'/g,"\'")}','${s.student_no||''}')">전체 보기 (${couns.length}) →</span>`:'';
+    const moreBtn=`<span style="font-size:12px;color:#6b9fd4;cursor:pointer" onclick="openStudentCounselModal('${s.id}','${(s.name||'').replace(/'/g,"\'")}','${s.student_no||''}')">+ 면담 추가${couns.length>0?' · 전체 보기 ('+couns.length+')':''} →</span>`;
     return `<div class="std-card" data-id="${s.id}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
         <div style="display:flex;align-items:flex-start;gap:10px">
