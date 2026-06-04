@@ -2355,75 +2355,60 @@ function downloadStudentTemplate(){
 
 let _excelUploading=false;
 async function uploadStudentExcel(input){
-  if(_excelUploading){showToast('업로드 처리 중이에요');return;}
+  if(_excelUploading){showToast('이미 처리 중이에요');return;}
   _excelUploading=true;
   try{
     const file=input.files[0];
-    if(!file){return;}
+    if(!file)return;
     if(typeof XLSX==='undefined'){showToast('엑셀 라이브러리 로딩 중...');return;}
-    const data=await file.arrayBuffer();
-    const wb=XLSX.read(data,{type:'array'});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows_raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:false});
-    const dataRows=rows_raw.slice(1).filter(r=>r[2]&&String(r[2]).trim());
+
+    // 1) 엑셀 파싱
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false});
+    const dataRows=rows.slice(1).filter(r=>r[2]&&String(r[2]).trim());
     if(!dataRows.length){showToast('데이터가 없어요');return;}
-    const studentMap=new Map();
+
+    // 2) 같은 원서번호(없으면 이름+전화) 기준으로 행 묶기
+    const parsed=new Map();
     for(const r of dataRows){
-      const name=String(r[2]||''). trim();
-      if(!name)continue;
+      const name=String(r[2]||''). trim();if(!name)continue;
       const rawNo=r[1];
       const no=(rawNo!=null&&!(rawNo instanceof Date))?String(rawNo).replace(/\s/g,''):'';
-      const phone=String(r[8]||''). replace(/[^0-9]/g,'');
-      const key=no||phone||name;
-      if(!studentMap.has(key)){
-        studentMap.set(key,{
-          name,student_no:no,
-          category:String(r[0]||'').trim(),
-          phone:String(r[8]||'').trim(),
-          subjects:[]
-        });
-      }
-      const stu=studentMap.get(key);
-      const subject=String(r[3]||'').trim();
-      if(subject){
-        const rawStart=r[5];const rawEnd=r[6];
-        const toDateStr=v=>{
+      const ph=String(r[8]||'').replace(/[^0-9]/g,'');
+      const key=no||(name+'|'+ph)||name;
+      if(!parsed.has(key))parsed.set(key,{name,student_no:no,category:String(r[0]||'').trim(),phone:String(r[8]||'').trim(),subjects:[]});
+      const stu=parsed.get(key);
+      const subj=String(r[3]||'').trim();
+      if(subj){
+        const toD=v=>{
           if(!v)return null;
-          if(v instanceof Date){const d=v;return d.getFullYear()+'-'+(String(d.getMonth()+1).padStart(2,'0'))+'-'+(String(d.getDate()).padStart(2,'0'));}
+          if(v instanceof Date)return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
           const s=String(v).trim();return s.length>=10?s.slice(0,10):null;
         };
-        stu.subjects.push({
-          subject,
-          day:r[4]?String(r[4]).trim():'',
-          start_date:toDateStr(rawStart),
-          end_date:toDateStr(rawEnd),
-          class_time:r[7]?String(r[7]).trim():'',
-          status:r[9]?String(r[9]).trim():'미배정'
-        });
+        stu.subjects.push({subject:subj,day:r[4]?String(r[4]).trim():'',start_date:toD(r[5]),end_date:toD(r[6]),class_time:r[7]?String(r[7]).trim():'',status:r[9]?String(r[9]).trim():'미배정'});
       }
     }
-    let successCount=0,skipCount=0;
-    for(const [,stu] of studentMap){
-      // DB 중복 체크 (같은 이름+원서번호 이미 존재하면 skip)
-      const {data:existing}=await sb.from('student_profiles')
-        .select('id').eq('user_id',currentUser.id)
-        .eq('name',stu.name).eq('student_no',stu.student_no).limit(1);
-      if(existing&&existing.length>0){skipCount++;continue;}
-      const {data:inserted,error}=await sb.from('student_profiles').insert({
-        id:crypto.randomUUID(),user_id:currentUser.id,
-        name:stu.name,student_no:stu.student_no,
-        phone:stu.phone,category:stu.category
-      }).select('id').single();
-      if(error){showToast('저장 실패: '+stu.name+' - '+error.message);continue;}
-      successCount++;
-      const realId=inserted.id;
+
+    // 3) DB에 이미 있는 학생 전체 로드 (중복 방지)
+    const {data:dbStudents=[]}=await sb.from('student_profiles').select('id,name,student_no').eq('user_id',currentUser.id);
+    const dbKeys=new Set(dbStudents.map(s=>(s.student_no||s.name)));
+
+    // 4) 새 학생만 INSERT
+    let added=0,skipped=0;
+    for(const [key,stu] of parsed){
+      const dbKey=stu.student_no||(stu.name+'|'+stu.phone.replace(/[^0-9]/g,''))||stu.name;
+      if(dbKeys.has(stu.student_no&&stu.student_no)||dbStudents.some(s=>s.name===stu.name&&s.student_no===stu.student_no)){
+        skipped++;continue;
+      }
+      const {data:ins,error}=await sb.from('student_profiles').insert({id:crypto.randomUUID(),user_id:currentUser.id,name:stu.name,student_no:stu.student_no,phone:stu.phone,category:stu.category}).select('id').single();
+      if(error){showToast('저장 실패: '+stu.name);continue;}
+      added++;
       if(stu.subjects.length){
-        const {error:se}=await sb.from('student_subjects').insert(stu.subjects.map(s=>({...s,student_id:realId})));
-        if(se)console.error('과목 저장 실패:',se.message);
+        await sb.from('student_subjects').insert(stu.subjects.map(s=>({...s,student_id:ins.id})));
       }
     }
-    const msg=skipCount>0?`${successCount}명 추가, ${skipCount}명 중복 건너뜀 ✓`:`${successCount}명 추가됐어요 ✓`;
-    showToast(msg);
+    showToast(skipped>0?`${added}명 추가, ${skipped}명 이미 존재`:`${added}명 추가됐어요 ✓`);
     renderStudents();
   }finally{
     _excelUploading=false;
