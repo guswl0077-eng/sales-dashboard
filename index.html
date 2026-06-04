@@ -2358,18 +2358,20 @@ async function uploadStudentExcel(input){
   if(!file){return;}
   if(typeof XLSX==='undefined'){showToast('엑셀 라이브러리 로딩 중...');return;}
   const data=await file.arrayBuffer();
-  const wb=XLSX.read(data,{type:'array',cellDates:true});
+  const wb=XLSX.read(data,{type:'array'});
   const ws=wb.Sheets[wb.SheetNames[0]];
   const rows_raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:false});
   const dataRows=rows_raw.slice(1).filter(r=>r[2]&&String(r[2]).trim());
   if(!dataRows.length){showToast('데이터가 없어요');input.value='';return;}
-  // 원서번호(r[1]) 기준으로 같은 학생 행 묶기
   const studentMap=new Map();
   for(const r of dataRows){
     const name=String(r[2]||''). trim();
     if(!name)continue;
-    const no=String(r[1]||'').trim();
-    const key=no||name;
+    // 원서번호가 Date 객체로 변환됐을 경우도 처리
+    const rawNo=r[1];
+    const no=(rawNo!=null&&!(rawNo instanceof Date))?String(rawNo).replace(/\s/g,''):'';
+    const phone=String(r[8]||''). replace(/[^0-9]/g,'');
+    const key=no||phone||name;
     if(!studentMap.has(key)){
       studentMap.set(key,{
         name,
@@ -2382,14 +2384,19 @@ async function uploadStudentExcel(input){
     const stu=studentMap.get(key);
     const subject=String(r[3]||'').trim();
     if(subject){
-      const statusVal=r[9]?String(r[9]).trim():'';
+      const rawStart=r[5];const rawEnd=r[6];
+      const toDateStr=v=>{
+        if(!v)return null;
+        if(v instanceof Date){const d=v;return d.getFullYear()+'-'+(String(d.getMonth()+1).padStart(2,'0'))+'-'+(String(d.getDate()).padStart(2,'0'));}
+        const s=String(v).trim();return s.length>=10?s.slice(0,10):null;
+      };
       stu.subjects.push({
         subject,
         day:r[4]?String(r[4]).trim():'',
-        start_date:r[5]&&String(r[5]).trim()?String(r[5]).trim().slice(0,10):null,
-        end_date:r[6]&&String(r[6]).trim()?String(r[6]).trim().slice(0,10):null,
+        start_date:toDateStr(rawStart),
+        end_date:toDateStr(rawEnd),
         class_time:r[7]?String(r[7]).trim():'',
-        status:statusVal||'미배정'
+        status:r[9]?String(r[9]).trim():'미배정'
       });
     }
   }
@@ -2404,8 +2411,7 @@ async function uploadStudentExcel(input){
     successCount++;
     const realId=inserted.id;
     if(stu.subjects.length){
-      const subjsWithRealId=stu.subjects.map(s=>({...s,student_id:realId}));
-      const {error:se}=await sb.from('student_subjects').insert(subjsWithRealId);
+      const {error:se}=await sb.from('student_subjects').insert(stu.subjects.map(s=>({...s,student_id:realId})));
       if(se)console.error('과목 저장 실패:',se.message);
     }
   }
