@@ -499,10 +499,12 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <label class="btn btn-outline" style="cursor:pointer">↑ 파일 업로드<input type="file" id="student-excel-file" accept=".xlsx,.xls" style="display:none" onchange="uploadStudentExcel(this)"></label>
         </div>
       </div>
-      <!-- 2줄: 검색 + 검색버튼 -->
+      <!-- 2줄: 검색 + 검색버튼 + 선택삭제 -->
       <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+        <input type="checkbox" id="student-check-all" onchange="toggleAllStudents(this)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
         <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 검색" style="flex:1" onkeydown="if(event.key==='Enter')renderStudents()">
         <button class="btn btn-primary" onclick="renderStudents()" style="flex-shrink:0">검색</button>
+        <button class="btn btn-outline" onclick="deleteSelectedStudents()" style="flex-shrink:0;color:#e74c3c;border-color:#e74c3c">선택 삭제</button>
       </div>
       <div id="student-list"></div>
     </div>
@@ -2060,6 +2062,19 @@ const SB_STATUS_CLASS={
   'COD':'sb-cod','휴학':'sb-leave','수강포기':'sb-done','포기':'sb-done'
 };
 
+function toggleAllStudents(cb){
+  document.querySelectorAll('.student-check').forEach(c=>c.checked=cb.checked);
+}
+
+async function deleteSelectedStudents(){
+  const checked=[...document.querySelectorAll('.student-check:checked')].map(c=>c.value);
+  if(!checked.length){showToast('삭제할 수강생을 선택해주세요');return;}
+  if(!confirm(`선택한 ${checked.length}명을 삭제할까요?`))return;
+  await sb.from('student_profiles').delete().in('id',checked);
+  document.getElementById('student-check-all').checked=false;
+  showToast(`${checked.length}명 삭제됐어요`);renderStudents();
+}
+
 function setStudentCat(cat){
   _studentCat=cat;
   document.querySelectorAll('.std-chip').forEach(c=>c.classList.toggle('active',c.textContent===cat));
@@ -2102,13 +2117,16 @@ async function renderStudents(){
       <span class="std-counsel-text">${c.content||''}</span>
     </div>`).join('');
     const moreBtn=couns.length>3?`<span style="font-size:12px;color:#6b9fd4;cursor:pointer" onclick="openStudentCounselModal('${s.id}','${(s.name||'').replace(/'/g,"\'")}','${s.student_no||''}')">전체 보기 (${couns.length}) →</span>`:'';
-    return `<div class="std-card">
+    return `<div class="std-card" data-id="${s.id}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
-        <div>
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <input type="checkbox" class="student-check" value="${s.id}" style="width:16px;height:16px;cursor:pointer;margin-top:3px;flex-shrink:0">
+          <div>
           <span class="std-name">${s.name||''}</span>
           <span class="std-id">${s.student_no||''} · ${s.phone||''}</span>
           <div><span class="std-cat">${s.category||''}</span></div>
           ${s.parent_mom?`<div class="std-parent">☎ 모 ${s.parent_mom}${s.parent_dad?' &nbsp;☎ 부 '+s.parent_dad:''}</div>`:s.parent_dad?`<div class="std-parent">☎ 부 ${s.parent_dad}</div>`:''}
+          </div>
         </div>
         <button onclick="openStudentEditModal('${s.id}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">수정</button>
       </div>
@@ -2285,14 +2303,15 @@ async function uploadStudentExcel(input){
     });
     const subject=String(r[3]||'').trim();
     if(subject){
+      const statusVal=r[9]?String(r[9]).trim():'';
       subjToInsert.push({
         student_id:sid,
         subject,
-        day:String(r[4]||'').trim()||'',
+        day:r[4]?String(r[4]).trim():'',
         start_date:r[5]&&String(r[5]).trim()?String(r[5]).trim().slice(0,10):null,
         end_date:r[6]&&String(r[6]).trim()?String(r[6]).trim().slice(0,10):null,
-        class_time:String(r[7]||'').trim()||'',
-        status:String(r[9]||'미배정').trim()||'미배정'
+        class_time:r[7]?String(r[7]).trim():'',
+        status:statusVal||'미배정'
       });
     }
   }
