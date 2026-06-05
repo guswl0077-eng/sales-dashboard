@@ -326,7 +326,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 .sched-stu-r{color:#993C1D;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 @media(max-width:480px){.sched-courses,.sched-divider{display:none;}}
 @media(max-width:640px){
-  /* 홈 이번주+오늘수업 — 세로 쌓기, 가로 100% 통일 */
+  /* 이번주 개강 + 오늘 수업 — 세로 쌓기, 둘 다 가로 100% */
   #today-schedule-box{
     flex-direction:column!important;
     gap:8px!important;
@@ -335,18 +335,11 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   #today-schedule-box .today-schedule{
     flex:none!important;
     width:100%!important;
-    max-width:100%!important;
+    max-width:none!important;
     min-width:0!important;
     margin-bottom:0!important;
     box-sizing:border-box;
   }
-  /* 전체 콘텐츠 가로 넘침 방지 */
-  body{overflow-x:hidden}
-  .content{box-sizing:border-box;overflow-x:hidden}
-  .card{box-sizing:border-box}
-  /* 수강생 카드 과목 테이블 모바일 */
-  .std-subj-table{font-size:10px}
-  .std-subj-table th,.std-subj-table td{padding:4px 3px}
 }
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -383,7 +376,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v53</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v54</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
