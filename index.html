@@ -357,7 +357,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v50</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v51</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -994,7 +994,7 @@ async function loadTodaySchedule(){
     .filter(s=>!s.day||s.day.replace(/[^가-힣]/g,'').split('').some(d=>s.day.includes(_todayDayChar)));
   _classes.sort((a,b)=>(a.class_time||'99:99').localeCompare(b.class_time||'99:99'));
   const _classRows=_classes.length
-    ?_classes.map(c=>`<div style="margin-bottom:8px"><div style="display:flex;gap:5px;align-items:baseline"><span style="font-size:11px;font-weight:700;color:#378ADD;flex-shrink:0;min-width:38px">${c.class_time||'??:??'}</span><span style="font-size:11px;color:var(--text)">${nameMap[c.student_id]||'?'}</span></div><div style="font-size:10px;color:var(--text2);padding-left:43px;margin-top:-1px">${c.subject||'-'}</div></div>`).join('')
+    ?_classes.map(c=>`<div style="display:flex;gap:6px;align-items:baseline;padding:4px 0;border-bottom:.5px solid var(--border2)"><span style="font-size:11px;font-weight:700;color:#378ADD;flex-shrink:0;min-width:38px">${c.class_time||'--:--'}</span><span style="font-size:12px;color:var(--text);flex:1">${nameMap[c.student_id]||'?'} <span style="color:var(--text2);font-size:11px">· ${c.subject||'-'}</span></span></div>`).join('')
     :'<div style="font-size:12px;color:var(--text3);padding-top:4px">오늘 수업 없음</div>';
   const cols=dates.map(d=>{
     const dt=new Date(d+'T00:00:00');
@@ -1818,7 +1818,14 @@ const MONTH_COLORS={1:['#FBD5D0','#9E2A20'],2:['#CFDDF5','#21407C'],3:['#FBEEC4'
 function periodColor(p){if(!p)return['#EAE9E5','#55534E'];const m=String(p).match(/(\d+)월/);const mo=m?Number(m[1]):0;return MONTH_COLORS[mo]||['#EAE9E5','#55534E'];}
 const STATUS_COLORS={'연락예정':['#FBEEC4','#79590C'],'연락완료':['#CFDDF5','#21407C'],'면담예정':['#FCE0CC','#8E4A14'],'면담완료':['#CFEDD2','#1E6230'],'결제':['#C8EAE2','#155C4E'],'결제 후 환불':['#FBD5D0','#9E2A20'],'취소':['#EAE9E5','#55534E']};
 function statusSelStyle(s){const v=STATUS_COLORS[s]||['#fff','#555'];return `border:none;border-radius:20px;font-size:11px;font-weight:700;padding:2px 8px;outline:none;min-width:90px;cursor:pointer;background:${v[0]};color:${v[1]}`;}
-function isPastPeriod(pName){if(!pName)return false;const p=(periodPickerData||[]).find(d=>d.name===pName);if(!p||!p.end_date)return false;return p.end_date<todayKey();}
+function isPastPeriod(pName){
+  if(!pName)return false;
+  const m=pName.match(/(\d+)월/);if(!m)return false;
+  const mo=Number(m[1]);const curMo=new Date().getMonth()+1;
+  if(mo<curMo)return true;
+  if(mo>=8&&curMo<=4)return true;
+  return false;
+}
 function buildPeriodOpts(cur){const _a=(periodPickerData||[]).filter(p=>!isPastPeriod(p.name));const _b=(periodPickerData||[]).filter(p=>isPastPeriod(p.name));return _a.map(p=>`<option value="${p.name}" ${p.name===cur?'selected':''}>${p.name}</option>`).join('')+(_b.length?`<optgroup label="지난 영업일">${_b.map(p=>`<option value="${p.name}" ${p.name===cur?'selected':''}>${p.name}</option>`).join('')}</optgroup>`:'');}
 function periodSelStyle(p){if(!p)return 'border:1px solid #e0deda;border-radius:20px;font-size:11px;padding:3px 9px;outline:none;cursor:pointer;background:#fff;color:#777';const c=periodColor(p);return `border:none;border-radius:20px;font-size:11px;font-weight:600;padding:3px 9px;outline:none;cursor:pointer;background:${c[0]};color:${c[1]}`;}
 const CAT_COLORS={'수강생':['#CFEDD2','#1E6230'],'DB':['#CFDDF5','#21407C'],'COD':['#FCE0CC','#8E4A14'],'따즈아':['#FBD2E2','#7E2651']};
@@ -2271,7 +2278,8 @@ async function subjDrop(e,sid,toIdx){
 async function renderStudents(){
   const el=document.getElementById('student-list');
   if(!el)return;
-  el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:20px 0;text-align:center">불러오는 중...</div>';
+  // 스크롤 위치 미리 저장 (로딩 인디케이터 없애서 스크롤 점프 방지)
+  const _scTop=document.documentElement.scrollTop||document.body.scrollTop||window.pageYOffset||0;
   const q=document.getElementById('student-search')?.value?.trim()||'';
   let query=sb.from('student_profiles').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
   if(_studentCat!=='전체')query=query.eq('category',_studentCat);
@@ -2290,14 +2298,13 @@ async function renderStudents(){
   const ids=list.map(s=>s.id);
   const [{data:subjects},{data:counsels}]=await Promise.all([
     sb.from('student_subjects').select('*').in('student_id',ids),
-    sb.from('student_counsels').select('*').in('student_id',ids).order('date',{ascending:false})
+    sb.from('student_counsels').select('*').in('student_id',ids).order('date',{ascending:false}).order('created_at',{ascending:false})
   ]);
   const subjMap={};(subjects||[]).forEach(s=>{if(!subjMap[s.student_id])subjMap[s.student_id]=[];subjMap[s.student_id].push(s);});
   Object.keys(subjMap).forEach(k=>subjMap[k].sort((a,b)=>((a.sort_order!=null?a.sort_order:999)-(b.sort_order!=null?b.sort_order:999))));
   window._subjOrder=subjMap;
   const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
-  Object.values(counMap).forEach(arr=>arr.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)));
-  const _savedScrollY=window.scrollY;
+  Object.values(counMap).forEach(arr=>arr.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)||new Date(b.created_at||0)-new Date(a.created_at||0)));
   el.innerHTML=list.map(s=>{
     const subjs=subjMap[s.id]||[];
     const couns=counMap[s.id]||[];
@@ -2352,7 +2359,7 @@ async function renderStudents(){
       ${addCounselBtn}
     </div>`;
   }).join('');
-  setTimeout(()=>window.scrollTo(0,_savedScrollY),0);
+  document.documentElement.scrollTop=_scTop;document.body.scrollTop=_scTop;
 }
 
 function openStudentAddModal(){
