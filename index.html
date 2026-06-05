@@ -318,6 +318,10 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 .sched-stu-g{color:#185FA5;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sched-stu-r{color:#993C1D;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 @media(max-width:480px){.sched-courses,.sched-divider{display:none;}}
+@media(max-width:640px){
+  #today-schedule-box{flex-direction:column!important}
+  #today-schedule-box .today-schedule{max-width:100%!important;min-width:0!important;flex:1 1 100%!important}
+}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -353,7 +357,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v49</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v50</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1018,21 +1022,20 @@ async function loadTodaySchedule(){
     </div>`;
   }).join('');
   if(!box)return;
-  box.innerHTML=`<div class="today-schedule" style="display:flex;gap:0;padding:0">
-    <div style="flex:1;min-width:0;padding:14px 16px;border-right:1px solid var(--border2)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div class="today-schedule-title">&#128197; 이번 주 개강 일정</div>
-        <div style="display:flex;gap:8px;font-size:10px;color:var(--sched-muted)">
-          <span style="display:flex;align-items:center;gap:2px"><span style="color:#D85A30;font-size:8px">&#9679;</span>종강</span>
-          <span style="display:flex;align-items:center;gap:2px"><span style="color:#378ADD;font-size:8px">&#9679;</span>개강</span>
-        </div>
+  box.setAttribute('style','display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap');
+  box.innerHTML=`<div class="today-schedule" style="flex:3;min-width:280px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="today-schedule-title">&#128197; 이번 주 개강 일정</div>
+      <div style="display:flex;gap:8px;font-size:10px;color:var(--sched-muted)">
+        <span style="display:flex;align-items:center;gap:2px"><span style="color:#D85A30;font-size:8px">&#9679;</span>종강</span>
+        <span style="display:flex;align-items:center;gap:2px"><span style="color:#378ADD;font-size:8px">&#9679;</span>개강</span>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cols}</div>
     </div>
-    <div style="width:175px;flex-shrink:0;padding:14px 14px;overflow-y:auto;max-height:240px">
-      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">&#127979; 오늘 수업</div>
-      ${_classRows}
-    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cols}</div>
+  </div>
+  <div class="today-schedule" style="flex:2;min-width:200px;max-width:280px">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">&#127979; 오늘 수업 일정</div>
+    ${_classRows}
   </div>`;
 }
 async function loadTodos(){
@@ -1811,9 +1814,13 @@ function periodSortKey(periodStr){
 }
 
 // ===== 밀크라이너 색 맵 =====
-const MONTH_COLORS={1:['#FBD5D0','#9E2A20'],2:['#FCE0CC','#8E4A14'],3:['#FBEEC4','#79590C'],4:['#E8F2C2','#4F6310'],5:['#CFEDD2','#1E6230'],6:['#C8EAE2','#155C4E'],7:['#C9E7F0','#15506B'],8:['#CFDDF5','#21407C'],9:['#D6D5F2','#312B80'],10:['#E2D2F0','#4E2378'],11:['#F2D2EC','#722663'],12:['#FBD2E2','#7E2651']};
+const MONTH_COLORS={1:['#FBD5D0','#9E2A20'],2:['#CFDDF5','#21407C'],3:['#FBEEC4','#79590C'],4:['#E2D2F0','#4E2378'],5:['#CFEDD2','#1E6230'],6:['#FCE0CC','#8E4A14'],7:['#C9E7F0','#15506B'],8:['#F2D2EC','#722663'],9:['#C8EAE2','#155C4E'],10:['#E8F2C2','#4F6310'],11:['#D6D5F2','#312B80'],12:['#FBD2E2','#7E2651']};
 function periodColor(p){if(!p)return['#EAE9E5','#55534E'];const m=String(p).match(/(\d+)월/);const mo=m?Number(m[1]):0;return MONTH_COLORS[mo]||['#EAE9E5','#55534E'];}
-function periodSelStyle(p){const c=periodColor(p);return `border:none;border-radius:20px;font-size:11px;font-weight:600;padding:3px 9px;outline:none;cursor:pointer;background:${c[0]};color:${c[1]}`;}
+const STATUS_COLORS={'연락예정':['#FBEEC4','#79590C'],'연락완료':['#CFDDF5','#21407C'],'면담예정':['#FCE0CC','#8E4A14'],'면담완료':['#CFEDD2','#1E6230'],'결제':['#C8EAE2','#155C4E'],'결제 후 환불':['#FBD5D0','#9E2A20'],'취소':['#EAE9E5','#55534E']};
+function statusSelStyle(s){const v=STATUS_COLORS[s]||['#fff','#555'];return `border:none;border-radius:20px;font-size:11px;font-weight:700;padding:2px 8px;outline:none;min-width:90px;cursor:pointer;background:${v[0]};color:${v[1]}`;}
+function isPastPeriod(pName){if(!pName)return false;const p=(periodPickerData||[]).find(d=>d.name===pName);if(!p||!p.end_date)return false;return p.end_date<todayKey();}
+function buildPeriodOpts(cur){const _a=(periodPickerData||[]).filter(p=>!isPastPeriod(p.name));const _b=(periodPickerData||[]).filter(p=>isPastPeriod(p.name));return _a.map(p=>`<option value="${p.name}" ${p.name===cur?'selected':''}>${p.name}</option>`).join('')+(_b.length?`<optgroup label="지난 영업일">${_b.map(p=>`<option value="${p.name}" ${p.name===cur?'selected':''}>${p.name}</option>`).join('')}</optgroup>`:'');}
+function periodSelStyle(p){if(!p)return 'border:1px solid #e0deda;border-radius:20px;font-size:11px;padding:3px 9px;outline:none;cursor:pointer;background:#fff;color:#777';const c=periodColor(p);return `border:none;border-radius:20px;font-size:11px;font-weight:600;padding:3px 9px;outline:none;cursor:pointer;background:${c[0]};color:${c[1]}`;}
 const CAT_COLORS={'수강생':['#CFEDD2','#1E6230'],'DB':['#CFDDF5','#21407C'],'COD':['#FCE0CC','#8E4A14'],'따즈아':['#FBD2E2','#7E2651']};
 function catSelStyle(c){const v=CAT_COLORS[c]||['#EAE9E5','#55534E'];return `border:none;border-radius:20px;font-size:11px;font-weight:700;padding:3px 9px;outline:none;cursor:pointer;background:${v[0]};color:${v[1]}`;}
 const PROF_CAT_COLORS={'원데이':['#FBD2E2','#7E2651'],'조리':['#CFEDD2','#1E6230'],'제과제빵':['#FCE0CC','#8E4A14'],'바리스타':['#FBEEC4','#79590C'],'입시':['#CFDDF5','#21407C']};
@@ -1843,13 +1850,15 @@ async function renderList(){
   if(periodSel){
     const periods=[...new Set(students.map(s=>s.period).filter(Boolean))].sort((a,b)=>periodSortKey(a)-periodSortKey(b));
     const curVal=periodSel.value;
-    periodSel.innerHTML='<option value="">전체 영업일</option>'+periods.map(p=>`<option value="${p}" ${curVal===p?'selected':''}>${p}</option>`).join('');
+    const _ap=periods.filter(p=>!isPastPeriod(p));const _pp=periods.filter(p=>isPastPeriod(p));
+    periodSel.innerHTML='<option value="">전체 영업일</option>'+_ap.map(p=>`<option value="${p}" ${curVal===p?'selected':''}>${p}</option>`).join('')+(_pp.length?`<optgroup label="지난 영업일">${_pp.map(p=>`<option value="${p}" ${curVal===p?'selected':''}>${p}</option>`).join('')}</optgroup>`:'');
   }
   // 검색 + 영업일 필터
   const searchVal=(document.getElementById('list-search')?.value||'').trim().toLowerCase();
   const periodVal=document.getElementById('list-period-filter')?.value||'';
   if(searchVal) students=students.filter(s=>s.name?.toLowerCase().includes(searchVal));
   if(periodVal) students=students.filter(s=>s.period===periodVal);
+  else students=students.filter(s=>!isPastPeriod(s.period));
   if(listFilter==='paid') students=students.filter(s=>s.status==='결제');
   else if(listFilter==='unpaid') students=students.filter(s=>!['결제','결제 후 환불','취소'].includes(s.status));
   else if(listFilter==='cancel') students=students.filter(s=>['결제 후 환불','취소'].includes(s.status));
@@ -1865,11 +1874,11 @@ async function renderList(){
     <td><select onchange="updateStudentCategory('${s.id}',this.value)" style="${catSelStyle(s.category)}">
       ${['','수강생','DB','COD','따즈아'].map(v=>`<option value="${v}" ${v===(s.category||'')?'selected':''}>${v||'미설정'}</option>`).join('')}
     </select></td>
-    <td style="white-space:nowrap"><select onchange="updateStudentPeriod('${s.id}',this.value)" style="${periodSelStyle(s.period)}"><option value="" ${!s.period?'selected':''}>미설정</option>${(periodPickerData||[]).map(p=>`<option value="${p.name}" ${p.name===s.period?'selected':''}>${p.name}</option>`).join('')}</select></td>
+    <td style="white-space:nowrap"><select onchange="updateStudentPeriod('${s.id}',this.value)" style="${periodSelStyle(s.period)}"><option value="" ${!s.period?'selected':''}>미설정</option>${buildPeriodOpts(s.period)}</select></td>
     <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','name')" style="cursor:pointer;font-weight:500;display:inline-block">${s.name}</span></td>
     <td><span onclick="editCell(this,'${s.id}','course')" style="cursor:pointer;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:125px">${s.course||'-'}</span></td>
     <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','amount')" style="cursor:pointer;display:inline-block">${s.amount?Number(s.amount).toLocaleString()+'원':'-'}</span></td>
-    <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="border:1px solid ${s.status==='결제'?'#a3d9a5':['결제 후 환불'].includes(s.status)?'#f5c5a0':s.status==='취소'?'#f5c5c5':'#e8e6e0'};border-radius:20px;font-size:11px;font-weight:600;padding:2px 6px;outline:none;min-width:100px;background:${s.status==='결제'?'#e8f5e9':s.status==='결제 후 환불'?'#fff3e0':s.status==='취소'?'#fee2e2':'#fff'};color:${s.status==='결제'?'#1a7a3a':s.status==='결제 후 환불'?'#b45309':s.status==='취소'?'#991b1b':'#333'};cursor:pointer">
+    <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="${statusSelStyle(s.status)}">
       ${['연락예정','연락완료','면담예정','면담완료','결제','결제 후 환불','취소'].map(v=>`<option ${v===s.status?'selected':''}>${v}</option>`).join('')}
     </select></td>
     <td style="width:100px;max-width:100px"><span onclick="editCell(this,'${s.id}','memo')" style="cursor:pointer;display:inline-block;font-size:12px;color:#888;white-space:pre-wrap;word-break:break-word;line-height:1.6;width:100%">${s.memo||'-'}</span></td>
@@ -2287,6 +2296,7 @@ async function renderStudents(){
   Object.keys(subjMap).forEach(k=>subjMap[k].sort((a,b)=>((a.sort_order!=null?a.sort_order:999)-(b.sort_order!=null?b.sort_order:999))));
   window._subjOrder=subjMap;
   const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
+  Object.values(counMap).forEach(arr=>arr.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)));
   const _savedScrollY=window.scrollY;
   el.innerHTML=list.map(s=>{
     const subjs=subjMap[s.id]||[];
@@ -2342,7 +2352,7 @@ async function renderStudents(){
       ${addCounselBtn}
     </div>`;
   }).join('');
-  requestAnimationFrame(()=>window.scrollTo(0,_savedScrollY));
+  setTimeout(()=>window.scrollTo(0,_savedScrollY),0);
 }
 
 function openStudentAddModal(){
@@ -2448,8 +2458,18 @@ async function openStudentFullView(sid){
   if(prof.phone)info+=`<br>☎ 본인 ${prof.phone}`;
   if(prof.parent_mom)info+='<br>'+prof.parent_mom.split('|').map(it=>{const a=(it||'').split(':');return a[0]&&a[1]?`☎ ${a[0]} ${a[1]}`:'';}).filter(Boolean).join('<br>');
   const subjTable=(subjs.length)?`<table style="width:100%;border-collapse:collapse;font-size:11px;color:var(--text2)"><thead><tr style="color:var(--text3)"><th style="text-align:left;padding:4px;font-weight:500;border-bottom:.5px solid var(--border2)">과목</th><th style="padding:4px;font-weight:500;border-bottom:.5px solid var(--border2)">요일</th><th style="padding:4px;font-weight:500;border-bottom:.5px solid var(--border2)">개강~종강</th><th style="padding:4px;font-weight:500;border-bottom:.5px solid var(--border2)">시간</th><th style="padding:4px;font-weight:500;border-bottom:.5px solid var(--border2)">진행</th></tr></thead><tbody>${subjs.map(su=>`<tr><td style="padding:5px 4px;color:var(--text)">${su.subject||'-'}</td><td style="text-align:center;padding:5px 4px">${su.day||'-'}</td><td style="text-align:center;padding:5px 4px">${su.start_date||'-'}${su.end_date?'~'+su.end_date:''}</td><td style="text-align:center;padding:5px 4px">${su.class_time||'-'}</td><td style="text-align:center;padding:5px 4px"><span class="std-badge ${SB_STATUS_CLASS[su.status]||'sb-standby'}" style="font-size:10px;padding:1px 6px;border-radius:6px">${su.status||'미배정'}</span></td></tr>`).join('')}</tbody></table>`:'<div style="font-size:12px;color:var(--text3)">등록 과목 없음</div>';
-  const counList=(couns.length)?couns.map(c=>`<div style="padding:6px 0;border-bottom:.5px solid var(--border2);font-size:12px;color:var(--text)"><span style="color:var(--text2);margin-right:6px">${(c.date||'').slice(5).replace('-','.')}</span>${c.content||''}</div>`).join(''):'<div style="font-size:12px;color:var(--text3)">면담 기록 없음</div>';
+  const counList=(couns.length)?couns.map(c=>`<div style="display:flex;align-items:flex-start;gap:6px;padding:6px 0;border-bottom:.5px solid var(--border2)"><span style="font-size:11px;color:var(--text2);flex-shrink:0;min-width:28px">${(c.date||'').slice(5).replace('-','.')}</span><span style="font-size:12px;color:var(--text);flex:1;cursor:pointer" onclick="editFullViewCounsel(this,'${c.id}','${sid}')">${c.content||''}</span><span onclick="deleteFullViewCounsel('${c.id}','${sid}')" style="cursor:pointer;color:#ccc;font-size:15px;flex-shrink:0;line-height:1.2">×</span></div>`).join(''):'<div style="font-size:12px;color:var(--text3)">면담 기록 없음</div>';
   body.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px">수강생 정보</div><div style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:16px">${info}</div><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px">메모 · 특이사항</div><div style="font-size:12px;color:${prof.memo?'var(--text)':'var(--text3)'};line-height:1.7;background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:16px">${prof.memo||'특이사항 없음'}</div><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px">등록 과목</div><div style="margin-bottom:16px">${subjTable}</div><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px">면담 기록 (${couns.length})</div><div>${counList}</div>`;
+}
+function deleteFullViewCounsel(cid,sid){if(!confirm('면담 기록을 삭제할까요?'))return;sb.from('student_counsels').delete().eq('id',cid).then(()=>{renderStudents();openStudentFullView(sid);showToast('면담 삭제됨');});}
+function editFullViewCounsel(el,cid,sid){
+  const cur=el.textContent||'';
+  const inp=document.createElement('textarea');
+  inp.value=cur;inp.rows=2;inp.className='form-input';inp.style.cssText='font-size:12px;flex:1;padding:4px 8px;resize:none;width:100%';
+  el.replaceWith(inp);inp.focus();
+  const save=async()=>{const v=inp.value.trim();if(!v)return;await sb.from('student_counsels').update({content:v}).eq('id',cid);renderStudents();openStudentFullView(sid);};
+  inp.addEventListener('blur',save);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();inp.blur();}});
 }
 function closeStudentFullView(){document.getElementById('std-full-modal').style.display='none';}
 
