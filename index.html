@@ -294,6 +294,13 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .metric-value{font-size:14px}
   .card{padding:12px 14px}
   .row-label{font-size:12px}
+  /* 모바일 수강생 카드 */
+  .std-card{padding:10px 12px}
+  .std-name{font-size:13px}
+  /* 결제 리스트 테이블 */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* 오늘 수업 한 줄 폰트 */
+  #today-schedule-box .today-schedule div[style*="font-size:12px"]{font-size:11px}
   .num-input{width:60px;font-size:12px}
   .money-input{width:90px;font-size:12px}
   .btn-sm{padding:4px 8px;font-size:11px}
@@ -319,8 +326,27 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 .sched-stu-r{color:#993C1D;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 @media(max-width:480px){.sched-courses,.sched-divider{display:none;}}
 @media(max-width:640px){
-  #today-schedule-box{flex-direction:column!important}
-  #today-schedule-box .today-schedule{max-width:100%!important;min-width:0!important;flex:1 1 100%!important}
+  /* 홈 이번주+오늘수업 — 세로 쌓기, 가로 100% 통일 */
+  #today-schedule-box{
+    flex-direction:column!important;
+    gap:8px!important;
+    align-items:stretch!important;
+  }
+  #today-schedule-box .today-schedule{
+    flex:none!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    margin-bottom:0!important;
+    box-sizing:border-box;
+  }
+  /* 전체 콘텐츠 가로 넘침 방지 */
+  body{overflow-x:hidden}
+  .content{box-sizing:border-box;overflow-x:hidden}
+  .card{box-sizing:border-box}
+  /* 수강생 카드 과목 테이블 모바일 */
+  .std-subj-table{font-size:10px}
+  .std-subj-table th,.std-subj-table td{padding:4px 3px}
 }
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -357,7 +383,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v51</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v53</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1820,13 +1846,11 @@ const STATUS_COLORS={'연락예정':['#FBEEC4','#79590C'],'연락완료':['#CFDD
 function statusSelStyle(s){const v=STATUS_COLORS[s]||['#fff','#555'];return `border:none;border-radius:20px;font-size:11px;font-weight:700;padding:2px 8px;outline:none;min-width:90px;cursor:pointer;background:${v[0]};color:${v[1]}`;}
 function isPastPeriod(pName){
   if(!pName)return false;
-  const m=pName.match(/(\d+)월/);if(!m)return false;
-  const mo=Number(m[1]);const curMo=new Date().getMonth()+1;
-  if(mo<curMo)return true;
-  if(mo>=8&&curMo<=4)return true;
-  return false;
+  const p=(periodPickerData||[]).find(d=>d.name===pName);
+  if(!p||!p.end_date)return false;
+  return p.end_date<todayKey();
 }
-function buildPeriodOpts(cur){const _a=(periodPickerData||[]).filter(p=>!isPastPeriod(p.name));const _b=(periodPickerData||[]).filter(p=>isPastPeriod(p.name));return _a.map(p=>`<option value="${p.name}" ${p.name===cur?'selected':''}>${p.name}</option>`).join('')+(_b.length?`<optgroup label="지난 영업일">${_b.map(p=>`<option value="${p.name}" ${p.name===cur?'selected':''}>${p.name}</option>`).join('')}</optgroup>`:'');}
+function buildPeriodOpts(cur){const _a=(periodPickerData||[]).filter(p=>!isPastPeriod(p.name));const _b=(periodPickerData||[]).filter(p=>isPastPeriod(p.name));return _a.map(p=>`<option value="${p.name}" ${p.name===cur?'selected':''}>${p.name}</option>`).join('')+(_b.length?`<optgroup label="26년 지난영업일">${_b.map(p=>`<option value="${p.name}" ${p.name===cur?'selected':''}>${p.name}</option>`).join('')}</optgroup>`:'');}
 function periodSelStyle(p){if(!p)return 'border:1px solid #e0deda;border-radius:20px;font-size:11px;padding:3px 9px;outline:none;cursor:pointer;background:#fff;color:#777';const c=periodColor(p);return `border:none;border-radius:20px;font-size:11px;font-weight:600;padding:3px 9px;outline:none;cursor:pointer;background:${c[0]};color:${c[1]}`;}
 const CAT_COLORS={'수강생':['#CFEDD2','#1E6230'],'DB':['#CFDDF5','#21407C'],'COD':['#FCE0CC','#8E4A14'],'따즈아':['#FBD2E2','#7E2651']};
 function catSelStyle(c){const v=CAT_COLORS[c]||['#EAE9E5','#55534E'];return `border:none;border-radius:20px;font-size:11px;font-weight:700;padding:3px 9px;outline:none;cursor:pointer;background:${v[0]};color:${v[1]}`;}
@@ -1858,13 +1882,22 @@ async function renderList(){
     const periods=[...new Set(students.map(s=>s.period).filter(Boolean))].sort((a,b)=>periodSortKey(a)-periodSortKey(b));
     const curVal=periodSel.value;
     const _ap=periods.filter(p=>!isPastPeriod(p));const _pp=periods.filter(p=>isPastPeriod(p));
-    periodSel.innerHTML='<option value="">전체 영업일</option>'+_ap.map(p=>`<option value="${p}" ${curVal===p?'selected':''}>${p}</option>`).join('')+(_pp.length?`<optgroup label="지난 영업일">${_pp.map(p=>`<option value="${p}" ${curVal===p?'selected':''}>${p}</option>`).join('')}</optgroup>`:'');
+    const _ppOpt=_pp.length?'<option value="__past__" '+('__past__'===curVal?'selected':'')+'>26년 지난영업일</option>':'';
+    periodSel.innerHTML='<option value="">전체 영업일</option>'+_ap.map(p=>`<option value="${p}" ${curVal===p?'selected':''}>${p}</option>`).join('')+_ppOpt;
   }
   // 검색 + 영업일 필터
   const searchVal=(document.getElementById('list-search')?.value||'').trim().toLowerCase();
   const periodVal=document.getElementById('list-period-filter')?.value||'';
   if(searchVal) students=students.filter(s=>s.name?.toLowerCase().includes(searchVal));
-  if(periodVal) students=students.filter(s=>s.period===periodVal);
+  if(periodVal==='__past__'){
+    students=students.filter(s=>isPastPeriod(s.period));
+    students.sort((a,b)=>{
+      const cs=['취소','결제 후 환불'];
+      const ac=cs.includes(a.status)?1:0,bc=cs.includes(b.status)?1:0;
+      if(ac!==bc)return ac-bc;
+      return periodSortKey(b.period)-periodSortKey(a.period);
+    });
+  } else if(periodVal) students=students.filter(s=>s.period===periodVal);
   else students=students.filter(s=>!isPastPeriod(s.period));
   if(listFilter==='paid') students=students.filter(s=>s.status==='결제');
   else if(listFilter==='unpaid') students=students.filter(s=>!['결제','결제 후 환불','취소'].includes(s.status));
