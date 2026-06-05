@@ -353,7 +353,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v48</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v49</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -510,7 +510,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         <input type="checkbox" id="student-check-all" onchange="toggleAllStudents(this)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
         <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 검색" style="flex:1" onkeydown="if(event.key==='Enter')renderStudents()">
         <button class="btn btn-primary" onclick="renderStudents()" style="flex-shrink:0">검색</button>
-        <select onchange="setStudentSort(this.value)" class="form-input" style="width:auto;padding:6px 10px;font-size:13px;flex-shrink:0;cursor:pointer"><option value="new">최신순</option><option value="old">오래된순</option><option value="name_asc">이름 ㄱ-ㅎ</option><option value="name_desc">이름 ㅎ-ㄱ</option></select>
+        <select onchange="setStudentSort(this.value)" class="form-input" style="width:auto;padding:6px 10px;font-size:13px;flex-shrink:0;cursor:pointer"><option value="new">최신순</option><option value="old">오래된순</option><option value="name_asc">이름 ㄱ-ㅎ</option><option value="name_desc">이름 ㅎ-ㄱ</option><option value="modified">최근 수정순</option></select>
         <button class="btn btn-outline" onclick="mergeDuplicateStudents()" style="flex-shrink:0;color:#1a56db;border-color:#1a56db">중복 정리</button>
         <button class="btn btn-outline" onclick="deleteSelectedStudents()" style="flex-shrink:0;color:#e74c3c;border-color:#e74c3c">선택 삭제</button>
       </div>
@@ -969,13 +969,14 @@ async function loadTodaySchedule(){
   const {data:profiles}=await sb.from('student_profiles').select('id,name').eq('user_id',currentUser.id);
   const studentIds=(profiles||[]).map(p=>p.id);
   const nameMap={};(profiles||[]).forEach(p=>nameMap[p.id]=p.name);
-  let gaegangData=[],jonggangData=[];
+  let gaegangData=[],jonggangData=[],todayClassSubjs=[];
   if(studentIds.length){
-    const [gr,jr]=await Promise.all([
+    const [gr,jr,tr]=await Promise.all([
       sb.from('student_subjects').select('subject,start_date,student_id').in('student_id',studentIds).gte('start_date',startStr).lte('start_date',endStr),
-      sb.from('student_subjects').select('subject,end_date,student_id').in('student_id',studentIds).gte('end_date',startStr).lte('end_date',endStr)
+      sb.from('student_subjects').select('subject,end_date,student_id').in('student_id',studentIds).gte('end_date',startStr).lte('end_date',endStr),
+      sb.from('student_subjects').select('subject,class_time,day,status,student_id').in('student_id',studentIds).lte('start_date',dates[0]).gte('end_date',dates[0])
     ]);
-    gaegangData=gr.data||[];jonggangData=jr.data||[];
+    gaegangData=gr.data||[];jonggangData=jr.data||[];todayClassSubjs=tr.data||[];
   }
   const byDate={};
   dates.forEach(d=>byDate[d]={courses:[],gaegang:[],jonggang:[]});
@@ -983,6 +984,14 @@ async function loadTodaySchedule(){
   gaegangData.forEach(s=>{if(byDate[s.start_date])byDate[s.start_date].gaegang.push({name:nameMap[s.student_id]||'?',subject:s.subject||''});});
   jonggangData.forEach(s=>{if(byDate[s.end_date])byDate[s.end_date].jonggang.push({name:nameMap[s.student_id]||'?',subject:s.subject||''});});
   const DAYS_KR=['일','월','화','수','목','금','토'];
+  const _todayDayChar=DAYS_KR[today.getDay()];
+  let _classes=(todayClassSubjs)
+    .filter(s=>!['종강','환불','휴학','COD','미배정'].includes(s.status||''))
+    .filter(s=>!s.day||s.day.replace(/[^가-힣]/g,'').split('').some(d=>s.day.includes(_todayDayChar)));
+  _classes.sort((a,b)=>(a.class_time||'99:99').localeCompare(b.class_time||'99:99'));
+  const _classRows=_classes.length
+    ?_classes.map(c=>`<div style="margin-bottom:8px"><div style="display:flex;gap:5px;align-items:baseline"><span style="font-size:11px;font-weight:700;color:#378ADD;flex-shrink:0;min-width:38px">${c.class_time||'??:??'}</span><span style="font-size:11px;color:var(--text)">${nameMap[c.student_id]||'?'}</span></div><div style="font-size:10px;color:var(--text2);padding-left:43px;margin-top:-1px">${c.subject||'-'}</div></div>`).join('')
+    :'<div style="font-size:12px;color:var(--text3);padding-top:4px">오늘 수업 없음</div>';
   const cols=dates.map(d=>{
     const dt=new Date(d+'T00:00:00');
     const isToday=d===todayKey();
@@ -1009,15 +1018,21 @@ async function loadTodaySchedule(){
     </div>`;
   }).join('');
   if(!box)return;
-  box.innerHTML=`<div class="today-schedule">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div class="today-schedule-title">&#128197; 이번 주 개강 일정</div>
-      <div style="display:flex;gap:8px;font-size:10px;color:var(--sched-muted)">
-        <span style="display:flex;align-items:center;gap:2px"><span style="color:#D85A30;font-size:8px">&#9679;</span>종강</span>
-        <span style="display:flex;align-items:center;gap:2px"><span style="color:#378ADD;font-size:8px">&#9679;</span>개강</span>
+  box.innerHTML=`<div class="today-schedule" style="display:flex;gap:0;padding:0">
+    <div style="flex:1;min-width:0;padding:14px 16px;border-right:1px solid var(--border2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="today-schedule-title">&#128197; 이번 주 개강 일정</div>
+        <div style="display:flex;gap:8px;font-size:10px;color:var(--sched-muted)">
+          <span style="display:flex;align-items:center;gap:2px"><span style="color:#D85A30;font-size:8px">&#9679;</span>종강</span>
+          <span style="display:flex;align-items:center;gap:2px"><span style="color:#378ADD;font-size:8px">&#9679;</span>개강</span>
+        </div>
       </div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cols}</div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cols}</div>
+    <div style="width:175px;flex-shrink:0;padding:14px 14px;overflow-y:auto;max-height:240px">
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">&#127979; 오늘 수업</div>
+      ${_classRows}
+    </div>
   </div>`;
 }
 async function loadTodos(){
@@ -2260,6 +2275,7 @@ async function renderStudents(){
   else if(_studentSort==='old')list.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   else if(_studentSort==='name_asc')list.sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko'));
   else if(_studentSort==='name_desc')list.sort((a,b)=>(b.name||'').localeCompare(a.name||'','ko'));
+  else if(_studentSort==='modified')list.sort((a,b)=>new Date(b.updated_at||b.created_at||0)-new Date(a.updated_at||a.created_at||0));
   if(!list.length){el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:20px 0;text-align:center">수강생이 없어요</div>';return;}
   // 과목+면담 가져오기
   const ids=list.map(s=>s.id);
@@ -2271,6 +2287,7 @@ async function renderStudents(){
   Object.keys(subjMap).forEach(k=>subjMap[k].sort((a,b)=>((a.sort_order!=null?a.sort_order:999)-(b.sort_order!=null?b.sort_order:999))));
   window._subjOrder=subjMap;
   const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
+  const _savedScrollY=window.scrollY;
   el.innerHTML=list.map(s=>{
     const subjs=subjMap[s.id]||[];
     const couns=counMap[s.id]||[];
@@ -2325,6 +2342,7 @@ async function renderStudents(){
       ${addCounselBtn}
     </div>`;
   }).join('');
+  requestAnimationFrame(()=>window.scrollTo(0,_savedScrollY));
 }
 
 function openStudentAddModal(){
