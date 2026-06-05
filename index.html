@@ -318,10 +318,6 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 .sched-stu-g{color:#185FA5;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sched-stu-r{color:#993C1D;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 @media(max-width:480px){.sched-courses,.sched-divider{display:none;}}
-/* 수강생 목록 2열 (모바일만 1열) */
-#student-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
-#student-list .std-card{margin-bottom:0}
-@media(max-width:480px){#student-list{grid-template-columns:1fr}}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -357,7 +353,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v44</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v46</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -514,6 +510,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         <input type="checkbox" id="student-check-all" onchange="toggleAllStudents(this)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
         <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 검색" style="flex:1" onkeydown="if(event.key==='Enter')renderStudents()">
         <button class="btn btn-primary" onclick="renderStudents()" style="flex-shrink:0">검색</button>
+        <select onchange="setStudentSort(this.value)" class="form-input" style="width:auto;padding:6px 10px;font-size:13px;flex-shrink:0;cursor:pointer"><option value="new">최신순</option><option value="old">오래된순</option><option value="name_asc">이름 ㄱ-ㅎ</option><option value="name_desc">이름 ㅎ-ㄱ</option></select>
         <button class="btn btn-outline" onclick="mergeDuplicateStudents()" style="flex-shrink:0;color:#1a56db;border-color:#1a56db">중복 정리</button>
         <button class="btn btn-outline" onclick="deleteSelectedStudents()" style="flex-shrink:0;color:#e74c3c;border-color:#e74c3c">선택 삭제</button>
       </div>
@@ -2185,6 +2182,8 @@ function setStudentCat(cat){
   renderStudents();
 }
 
+let _studentSort='new';
+function setStudentSort(v){_studentSort=v;renderStudents();}
 async function updateSubjectStatus(id,status){
   await sb.from('student_subjects').update({status}).eq('id',id);
   showToast('진행 변경됨 ✓');renderStudents();
@@ -2238,6 +2237,11 @@ async function renderStudents(){
   if(error){el.innerHTML='<div style="color:var(--text2)">불러오기 실패</div>';return;}
   let list=students||[];
   if(q)list=list.filter(s=>(s.name||'').includes(q)||(s.student_no||'').includes(q)||(s.phone||'').includes(q));
+  // 정렬
+  if(_studentSort==='new')list.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  else if(_studentSort==='old')list.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  else if(_studentSort==='name_asc')list.sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko'));
+  else if(_studentSort==='name_desc')list.sort((a,b)=>(b.name||'').localeCompare(a.name||'','ko'));
   if(!list.length){el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:20px 0;text-align:center">수강생이 없어요</div>';return;}
   // 과목+면담 가져오기
   const ids=list.map(s=>s.id);
@@ -2263,6 +2267,7 @@ async function renderStudents(){
     const counselRows=couns.slice(0,3).map(c=>`<div class="std-counsel-row">
       <span class="std-counsel-date">${(c.date||'').slice(5).replace('-','.')}</span>
       <span class="std-counsel-text">${c.content||''}</span>
+      <span onclick="deleteStudentCounsel('${c.id}','${s.id}')" style="cursor:pointer;color:#ddd;font-size:14px;padding:0 4px;flex-shrink:0" title="삭제">×</span>
     </div>`).join('');
     const _openCounsel=`openStudentCounselModal('${s.id}','${(s.name||'').replace(/'/g,"\'")}','${s.student_no||''}')`;
     const moreBtn=couns.length>0?`<span style="font-size:12px;color:#6b9fd4;cursor:pointer" onclick="${_openCounsel}">전체 보기 (${couns.length}) →</span>`:'';
@@ -2412,9 +2417,11 @@ async function addStudentCounsel(){
   loadStudentCounsels(sid);renderStudents();showToast('면담 기록 추가됐어요 ✓');
 }
 async function deleteStudentCounsel(id,sid){
-  if(!confirm('삭제할까요?'))return;
+  if(!confirm('면담 기록을 삭제할까요?'))return;
   await sb.from('student_counsels').delete().eq('id',id);
-  loadStudentCounsels(sid);renderStudents();
+  const modal=document.getElementById('std-counsel-modal');
+  if(modal&&modal.style.display!=='none')loadStudentCounsels(sid);
+  renderStudents();showToast('면담 삭제됨');
 }
 
 function downloadStudentTemplate(){
