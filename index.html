@@ -318,6 +318,10 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 .sched-stu-g{color:#185FA5;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sched-stu-r{color:#993C1D;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 @media(max-width:480px){.sched-courses,.sched-divider{display:none;}}
+/* 수강생 목록 2열 (모바일만 1열) */
+#student-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+#student-list .std-card{margin-bottom:0}
+@media(max-width:480px){#student-list{grid-template-columns:1fr}}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -353,7 +357,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v42</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v44</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -2095,6 +2099,7 @@ const SB_STATUS_CLASS={
   '대기':'sb-standby','종강':'sb-done','환불':'sb-refund',
   'COD':'sb-cod','휴학':'sb-leave','수강포기':'sb-done','포기':'sb-done'
 };
+const STATUS_OPTS=['미배정','대기','배정완료','개강','종강','환불','COD','휴학'];
 
 function addExtraPhone(containerId){
   const wrap=document.getElementById(containerId);
@@ -2180,6 +2185,48 @@ function setStudentCat(cat){
   renderStudents();
 }
 
+async function updateSubjectStatus(id,status){
+  await sb.from('student_subjects').update({status}).eq('id',id);
+  showToast('진행 변경됨 ✓');renderStudents();
+}
+async function deleteSubject(id){
+  if(!confirm('이 과목을 삭제할까요?'))return;
+  await sb.from('student_subjects').delete().eq('id',id);
+  showToast('과목 삭제됨');renderStudents();
+}
+function editSubjectCell(el,id,field,type){
+  if(el.querySelector('input'))return;
+  const cur=el.getAttribute('data-val')||'';
+  const input=document.createElement('input');
+  input.type=type==='date'?'date':'text';
+  input.value=cur;
+  input.style.cssText='width:95%;border:1px solid #1a1a1a;border-radius:5px;padding:2px 4px;font-size:12px;outline:none';
+  el.innerHTML='';el.appendChild(input);input.focus();
+  let done=false;
+  const save=async()=>{
+    if(done)return;done=true;
+    const val=input.value.trim();
+    await sb.from('student_subjects').update({[field]:val||null}).eq('id',id);
+    showToast('수정됐어요 ✓');renderStudents();
+  };
+  input.addEventListener('blur',save);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape'){done=true;renderStudents();}});
+}
+let _subjDrag={sid:null,idx:null};
+function subjDragStart(e,sid,idx){_subjDrag={sid,idx};e.currentTarget.style.opacity='.4';}
+function subjDragOver(e){e.preventDefault();e.currentTarget.style.borderTop='2px solid #1a1a1a';}
+function subjDragLeave(e){e.currentTarget.style.borderTop='';}
+async function subjDrop(e,sid,toIdx){
+  e.preventDefault();e.currentTarget.style.borderTop='';
+  document.querySelectorAll('#student-list tr').forEach(r=>{r.style.opacity='';r.style.borderTop='';});
+  if(_subjDrag.sid!==sid||_subjDrag.idx===null||_subjDrag.idx===toIdx){_subjDrag={sid:null,idx:null};return;}
+  const arr=[...((window._subjOrder||{})[sid]||[])];
+  const moved=arr.splice(_subjDrag.idx,1)[0];
+  arr.splice(toIdx,0,moved);
+  _subjDrag={sid:null,idx:null};
+  try{await Promise.all(arr.map((s,i)=>sb.from('student_subjects').update({sort_order:i}).eq('id',s.id)));}catch(err){console.warn('순서 저장 실패(sort_order 컬럼 필요):',err);}
+  renderStudents();
+}
 async function renderStudents(){
   const el=document.getElementById('student-list');
   if(!el)return;
@@ -2199,17 +2246,19 @@ async function renderStudents(){
     sb.from('student_counsels').select('*').in('student_id',ids).order('date',{ascending:false})
   ]);
   const subjMap={};(subjects||[]).forEach(s=>{if(!subjMap[s.student_id])subjMap[s.student_id]=[];subjMap[s.student_id].push(s);});
+  Object.keys(subjMap).forEach(k=>subjMap[k].sort((a,b)=>((a.sort_order!=null?a.sort_order:999)-(b.sort_order!=null?b.sort_order:999))));
+  window._subjOrder=subjMap;
   const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
   el.innerHTML=list.map(s=>{
     const subjs=subjMap[s.id]||[];
     const couns=counMap[s.id]||[];
-    const subjRows=subjs.map(sub=>`<tr>
-      <td style="text-align:left;font-weight:500;color:var(--text)">${sub.subject||'-'}</td>
-      <td>${sub.day||'-'}</td>
-      <td>${sub.start_date||'-'}</td>
-      <td>${sub.end_date||'-'}</td>
-      <td>${sub.class_time||'-'}</td>
-      <td><span class="std-badge ${SB_STATUS_CLASS[sub.status]||'sb-standby'}">${sub.status||'미배정'}</span></td>
+    const subjRows=subjs.map((sub,si)=>`<tr draggable="true" ondragstart="subjDragStart(event,'${s.id}',${si})" ondragover="subjDragOver(event)" ondragleave="subjDragLeave(event)" ondrop="subjDrop(event,'${s.id}',${si})">
+      <td style="text-align:left;font-weight:500;color:var(--text)"><span style="color:#ccc;cursor:grab;margin-right:3px;font-size:10px">⠇</span><span style="cursor:pointer" data-val="${sub.subject||''}" onclick="editSubjectCell(this,'${sub.id}','subject','text')">${sub.subject||'-'}</span></td>
+      <td style="cursor:pointer" data-val="${sub.day||''}" onclick="editSubjectCell(this,'${sub.id}','day','text')">${sub.day||'-'}</td>
+      <td style="cursor:pointer" data-val="${sub.start_date||''}" onclick="editSubjectCell(this,'${sub.id}','start_date','date')">${sub.start_date||'-'}</td>
+      <td style="cursor:pointer" data-val="${sub.end_date||''}" onclick="editSubjectCell(this,'${sub.id}','end_date','date')">${sub.end_date||'-'}</td>
+      <td style="cursor:pointer" data-val="${sub.class_time||''}" onclick="editSubjectCell(this,'${sub.id}','class_time','text')">${sub.class_time||'-'}</td>
+      <td style="white-space:nowrap"><select onchange="updateSubjectStatus('${sub.id}',this.value)" class="std-badge ${SB_STATUS_CLASS[sub.status]||'sb-standby'}" style="border:none;font-size:10px;font-weight:600;padding:2px 3px;border-radius:8px;cursor:pointer;outline:none">${STATUS_OPTS.map(o=>`<option ${o===(sub.status||'미배정')?'selected':''}>${o}</option>`).join('')}</select><span onclick="deleteSubject('${sub.id}')" style="cursor:pointer;color:#ddd;margin-left:3px;font-size:13px">×</span></td>
     </tr>`).join('');
     const counselRows=couns.slice(0,3).map(c=>`<div class="std-counsel-row">
       <span class="std-counsel-date">${(c.date||'').slice(5).replace('-','.')}</span>
@@ -2357,7 +2406,8 @@ async function addStudentCounsel(){
   const sid=document.getElementById('std-counsel-student-id').value;
   const content=document.getElementById('std-counsel-input').value.trim();
   if(!content){showToast('내용을 입력해주세요');return;}
-  await sb.from('student_counsels').insert({student_id:sid,content,date:todayKey(),user_id:currentUser.id});
+  const {error:_ce}=await sb.from('student_counsels').insert({student_id:sid,content,date:todayKey()});
+  if(_ce){showToast('면담 저장 실패: '+_ce.message);return;}
   document.getElementById('std-counsel-input').value='';
   loadStudentCounsels(sid);renderStudents();showToast('면담 기록 추가됐어요 ✓');
 }
