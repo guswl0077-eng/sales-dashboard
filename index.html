@@ -373,7 +373,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v57</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v58</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1346,6 +1346,12 @@ async function renderSales(){
   if(period.start_date)logsQuery=logsQuery.gte('date',period.start_date);
   if(period.end_date)logsQuery=logsQuery.lte('date',period.end_date<today?period.end_date:today);
   const {data:logs}=await logsQuery;
+  // work_schedules 같은 기간 fetch
+  let wsQuery=sb.from('work_schedules').select('date,work_type').eq('user_id',currentUser.id).lte('date',today);
+  if(period.start_date)wsQuery=wsQuery.gte('date',period.start_date);
+  if(period.end_date)wsQuery=wsQuery.lte('date',period.end_date<today?period.end_date:today);
+  const {data:wsData}=await wsQuery;
+  const workMap={};(wsData||[]).forEach(w=>{workMap[w.date]=w.work_type;});
   const entries=logs||[];
   const totalSales=entries.reduce((s,e)=>s+(e.sales||0),0);
   const totalRefund=entries.reduce((s,e)=>s+(e.refund||0),0);
@@ -1369,7 +1375,7 @@ async function renderSales(){
     <tr>
       <td style="font-size:11px">${e.date}</td>
       <td style="font-weight:600;font-size:11px;color:${(e.sales||0)-(e.refund||0)<0?'#c0392b':'var(--text)'}">${fmt((e.sales||0)-(e.refund||0))}</td>
-      <td style="text-align:center;font-size:10px;color:#888">${e.work_type||'-'}</td>
+      <td style="text-align:center;font-size:10px;color:#888">${workMap[e.date]||'-'}</td>
       <td style="text-align:center;font-size:11px;color:#888">${e.counsel_set||0}건</td>
       <td style="text-align:center;font-size:11px;color:#888">${e.counsel_done||0}건</td>
       <td style="text-align:center;font-size:11px;color:#888">${e.calls||0}콜</td>
