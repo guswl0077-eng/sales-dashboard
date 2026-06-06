@@ -29,7 +29,7 @@ body.dark{color-scheme:dark;
   --sched-title:#8ab4d4;--sched-text:#a8c8e0;
   --sched-muted:#6a8aa0;--sched-today:#3d4f63;
 }
-html{overflow-x:hidden}body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s;overflow-x:hidden}
+html,body{margin:0;padding:0}body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
 .auth-card{background:var(--card);border-radius:20px;border:1px solid var(--border);padding:40px 36px;width:100%;max-width:380px}
 .auth-logo{text-align:center;font-size:32px;margin-bottom:8px}
@@ -48,14 +48,14 @@ html{overflow-x:hidden}body{font-family:'Apple SD Gothic Neo','Pretendard',sans-
 .msg{font-size:12px;text-align:center;margin-top:10px;min-height:18px}
 .msg.err{color:#c0392b}.msg.ok{color:#1a8a50}
 .app{display:none}
-.topbar{background:var(--topbar);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.topbar{background:var(--topbar);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-sizing:border-box;width:100%}
 .logo{font-size:15px;font-weight:700}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .date-badge{font-size:12px;color:var(--text2);background:var(--bg);padding:4px 10px;border-radius:20px}
 .user-chip{font-size:12px;font-weight:600;background:var(--bg);padding:4px 10px;border-radius:20px;color:var(--text)}
 .admin-chip{font-size:11px;font-weight:600;background:#1a1a1a;color:#fff;padding:3px 8px;border-radius:20px}
 .logout-btn{font-size:12px;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:none}
-.nav-tabs{display:flex;gap:2px;padding:0 20px;background:var(--nav);border-bottom:1px solid var(--border);overflow-x:auto;width:100%;-webkit-overflow-scrolling:touch}
+.nav-tabs{display:flex;gap:2px;padding:0 20px;background:var(--nav);border-bottom:1px solid var(--border);overflow-x:auto;width:100%;box-sizing:border-box;-webkit-overflow-scrolling:touch}
 .tab{padding:12px 14px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
 .tab.active{color:var(--text);border-bottom-color:var(--text)}
 .content{max-width:1200px;margin:0 auto;padding:20px 16px}
@@ -313,7 +313,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .cal-header{padding:10px 12px}
   .cal-title{font-size:13px}
   .cal-nav button{padding:3px 8px;font-size:12px}
-  .topbar-right{gap:6px}
+  .topbar-right{gap:6px}.logout-btn{white-space:nowrap;font-size:12px;padding:4px 8px}
   .admin-chip{display:none}
   .report-box{font-size:12px}
   table{font-size:12px}
@@ -368,7 +368,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v61</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v62</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
