@@ -29,7 +29,7 @@ body.dark{color-scheme:dark;
   --sched-title:#8ab4d4;--sched-text:#a8c8e0;
   --sched-muted:#6a8aa0;--sched-today:#3d4f63;
 }
-*,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+*,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0}/* 그리드/플렉스 아이템이 내용물 때문에 안 줄어드는 문제 차단 */.split>*,.metrics-grid>*,#today-schedule-box>*{min-width:0}.split,.metrics-grid{min-width:0}body{font-family:'Apple SD Gothic Neo','Pretendard',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
 .auth-card{background:var(--card);border-radius:20px;border:1px solid var(--border);padding:40px 36px;width:100%;max-width:380px}
 .auth-logo{text-align:center;font-size:32px;margin-bottom:8px}
@@ -368,7 +368,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v63</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v64</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
