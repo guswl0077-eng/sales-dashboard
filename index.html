@@ -369,7 +369,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v71</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v72</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -535,7 +535,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
         <input type="checkbox" id="student-check-all" onchange="toggleAllStudents(this)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
-        <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 검색" style="flex:1" onkeydown="if(event.key==='Enter')renderStudents()">
+        <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 · 과목 검색" style="flex:1" onkeydown="if(event.key==='Enter')renderStudents()">
         <button class="btn btn-primary" onclick="renderStudents()" style="flex-shrink:0">검색</button>
         <select onchange="setStudentSort(this.value)" class="form-input" style="width:auto;padding:6px 10px;font-size:13px;flex-shrink:0;cursor:pointer"><option value="new">최신순</option><option value="old">오래된순</option><option value="name_asc">이름 ㄱ-ㅎ</option><option value="name_desc">이름 ㅎ-ㄱ</option><option value="modified">최근 수정순</option></select>
         <button class="btn btn-outline" onclick="mergeDuplicateStudents()" style="flex-shrink:0;color:#1a56db;border-color:#1a56db">중복 정리</button>
@@ -2271,6 +2271,10 @@ function setStudentStatus(v){
   document.querySelectorAll('#student-status-chips .std-chip').forEach(c=>c.classList.toggle('active',c.textContent===(v||'전체')));
   renderStudents();
 }
+async function updateSubCategory(id,val){
+  await sb.from('student_profiles').update({sub_category:val||null}).eq('id',id);
+  renderStudents();
+}
 let _studentSort='new';
 function setStudentSort(v){_studentSort=v;renderStudents();}
 async function updateSubjectStatus(id,status){
@@ -2326,16 +2330,15 @@ async function renderStudents(){
   const {data:students,error}=await query;
   if(error){el.innerHTML='<div style="color:var(--text2)">불러오기 실패</div>';return;}
   let list=students||[];
-  if(q)list=list.filter(s=>(s.name||'').includes(q)||(s.student_no||'').includes(q)||(s.phone||'').includes(q));
-  // 정렬
+  // 정렬 (과목 검색은 subjMap 빌드 후 적용)
   if(_studentSort==='new')list.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   else if(_studentSort==='old')list.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   else if(_studentSort==='name_asc')list.sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko'));
   else if(_studentSort==='name_desc')list.sort((a,b)=>(b.name||'').localeCompare(a.name||'','ko'));
   else if(_studentSort==='modified')list.sort((a,b)=>new Date(b.updated_at||b.created_at||0)-new Date(a.updated_at||a.created_at||0));
-  if(!list.length){el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:20px 0;text-align:center">수강생이 없어요</div>';return;}
-  // 과목+면담 가져오기
+  // ids: 검색 전 전체 리스트 기준 (과목 검색 포함하려면 미리 가져와야 함)
   const ids=list.map(s=>s.id);
+  if(!ids.length){el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:20px 0;text-align:center">수강생이 없어요</div>';return;}
   const [{data:subjects},{data:counsels}]=await Promise.all([
     sb.from('student_subjects').select('*').in('student_id',ids),
     sb.from('student_counsels').select('*').in('student_id',ids).order('date',{ascending:false}).order('created_at',{ascending:false})
@@ -2343,7 +2346,14 @@ async function renderStudents(){
   const subjMap={};(subjects||[]).forEach(s=>{if(!subjMap[s.student_id])subjMap[s.student_id]=[];subjMap[s.student_id].push(s);});
   Object.keys(subjMap).forEach(k=>subjMap[k].sort((a,b)=>((a.sort_order!=null?a.sort_order:999)-(b.sort_order!=null?b.sort_order:999))));
   window._subjOrder=subjMap;
-  // 진행현황 필터 (상태 과목이 하나라도 있는 학생만)
+  // 통합 검색 필터 (이름·원서번호·전화번호·과목명)
+  if(q) list=list.filter(s=>
+    (s.name||'').includes(q)||
+    (s.student_no||'').includes(q)||
+    (s.phone||'').includes(q)||
+    (subjMap[s.id]||[]).some(sub=>(sub.subject||'').includes(q))
+  );
+  // 진행현황 필터
   if(_studentStatus) list=list.filter(s=>(subjMap[s.id]||[]).some(sub=>sub.status===_studentStatus));
   const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
   Object.values(counMap).forEach(arr=>arr.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)||new Date(b.created_at||0)-new Date(a.created_at||0)));
@@ -2372,7 +2382,7 @@ async function renderStudents(){
           <input type="checkbox" class="student-check" value="${s.id}" style="width:16px;height:16px;cursor:pointer;margin-top:3px;flex-shrink:0">
           <div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
-            ${s.category?`<span class="std-cat" style="${profCatStyle(s.category)};font-weight:700">${s.category}</span>`:''}${s.sub_category?`<span style="background:${s.sub_category==='제과제빵'?'#F4A535':'#3A9E5C'};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;margin-left:2px">${s.sub_category}</span>`:''}
+            ${s.category?`<span class="std-cat" style="${profCatStyle(s.category)};font-weight:700">${s.category}</span>`:''}${s.sub_category?`<span style="background:${s.sub_category==='제과제빵'?'#F4A535':'#3A9E5C'};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;margin-left:2px">${s.sub_category}</span>`:''}${s.category==='입시'?`<select onchange="updateSubCategory('${s.id}',this.value)" style="font-size:11px;padding:2px 6px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;margin-left:4px"><option value="" ${!s.sub_category?'selected':''}>세부구분</option><option value="제과제빵" ${s.sub_category==='제과제빵'?'selected':''}>제과제빵</option><option value="조리" ${s.sub_category==='조리'?'selected':''}>조리</option></select>`:''}
             <span class="std-name">${s.name||''}</span>
             <span class="std-id">${s.student_no||''} · ${s.phone||''}</span>
           </div>
@@ -2438,7 +2448,6 @@ async function openStudentEditModal(id){
   document.getElementById('std-e-phone').value=data.phone||'';
   setExtraPhones('std-e-extra-phones', data.parent_mom||'');
   document.getElementById('std-e-cat').value=data.category||'요리정복';
-  document.getElementById('std-e-subcat').value=data.sub_category||'';
   document.getElementById('std-edit-modal').style.display='flex';
 }
 function closeStudentEditModal(){document.getElementById('std-edit-modal').style.display='none';}
@@ -2450,8 +2459,7 @@ async function saveStudentEdit(){
     student_no:document.getElementById('std-e-no').value.trim(),
     phone:document.getElementById('std-e-phone').value.trim(),
     parent_mom:getExtraPhones('std-e-extra-phones'),
-    category:document.getElementById('std-e-cat').value,
-    sub_category:document.getElementById('std-e-subcat').value||null
+    category:document.getElementById('std-e-cat').value
   };
   await sb.from('student_profiles').update(row).eq('id',id);
   closeStudentEditModal();showToast('수정됐어요 ✓');renderStudents();
@@ -3074,13 +3082,6 @@ sb.auth.getSession().then(({data:{session}})=>{
       <div class="form-group"><label class="form-label">구분</label>
         <select class="form-input" id="std-e-cat">
           <option>원데이</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">세부 구분 <span style="font-size:11px;color:var(--text2)">(입시용: 제과제빵 / 조리)</span></label>
-        <select class="form-input" id="std-e-subcat">
-          <option value="">없음</option>
-          <option value="제과제빵">제과제빵</option>
-          <option value="조리">조리</option>
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px">
