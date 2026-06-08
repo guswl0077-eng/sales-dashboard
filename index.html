@@ -314,6 +314,10 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .cal-title{font-size:13px}
   .cal-nav button{padding:3px 8px;font-size:12px}
   .topbar-right{gap:6px}.logout-btn{white-space:nowrap;font-size:12px;padding:4px 8px}
+  .todo-add-row{gap:4px}
+  #counsel-text{min-width:0;font-size:12px}
+  #counsel-hour,#counsel-min{width:30px;padding:6px 3px}
+  #counsel-type-sangdam,#counsel-type-myundam{padding:4px 8px;font-size:11px}
   .admin-chip{display:none}
   .report-box{font-size:12px}
   table{font-size:12px}
@@ -369,7 +373,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v72</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v73</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -522,6 +526,12 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         </div>
       </div>
       <!-- 2줄: 검색 + 검색버튼 + 선택삭제 -->
+      <div id="student-subcat-chips" style="display:none;gap:6px;align-items:center;margin-bottom:6px">
+        <span style="font-size:11px;color:var(--text3)">└</span>
+        <div class="std-chip active" data-val="" onclick="setStudentSubCat('')">전체</div>
+        <div class="std-chip" data-val="제과제빵" onclick="setStudentSubCat('제과제빵')" style="background:#F4A535;color:#fff;border-color:#F4A535">제과제빵</div>
+        <div class="std-chip" data-val="조리" onclick="setStudentSubCat('조리')" style="background:#3A9E5C;color:#fff;border-color:#3A9E5C">조리</div>
+      </div>
       <div id="student-status-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
         <div class="std-chip active" onclick="setStudentStatus('',this)">전체</div>
         <div class="std-chip" onclick="setStudentStatus('미배정',this)">미배정</div>
@@ -2261,7 +2271,10 @@ async function mergeDuplicateStudents(){
 
 function setStudentCat(cat){
   _studentCat=cat;
+  _studentSubCat=''; // 카테고리 바뀌면 서브 초기화
   document.querySelectorAll('#student-cat-chips .std-chip').forEach(c=>c.classList.toggle('active',c.textContent===cat));
+  const subEl=document.getElementById('student-subcat-chips');
+  if(subEl) subEl.style.display=cat==='입시'?'flex':'none';
   renderStudents();
 }
 
@@ -2273,6 +2286,12 @@ function setStudentStatus(v){
 }
 async function updateSubCategory(id,val){
   await sb.from('student_profiles').update({sub_category:val||null}).eq('id',id);
+  renderStudents();
+}
+let _studentSubCat=''; // 입시 서브 카테고리 필터
+function setStudentSubCat(v){
+  _studentSubCat=v;
+  document.querySelectorAll('#student-subcat-chips .std-chip').forEach(c=>c.classList.toggle('active',c.dataset.val===(v||'')));
   renderStudents();
 }
 let _studentSort='new';
@@ -2353,6 +2372,8 @@ async function renderStudents(){
     (s.phone||'').includes(q)||
     (subjMap[s.id]||[]).some(sub=>(sub.subject||'').includes(q))
   );
+  // 서브카테고리 필터 (입시 - 제과제빵/조리)
+  if(_studentSubCat) list=list.filter(s=>s.sub_category===_studentSubCat);
   // 진행현황 필터
   if(_studentStatus) list=list.filter(s=>(subjMap[s.id]||[]).some(sub=>sub.status===_studentStatus));
   const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
