@@ -369,7 +369,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v69</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v70</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -522,6 +522,17 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         </div>
       </div>
       <!-- 2줄: 검색 + 검색버튼 + 선택삭제 -->
+      <div id="student-status-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <div class="std-chip active" onclick="setStudentStatus('',this)">전체</div>
+        <div class="std-chip" onclick="setStudentStatus('미배정',this)">미배정</div>
+        <div class="std-chip" onclick="setStudentStatus('대기',this)">대기</div>
+        <div class="std-chip" onclick="setStudentStatus('배정완료',this)">배정완료</div>
+        <div class="std-chip" onclick="setStudentStatus('개강',this)">개강</div>
+        <div class="std-chip" onclick="setStudentStatus('종강',this)">종강</div>
+        <div class="std-chip" onclick="setStudentStatus('환불',this)">환불</div>
+        <div class="std-chip" onclick="setStudentStatus('COD',this)">COD</div>
+        <div class="std-chip" onclick="setStudentStatus('휴학',this)">휴학</div>
+      </div>
       <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
         <input type="checkbox" id="student-check-all" onchange="toggleAllStudents(this)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
         <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 검색" style="flex:1" onkeydown="if(event.key==='Enter')renderStudents()">
@@ -2250,10 +2261,16 @@ async function mergeDuplicateStudents(){
 
 function setStudentCat(cat){
   _studentCat=cat;
-  document.querySelectorAll('.std-chip').forEach(c=>c.classList.toggle('active',c.textContent===cat));
+  document.querySelectorAll('#student-cat-chips .std-chip').forEach(c=>c.classList.toggle('active',c.textContent===cat));
   renderStudents();
 }
 
+let _studentStatus='';
+function setStudentStatus(v){
+  _studentStatus=v;
+  document.querySelectorAll('#student-status-chips .std-chip').forEach(c=>c.classList.toggle('active',c.textContent===(v||'전체')));
+  renderStudents();
+}
 let _studentSort='new';
 function setStudentSort(v){_studentSort=v;renderStudents();}
 async function updateSubjectStatus(id,status){
@@ -2326,6 +2343,8 @@ async function renderStudents(){
   const subjMap={};(subjects||[]).forEach(s=>{if(!subjMap[s.student_id])subjMap[s.student_id]=[];subjMap[s.student_id].push(s);});
   Object.keys(subjMap).forEach(k=>subjMap[k].sort((a,b)=>((a.sort_order!=null?a.sort_order:999)-(b.sort_order!=null?b.sort_order:999))));
   window._subjOrder=subjMap;
+  // 진행현황 필터 (상태 과목이 하나라도 있는 학생만)
+  if(_studentStatus) list=list.filter(s=>(subjMap[s.id]||[]).some(sub=>sub.status===_studentStatus));
   const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
   Object.values(counMap).forEach(arr=>arr.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)||new Date(b.created_at||0)-new Date(a.created_at||0)));
   el.innerHTML=list.map(s=>{
