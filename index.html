@@ -373,7 +373,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v73</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v74</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -2736,32 +2736,112 @@ async function uploadStudentExcel(input){
   showToast(`${successCount}명 추가됐어요 ✓`);renderStudents();
 }
 
+let _pastGroupOpen={};
+function togglePastGroup(key){
+  _pastGroupOpen[key]=!_pastGroupOpen[key];
+  const body=document.getElementById('body_'+key);
+  const icon=document.getElementById('icon_'+key);
+  const hdr=document.getElementById('hdr_'+key);
+  if(!body)return;
+  const open=_pastGroupOpen[key];
+  body.style.display=open?'block':'none';
+  if(icon)icon.textContent=open?'▼':'▶';
+  if(hdr){hdr.style.borderRadius=open?'10px 10px 0 0':'10px';hdr.style.borderBottom=open?'none':'';}
+}
+function _buildSchedCard(date,items,isToday){
+  const d=new Date(date+'T00:00:00');
+  const label=`${date.slice(5,7)}월 ${date.slice(8,10)}일 (${DAYS[d.getDay()]})`;
+  return `<div class="schedule-card" style="${isToday?'border-color:#f59e0b;background:#fffdf5':''}">
+    <div class="schedule-date-header" style="${isToday?'color:#b45309':''}">📅 ${label}${isToday?' · 오늘':''}</div>
+    ${items.map((s,i)=>`<div class="schedule-item" draggable="true" data-id="${s.id}" data-date="${date}" data-idx="${i}"
+      ondragstart="schedDragStart(event,'${date}',${i})"
+      ondragover="schedDragOver(event)"
+      ondragleave="schedDragLeave(event)"
+      ondrop="schedDrop(event,'${date}',${i})">
+      <span class="sched-drag">⠿</span>
+      <div class="schedule-dot"></div>
+      <span class="schedule-title-txt" onclick="editScheduleInline(this,'${s.id}')" style="cursor:text;flex:1;overflow:hidden">${s.title}</span>
+      <span title="색상" onclick="event.stopPropagation();showSchedColorPopup('${s.id}',this)" style="flex-shrink:0;color:#ccc;cursor:pointer;padding:0 4px;font-size:13px">🎨</span>
+      <span onclick="event.stopPropagation();deleteSchedule('${s.id}')" style="flex-shrink:0;color:#ddd;cursor:pointer;padding:0 4px">×</span>
+    </div>`).join('')}
+  </div>`;
+}
+
 async function renderSchedule(){
   const {data}=await sb.from('schedules').select('*').order('date',{ascending:true}).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
   const el=document.getElementById('schedule-list');
   if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3)">등록된 개강 일정이 없어요</div>';return;}
-  const groups={};(data||[]).forEach(s=>{if(!groups[s.date])groups[s.date]=[];groups[s.date].push(s)});
+  const groups={};(data||[]).forEach(s=>{if(!groups[s.date])groups[s.date]=[];groups[s.date].push(s);});
   window._schedGroups=groups;
   const today=todayKey();
-  el.innerHTML=Object.entries(groups).map(([date,items])=>{
-    const d=new Date(date+'T00:00:00');
-    const label=`${date.slice(5,7)}월 ${date.slice(8,10)}일 (${DAYS[d.getDay()]})`;
-    const isToday=date===today;
-    return `<div class="schedule-card" style="${isToday?'border-color:#f59e0b;background:#fffdf5':''}">
-      <div class="schedule-date-header" style="${isToday?'color:#b45309':''}">📅 ${label}${isToday?' · 오늘':''}</div>
-      ${items.map((s,i)=>{const safeId=s.id;return `<div class="schedule-item" draggable="true" data-id="${s.id}" data-date="${date}" data-idx="${i}"
-        ondragstart="schedDragStart(event,'${date}',${i})"
-        ondragover="schedDragOver(event)"
-        ondragleave="schedDragLeave(event)"
-        ondrop="schedDrop(event,'${date}',${i})">
-        <span class="sched-drag">⠿</span>
-        <div class="schedule-dot"></div>
-        <span class="schedule-title-txt" onclick="editScheduleInline(this,'${safeId}')" style="cursor:text;flex:1;overflow:hidden">${s.title}</span>
-        <span title="색상" onclick="event.stopPropagation();showSchedColorPopup('${safeId}',this)" style="flex-shrink:0;color:#ccc;cursor:pointer;padding:0 4px;font-size:13px">🎨</span>
-        <span onclick="event.stopPropagation();deleteSchedule('${safeId}')" style="flex-shrink:0;color:#ddd;cursor:pointer;padding:0 4px">×</span>
-      </div>`;}).join('')}
-    </div>`;
-  }).join('');
+  const curYear=new Date().getFullYear();
+
+  // 과거(어제이전) vs 현재/미래 분리
+  const pastEntries=Object.entries(groups).filter(([d])=>d<today).sort(([a],[b])=>b.localeCompare(a));
+  const futureEntries=Object.entries(groups).filter(([d])=>d>=today).sort(([a],[b])=>a.localeCompare(b));
+
+  // 과거 → 영업일별 그룹
+  const periodMap=new Map();
+  for(const [date,items] of pastEntries){
+    const p=(periodPickerData||[]).find(p=>p.start_date<=date&&p.end_date>=date);
+    const key=p?p.name:'기타';
+    const yr=p?new Date(p.start_date+'T00:00:00').getFullYear():curYear;
+    const sd=p?p.start_date:date;
+    if(!periodMap.has(key))periodMap.set(key,{dates:[],year:yr,startDate:sd});
+    periodMap.get(key).dates.push([date,items]);
+  }
+  const sortedPeriods=[...periodMap.entries()].sort(([,a],[,b])=>b.startDate.localeCompare(a.startDate));
+
+  // 연도별 그룹
+  const byYear={};
+  for(const [pName,info] of sortedPeriods){
+    if(!byYear[info.year])byYear[info.year]=[];
+    byYear[info.year].push([pName,info]);
+  }
+
+  // 과거 HTML 빌드
+  let pastHTML='';
+  for(const [yr,periods] of Object.entries(byYear).sort(([a],[b])=>b-a)){
+    const periodsHTML=periods.map(([pName,{dates}])=>{
+      const k='p_'+pName.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_가-힣]/g,'');
+      const open=!!_pastGroupOpen[k];
+      const cnt=dates.length;
+      return `<div style="margin-bottom:6px">
+        <div id="hdr_${k}" onclick="togglePastGroup('${k}')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:${open?'10px 10px 0 0':'10px'};background:var(--bg3);cursor:pointer;border:1px solid var(--border);${open?'border-bottom:none':''}">
+          <span id="icon_${k}" style="font-size:11px">${open?'▼':'▶'}</span>
+          <span style="font-weight:600;color:var(--text)">${pName}</span>
+          <span style="font-size:12px;color:var(--text3)">지난 일정</span>
+          <span style="margin-left:auto;background:var(--border2);color:var(--text2);padding:1px 8px;border-radius:10px;font-size:11px">${cnt}일</span>
+        </div>
+        <div id="body_${k}" style="display:${open?'block':'none'};border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden">
+          ${dates.map(([d,it])=>_buildSchedCard(d,it,false)).join('')}
+        </div>
+      </div>`;
+    }).join('');
+    if(parseInt(yr)<curYear){
+      const yk='yr_'+yr;
+      const yOpen=!!_pastGroupOpen[yk];
+      pastHTML+=`<div style="margin-bottom:6px">
+        <div id="hdr_${yk}" onclick="togglePastGroup('${yk}')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:${yOpen?'10px 10px 0 0':'10px'};background:var(--bg3);cursor:pointer;border:1px solid var(--border);${yOpen?'border-bottom:none':''}">
+          <span id="icon_${yk}" style="font-size:11px">${yOpen?'▼':'▶'}</span>
+          <span style="font-weight:600;color:var(--text)">${String(yr).slice(2)}년 영업일 지난 일정</span>
+        </div>
+        <div id="body_${yk}" style="display:${yOpen?'block':'none'};border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:8px">
+          ${periodsHTML}
+        </div>
+      </div>`;
+    } else {
+      pastHTML+=periodsHTML;
+    }
+  }
+
+  // 구분선
+  const sep=(pastHTML&&futureEntries.length)?`<div style="display:flex;align-items:center;gap:8px;margin:12px 0 10px"><div style="flex:1;height:1px;background:var(--border2)"></div><span style="font-size:11px;color:var(--text3);white-space:nowrap">현재 영업일</span><div style="flex:1;height:1px;background:var(--border2)"></div></div>`:'';
+
+  // 미래 HTML
+  const futureHTML=futureEntries.map(([d,it])=>_buildSchedCard(d,it,d===today)).join('');
+
+  el.innerHTML=pastHTML+sep+futureHTML||(pastHTML||futureHTML?'':'<div style="font-size:13px;color:var(--text3)">등록된 개강 일정이 없어요</div>');
 }
 
 async function deleteSchedule(id){await sb.from('schedules').delete().eq('id',id);renderSchedule();showToast('삭제됐어요')}
