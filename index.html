@@ -375,7 +375,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v76</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v77</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -2439,7 +2439,7 @@ async function renderStudents(){
           ${s.parent_mom?(s.parent_mom.split('|').map(item=>{const[w,p]=(item||'').split(':');return w&&p?`<span class="std-parent">☎ ${w} ${p}</span>`:''}).join(' &nbsp;')):'' }
           </div>
         </div>
-        <div style="display:flex;gap:5px;flex-shrink:0"><button onclick="openStudentFullView('${s.id}')" style="font-size:11px;padding:3px 11px;border-radius:6px;border:1px solid #5852C0;background:#EEEDFB;color:#312B80;font-weight:600;cursor:pointer">전체 보기</button><button onclick="toggleHidden('${s.id}',${!s.hidden})" title="${s.hidden?'다시 보이기':'숨기기'}" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">${s.hidden?'👁️':'🙈'}</button><button onclick="openStudentEditModal('${s.id}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">수정</button></div>
+        <div style="display:flex;gap:5px;flex-shrink:0"><button onclick="openStudentFullView('${s.id}')" style="font-size:11px;padding:3px 11px;border-radius:6px;border:1px solid #5852C0;background:#EEEDFB;color:#312B80;font-weight:600;cursor:pointer">전체 보기</button><button onclick="toggleHidden('${s.id}',${!s.hidden})" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">${s.hidden?'보이기':'숨기기'}</button><button onclick="openStudentEditModal('${s.id}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">수정</button></div>
       </div>
       <table class="std-subj-table">
         <thead><tr><th style="width:32%">등록과목</th><th style="width:10%">요일</th><th style="width:13%">개강일</th><th style="width:13%">종강일</th><th style="width:13%">수업시간</th><th style="width:10%">진행</th></tr></thead>
