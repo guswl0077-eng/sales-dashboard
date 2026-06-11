@@ -375,7 +375,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v75</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v76</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -522,6 +522,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div class="std-chip" onclick="setStudentCat('전체')">전체</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
+          <button id="hidden-toggle-btn" class="btn btn-outline" onclick="toggleShowHidden()" style="font-size:12px">숨겨진 수강생 보기</button>
           <button class="btn btn-primary" onclick="openStudentAddModal()">＋ 수강생 추가</button>
           <button class="btn btn-outline" onclick="downloadStudentTemplate()">↓ 양식 다운로드</button>
           <label class="btn btn-outline" style="cursor:pointer">↑ 파일 업로드<input type="file" id="student-excel-file" accept=".xlsx,.xls" style="display:none" onchange="uploadStudentExcel(this)"></label>
@@ -2283,6 +2284,18 @@ function setStudentCat(cat){
 }
 
 let _studentStatus='';
+let _showHidden=false;
+async function toggleHidden(id,hide){
+  await sb.from('student_profiles').update({hidden:hide}).eq('id',id);
+  renderStudents();
+  showToast(hide?'숨겼어요':'다시 보이게 했어요');
+}
+function toggleShowHidden(){
+  _showHidden=!_showHidden;
+  const btn=document.getElementById('hidden-toggle-btn');
+  if(btn){btn.textContent=_showHidden?'← 숨김 해제':'숨겨진 수강생 보기';btn.style.background=_showHidden?'var(--text)':'';btn.style.color=_showHidden?'var(--bg)':'';}
+  renderStudents();
+}
 function setStudentStatus(v){
   _studentStatus=v;
   document.querySelectorAll('#student-status-chips .std-chip').forEach(c=>c.classList.toggle('active',c.textContent===(v||'전체')));
@@ -2350,6 +2363,7 @@ async function renderStudents(){
   const q=document.getElementById('student-search')?.value?.trim()||'';
   let query=sb.from('student_profiles').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
   if(_studentCat!=='전체')query=query.eq('category',_studentCat);
+  if(q){/* 검색 시 숨김 포함 */}else if(_showHidden){query=query.eq('hidden',true);}else{query=query.or('hidden.eq.false,hidden.is.null');}
   const {data:students,error}=await query;
   if(error){el.innerHTML='<div style="color:var(--text2)">불러오기 실패</div>';return;}
   let list=students||[];
@@ -2369,6 +2383,17 @@ async function renderStudents(){
   const subjMap={};(subjects||[]).forEach(s=>{if(!subjMap[s.student_id])subjMap[s.student_id]=[];subjMap[s.student_id].push(s);});
   Object.keys(subjMap).forEach(k=>subjMap[k].sort((a,b)=>((a.sort_order!=null?a.sort_order:999)-(b.sort_order!=null?b.sort_order:999))));
   window._subjOrder=subjMap;
+  // 자동 개강/종강 업데이트 (배정완료/개강/종강만 관리)
+  const _autoUpdate=[];
+  const _today=todayKey();
+  Object.entries(subjMap).forEach(([sid,subjs])=>subjs.forEach(sub=>{
+    if(!sub.start_date||!sub.end_date)return;
+    const auto=['배정완료','개강','종강'].includes(sub.status||'');
+    if(!auto)return;
+    const newStatus=_today>=sub.start_date&&_today<=sub.end_date?'개강':_today>sub.end_date?'종강':sub.status;
+    if(newStatus!==sub.status){_autoUpdate.push({id:sub.id,status:newStatus});sub.status=newStatus;}
+  }));
+  if(_autoUpdate.length)Promise.all(_autoUpdate.map(u=>sb.from('student_subjects').update({status:u.status}).eq('id',u.id)));
   // 통합 검색 필터 (이름·원서번호·전화번호·과목명)
   if(q) list=list.filter(s=>
     (s.name||'').includes(q)||
@@ -2414,7 +2439,7 @@ async function renderStudents(){
           ${s.parent_mom?(s.parent_mom.split('|').map(item=>{const[w,p]=(item||'').split(':');return w&&p?`<span class="std-parent">☎ ${w} ${p}</span>`:''}).join(' &nbsp;')):'' }
           </div>
         </div>
-        <div style="display:flex;gap:5px;flex-shrink:0"><button onclick="openStudentFullView('${s.id}')" style="font-size:11px;padding:3px 11px;border-radius:6px;border:1px solid #5852C0;background:#EEEDFB;color:#312B80;font-weight:600;cursor:pointer">전체 보기</button><button onclick="openStudentEditModal('${s.id}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">수정</button></div>
+        <div style="display:flex;gap:5px;flex-shrink:0"><button onclick="openStudentFullView('${s.id}')" style="font-size:11px;padding:3px 11px;border-radius:6px;border:1px solid #5852C0;background:#EEEDFB;color:#312B80;font-weight:600;cursor:pointer">전체 보기</button><button onclick="toggleHidden('${s.id}',${!s.hidden})" title="${s.hidden?'다시 보이기':'숨기기'}" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">${s.hidden?'👁️':'🙈'}</button><button onclick="openStudentEditModal('${s.id}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer">수정</button></div>
       </div>
       <table class="std-subj-table">
         <thead><tr><th style="width:32%">등록과목</th><th style="width:10%">요일</th><th style="width:13%">개강일</th><th style="width:13%">종강일</th><th style="width:13%">수업시간</th><th style="width:10%">진행</th></tr></thead>
