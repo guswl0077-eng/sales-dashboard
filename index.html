@@ -319,7 +319,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .todo-add-row{gap:4px}
   #counsel-text{min-width:0;font-size:12px}
   #student-search{flex:1!important;min-width:0!important}
-  select[onchange="setStudentSort(this.value)"]{width:70px!important;padding:5px 2px!important;font-size:11px!important}
+  #student-sort-sel{width:74px!important;padding:5px 2px!important;font-size:11px!important;flex-shrink:0!important}
   #counsel-hour,#counsel-min{width:30px;padding:6px 3px}
   #counsel-type-sangdam,#counsel-type-myundam{padding:4px 8px;font-size:11px}
   .admin-chip{display:none}
@@ -377,7 +377,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v79</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v80</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -550,9 +550,9 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       </div>
       <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
         <input type="checkbox" id="student-check-all" onchange="toggleAllStudents(this)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
-        <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 · 과목 검색" style="flex:1" onkeydown="if(event.key==='Enter')renderStudents()">
+        <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 · 과목 검색" style="flex:1;min-width:0" onkeydown="if(event.key==='Enter')renderStudents()"> 
         <button class="btn btn-primary" onclick="renderStudents()" style="flex-shrink:0">검색</button>
-        <select onchange="setStudentSort(this.value)" class="form-input" style="width:auto;padding:6px 10px;font-size:13px;flex-shrink:0;cursor:pointer"><option value="new">최신순</option><option value="old">오래된순</option><option value="name_asc">이름 ㄱ-ㅎ</option><option value="name_desc">이름 ㅎ-ㄱ</option><option value="modified">최근 수정순</option></select>
+        <select onchange="setStudentSort(this.value)" class="form-input" id="student-sort-sel" style="width:auto;padding:6px 10px;font-size:13px;flex-shrink:0;cursor:pointer"><option value="new">최신순</option><option value="old">오래된순</option><option value="name_asc">이름 ㄱ-ㅎ</option><option value="name_desc">이름 ㅎ-ㄱ</option><option value="modified">최근 수정순</option></select>
         <button class="btn btn-outline" onclick="mergeDuplicateStudents()" style="flex-shrink:0;color:#1a56db;border-color:#1a56db">중복 정리</button>
         <button class="btn btn-outline" onclick="deleteSelectedStudents()" style="flex-shrink:0;color:#e74c3c;border-color:#e74c3c">선택 삭제</button>
       </div>
