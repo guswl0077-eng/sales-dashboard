@@ -377,7 +377,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v81</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v82</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1601,11 +1601,15 @@ async function renderCalendar(){
     if(!calTagData[d.date])calTagData[d.date]=[];
     calTagData[d.date].push(d);
   });
-  // 날짜별로 personal 태그가 있으면 personal만, 없으면 shared 유지
+  // 배경형: personal 우선(1개), 배지형: 전부 표시
   Object.keys(calTagData).forEach(date=>{
-    const personalOnes=calTagData[date].filter(d=>d.cal_tags.scope==='personal'&&d.user_id===currentUser.id);
-    if(personalOnes.length) calTagData[date]=personalOnes;
-    else calTagData[date]=calTagData[date].filter(d=>d.cal_tags.scope==='shared');
+    const all=calTagData[date];
+    const bgs=all.filter(d=>(d.cal_tags.display_type||'bg')==='bg');
+    const badges=all.filter(d=>(d.cal_tags.display_type||'bg')==='badge');
+    // 배경형은 personal 있으면 personal, 없으면 shared 중 1개만
+    const myBg=bgs.filter(d=>d.cal_tags.scope==='personal'&&d.user_id===currentUser.id);
+    const pickBg=myBg.length?myBg.slice(0,1):bgs.filter(d=>d.cal_tags.scope==='shared').slice(0,1);
+    calTagData[date]=[...pickBg,...badges];
   });
 
   let html='';
@@ -1734,12 +1738,20 @@ async function stuDrop(e,toIdx){
   e.currentTarget.style.borderTop='';
   document.querySelectorAll('#student-tbody tr').forEach(r=>r.style.opacity='');
   if(_stuDragIdx===null||_stuDragIdx===toIdx){_stuDragIdx=null;return;}
-  const arr=[...(window._studentOrder||[])];
-  const moved=arr.splice(_stuDragIdx,1)[0];
-  arr.splice(toIdx,0,moved);
-  _stuDragIdx=null;
+  const list=window._studentOrder||[];
+  const from=_stuDragIdx;_stuDragIdx=null;
+  const moved=list[from], target=list[toIdx];
+  if(!moved||!target){await renderList();return;}
+  // 같은 영업일끼리만 이동 허용
+  if((moved.period||'')!==(target.period||'')){showToast('같은 영업일 안에서만 순서를 바꿀 수 있어요');await renderList();return;}
+  // 같은 영업일 그룹만 추출해서 재정렬
+  const group=list.filter(s=>(s.period||'')===(moved.period||''));
+  const gFrom=group.findIndex(s=>s.id===moved.id);
+  const gTo=group.findIndex(s=>s.id===target.id);
+  const m=group.splice(gFrom,1)[0];
+  group.splice(gTo,0,m);
   try{
-    await Promise.all(arr.map((s,i)=>sb.from('students').update({sort_order:i}).eq('id',s.id)));
+    await Promise.all(group.map((s,i)=>sb.from('students').update({sort_order:i}).eq('id',s.id)));
   }catch(err){console.warn('sort_order 저장 실패:',err);}
   await renderList();
 }
@@ -1928,7 +1940,10 @@ async function renderList(){
     const aCancel=cancelStatus.includes(a.status)?1:0;
     const bCancel=cancelStatus.includes(b.status)?1:0;
     if(aCancel!==bCancel) return aCancel-bCancel;
-    return periodSortKey(a.period)-periodSortKey(b.period);
+    const pk=periodSortKey(a.period)-periodSortKey(b.period);
+    if(pk!==0) return pk;
+    // 같은 영업일 안에서는 sort_order 순
+    return (a.sort_order!=null?a.sort_order:999)-(b.sort_order!=null?b.sort_order:999);
   });
   // 영업일 필터 옵션 채우기
   const periodSel=document.getElementById('list-period-filter');
