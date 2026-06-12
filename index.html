@@ -318,12 +318,8 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .topbar-right{gap:6px}.logout-btn{white-space:nowrap;font-size:12px;padding:4px 8px}
   .todo-add-row{gap:4px}
   #counsel-text{min-width:0;font-size:12px}
-  /* 수강생 검색 행 모바일 정리 */
-  .student-search-row #student-search{flex:1 1 100%!important;min-width:0!important;order:1}
-  .student-search-row #student-check-all{order:0}
-  .student-search-row .ssr-search{order:2;font-size:12px;padding:6px 12px}
-  .student-search-row .ssr-sort{order:3;width:auto!important;font-size:12px!important;padding:6px 8px!important}
-  .student-search-row .ssr-extra{order:4;font-size:12px;padding:6px 10px;flex:1}
+  #student-search{flex:1!important;min-width:0!important}
+  #student-sort-sel{width:62px!important;padding:6px 2px!important;font-size:10px!important;flex-shrink:0!important}
   #counsel-hour,#counsel-min{width:30px;padding:6px 3px}
   #counsel-type-sangdam,#counsel-type-myundam{padding:4px 8px;font-size:11px}
   .admin-chip{display:none}
@@ -527,7 +523,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div class="std-chip" onclick="setStudentCat('입시')">입시</div>
           <div class="std-chip" onclick="setStudentCat('전체')">전체</div>
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button id="hidden-toggle-btn" class="btn btn-outline" onclick="toggleShowHidden()" style="font-size:12px">숨겨진 수강생 보기</button>
           <button class="btn btn-primary" onclick="openStudentAddModal()">＋ 수강생 추가</button>
           <button class="btn btn-outline" onclick="downloadStudentTemplate()">↓ 양식 다운로드</button>
@@ -552,13 +548,13 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         <div class="std-chip" onclick="setStudentStatus('COD',this)">COD</div>
         <div class="std-chip" onclick="setStudentStatus('휴학',this)">휴학</div>
       </div>
-      <div class="student-search-row" style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
         <input type="checkbox" id="student-check-all" onchange="toggleAllStudents(this)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
-        <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 · 과목 검색" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')renderStudents()">
-        <button class="btn btn-primary ssr-search" onclick="renderStudents()" style="flex-shrink:0">검색</button>
-        <select onchange="setStudentSort(this.value)" class="form-input ssr-sort" id="student-sort-sel" style="width:auto;padding:6px 10px;font-size:13px;flex-shrink:0;cursor:pointer"><option value="new">최신순</option><option value="old">오래된순</option><option value="name_asc">이름 ㄱ-ㅎ</option><option value="name_desc">이름 ㅎ-ㄱ</option><option value="modified">최근 수정순</option></select>
-        <button class="btn btn-outline ssr-extra" onclick="mergeDuplicateStudents()" style="flex-shrink:0;color:#1a56db;border-color:#1a56db">중복 정리</button>
-        <button class="btn btn-outline ssr-extra" onclick="deleteSelectedStudents()" style="flex-shrink:0;color:#e74c3c;border-color:#e74c3c">선택 삭제</button>
+        <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 · 과목 검색" style="flex:1;min-width:0" onkeydown="if(event.key==='Enter')renderStudents()"> 
+        <button class="btn btn-primary" onclick="renderStudents()" style="flex-shrink:0">검색</button>
+        <select onchange="setStudentSort(this.value)" class="form-input" id="student-sort-sel" style="width:auto;padding:6px 10px;font-size:13px;flex-shrink:0;cursor:pointer"><option value="new">최신순</option><option value="old">오래된순</option><option value="name_asc">이름 ㄱ-ㅎ</option><option value="name_desc">이름 ㅎ-ㄱ</option><option value="modified">최근 수정순</option></select>
+        <button class="btn btn-outline" onclick="mergeDuplicateStudents()" style="flex-shrink:0;color:#1a56db;border-color:#1a56db">중복 정리</button>
+        <button class="btn btn-outline" onclick="deleteSelectedStudents()" style="flex-shrink:0;color:#e74c3c;border-color:#e74c3c">선택 삭제</button>
       </div>
       <div id="student-list"></div>
     </div>
