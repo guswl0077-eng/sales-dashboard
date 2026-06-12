@@ -375,7 +375,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v77</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v78</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -791,7 +791,7 @@ let currentUser=null,currentProfile=null,todos=[],fixedTodos=[];
 let calWorkData={},calScheduleData={},calLogData={},calTagData={},calTodoData={};
 let sharedTags=[],personalTags=[],selectedTag=null;
 let selectedColors={shared:'#fde8e8',personal:'#e8f0fe'};
-let calPeriodIdx=0,allPeriods=[];
+let calPeriodIdx=0,allPeriods=[],_calInitialized=false;
 let dayModalDate=null,selectedWorkType=null;
 const isAdmin=()=>currentProfile?.username?.trim()===ADMIN_ID.trim();
 
@@ -1510,6 +1510,13 @@ function hexToRgba(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.sli
 async function renderCalendar(){
   const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:true});
   allPeriods=periods||[];
+  if(!_calInitialized&&allPeriods.length){
+    const _t=todayKey();
+    const _ci=allPeriods.findIndex(p=>p.start_date<=_t&&p.end_date>=_t);
+    if(_ci>=0){calPeriodIdx=_ci;}
+    else{const _ni=allPeriods.findIndex(p=>p.start_date>_t);calPeriodIdx=_ni>=0?Math.max(0,_ni-1):allPeriods.length-1;}
+    _calInitialized=true;
+  }
 
   if(!allPeriods.length){
     document.getElementById('cal-title').textContent='영업일 없음';
@@ -3104,8 +3111,10 @@ async function renderReportYearly(){
   const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:false});
   if(!periods||!periods.length){document.getElementById('report-yearly-grid').innerHTML='<div style="color:var(--text2);font-size:13px">영업일 기록이 없어요</div>';return;}
   const today=todayKey();
+  const activePeriods=periods.filter(p=>p.start_date<=today);
+  if(!activePeriods.length){document.getElementById('report-yearly-grid').innerHTML='<div style="color:var(--text2);font-size:13px">표시할 영업일이 없어요</div>';return;}
   // 각 영업일별 합산
-  const cards=await Promise.all(periods.map(async p=>{
+  const cards=await Promise.all(activePeriods.map(async p=>{
     const [logsRes,todosRes]=await Promise.all([
       sb.from('daily_logs').select('sales,refund,counsel_set,counsel_done,calls,mins,blog').eq('user_id',currentUser.id).gte('date',p.start_date).lte('date',p.end_date||today),
       sb.from('todos').select('done').eq('user_id',currentUser.id).gte('date',p.start_date).lte('date',p.end_date||today).eq('is_fixed',false)
