@@ -319,7 +319,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .todo-add-row{gap:4px}
   #counsel-text{min-width:0;font-size:12px}
   #student-search{flex:1!important;min-width:0!important}
-  #student-sort-sel{width:62px!important;padding:6px 2px!important;font-size:10px!important;flex-shrink:0!important}
+  #student-sort-sel{width:74px!important;padding:5px 2px!important;font-size:11px!important;flex-shrink:0!important}
   #counsel-hour,#counsel-min{width:30px;padding:6px 3px}
   #counsel-type-sangdam,#counsel-type-myundam{padding:4px 8px;font-size:11px}
   .admin-chip{display:none}
@@ -477,6 +477,10 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
             <div class="color-palette-popup" id="shared-palette" style="display:none"></div>
           </div>
           <input class="todo-input" id="shared-tag-text" placeholder="태그 이름 입력..." style="flex:1">
+          <div style="display:flex;gap:3px;flex-shrink:0">
+            <button id="shared-dtype-bg" onclick="setTagDisplayType('shared','bg')" style="padding:5px 9px;border-radius:7px;border:1px solid #1a1a1a;background:#1a1a1a;color:#fff;font-size:11px;cursor:pointer;white-space:nowrap">🎨 배경</button>
+            <button id="shared-dtype-badge" onclick="setTagDisplayType('shared','badge')" style="padding:5px 9px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:11px;cursor:pointer;white-space:nowrap">🏷️ 배지</button>
+          </div>
           <button class="btn btn-primary btn-sm" onclick="addTag('shared')">추가</button>
         </div>
       </div>
@@ -489,6 +493,10 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
             <div class="color-palette-popup" id="personal-palette" style="display:none"></div>
           </div>
           <input class="todo-input" id="personal-tag-text" placeholder="태그 이름 입력..." style="flex:1">
+          <div style="display:flex;gap:3px;flex-shrink:0">
+            <button id="personal-dtype-bg" onclick="setTagDisplayType('personal','bg')" style="padding:5px 9px;border-radius:7px;border:1px solid #1a1a1a;background:#1a1a1a;color:#fff;font-size:11px;cursor:pointer;white-space:nowrap">🎨 배경</button>
+            <button id="personal-dtype-badge" onclick="setTagDisplayType('personal','badge')" style="padding:5px 9px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:11px;cursor:pointer;white-space:nowrap">🏷️ 배지</button>
+          </div>
           <button class="btn btn-primary btn-sm" onclick="addTag('personal')">추가</button>
         </div>
       </div>
@@ -523,7 +531,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div class="std-chip" onclick="setStudentCat('입시')">입시</div>
           <div class="std-chip" onclick="setStudentCat('전체')">전체</div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;flex-shrink:0">
           <button id="hidden-toggle-btn" class="btn btn-outline" onclick="toggleShowHidden()" style="font-size:12px">숨겨진 수강생 보기</button>
           <button class="btn btn-primary" onclick="openStudentAddModal()">＋ 수강생 추가</button>
           <button class="btn btn-outline" onclick="downloadStudentTemplate()">↓ 양식 다운로드</button>
@@ -1479,11 +1487,24 @@ function selectTag(id){
   showToast(selectedTag?`"${selectedTag.text}" 선택 — 날짜 클릭하세요`:'태그 선택 해제');
 }
 
+let tagDisplayType={shared:'bg',personal:'bg'};
+function setTagDisplayType(scope,type){
+  tagDisplayType[scope]=type;
+  ['bg','badge'].forEach(t=>{
+    const btn=document.getElementById(scope+'-dtype-'+t);
+    if(btn){
+      const on=t===type;
+      btn.style.background=on?'#1a1a1a':'var(--card)';
+      btn.style.color=on?'#fff':'var(--text2)';
+      btn.style.borderColor=on?'#1a1a1a':'var(--border)';
+    }
+  });
+}
 async function addTag(scope){
   const text=document.getElementById(scope+'-tag-text').value.trim();
   const color=selectedColors[scope]||'#fde8e8';
   if(!text){showToast('태그 이름을 입력해주세요');return;}
-  const {error}=await sb.from('cal_tags').insert({scope,color,text,user_id:currentUser.id});
+  const {error}=await sb.from('cal_tags').insert({scope,color,text,display_type:tagDisplayType[scope]||'bg',user_id:currentUser.id});
   if(error){showToast('추가 실패');return;}
   document.getElementById(scope+'-tag-text').value='';
   await loadTags();showToast('태그 추가됐어요 ✓');
@@ -1602,7 +1623,8 @@ async function renderCalendar(){
     const cls=WORK_CLASS[wType]||'기타';
     // 배경: 태그 색만 사용 (근무유형은 배지로만 표시)
     const _isDark=document.body.classList.contains('dark');
-    const tagBg=firstTag&&inPeriod?(_isDark&&firstTag.cal_tags.color?hexToRgba(firstTag.cal_tags.color,0.75):firstTag.cal_tags.color):'';
+    const bgTag=inPeriod?dateTags.find(t=>(t.cal_tags.display_type||'bg')==='bg'):null;
+    const tagBg=bgTag?(_isDark&&bgTag.cal_tags.color?hexToRgba(bgTag.cal_tags.color,0.75):bgTag.cal_tags.color):'';
     const bg=tagBg;
     const style=bg?`background:${bg};`:'';
     const tc=tagBg?'color:#fff':'';
@@ -1620,7 +1642,14 @@ async function renderCalendar(){
         ${isToday?`<span class="cal-date-inner">${day}</span>`:day}
         ${inPeriod?`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;${dDayStyle}">${dDayLabel}</span>`:''}
       </div>
-      ${dateTags.map(t=>`<div style="font-size:10px;font-weight:700;color:#fff;margin-bottom:1px;line-height:1.3">${t.cal_tags.text}</div>`).join('')}
+      ${dateTags.map(t=>{
+        const dt=t.cal_tags.display_type||'bg';
+        if(dt==='badge'){
+          const c=t.cal_tags.color||'#888';
+          return `<div style="display:inline-block;background:${c};color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:5px;margin-bottom:2px;line-height:1.4">${t.cal_tags.text}</div>`;
+        }
+        return `<div style="font-size:10px;font-weight:700;color:#fff;margin-bottom:1px;line-height:1.3">${t.cal_tags.text}</div>`;
+      }).join('')}
       ${(()=>{
         // 최대 7줄: 근무유형(1) + 매출(1) + 개강일정(최대n) + 할일(나머지)
         let lines=0;
@@ -1947,7 +1976,7 @@ async function renderList(){
       ${['연락예정','연락완료','면담예정','면담완료','결제','결제 후 환불','취소'].map(v=>`<option ${v===s.status?'selected':''}>${v}</option>`).join('')}
     </select></td>
     <td style="width:100px;max-width:100px"><span onclick="editCell(this,'${s.id}','memo')" style="cursor:pointer;display:inline-block;font-size:12px;color:#888;white-space:pre-wrap;word-break:break-word;line-height:1.6;width:100%">${s.memo||'-'}</span></td>
-    <td><span onclick="deleteStudent('${s.id}')" style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px">×</span></td></tr>`).join('')
+    <td><span onclick="deleteListStudent('${s.id}')" style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px">×</span></td></tr>`).join('')
     :'<tr><td colspan="8" style="text-align:center;color:#bbb;padding:20px">등록된 학생이 없어요</td></tr>';
 }
 
@@ -1985,7 +2014,7 @@ function editCell(el,id,field){
   });
 }
 
-async function deleteStudent(id){
+async function deleteListStudent(id){
   if(!confirm('이 학생을 삭제할까요?'))return;
   await sb.from('students').delete().eq('id',id);
   renderList();showToast('삭제됐어요');
