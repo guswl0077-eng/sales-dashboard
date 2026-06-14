@@ -377,7 +377,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v85</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v86</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -911,9 +911,9 @@ async function loadTodayBadges(){
   const el=document.getElementById('today-badge-box');
   if(!el)return;
   const today=todayKey();
-  const {data}=await sb.from('cal_date_tags').select('*,cal_tags(*)').eq('user_id',currentUser.id).eq('date',today);
+  const {data}=await sb.from('cal_date_tags').select('*,cal_tags(*)').eq('date',today);
   if(!data||!data.length){el.innerHTML='';return;}
-  const badges=data.filter(d=>d.cal_tags&&(d.cal_tags.display_type||'bg')==='badge');
+  const badges=data.filter(d=>d.cal_tags&&(d.cal_tags.display_type||'bg')==='badge'&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
   if(!badges.length){el.innerHTML='';return;}
   el.innerHTML=`<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:8px 0 4px">
     <span style="font-size:11px;color:var(--text3);flex-shrink:0">오늘 태그</span>
@@ -1604,7 +1604,7 @@ async function renderCalendar(){
     sb.from('work_schedules').select('*').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr),
     sb.from('schedules').select('*').gte('date',startStr).lte('date',endStr).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true}),
     sb.from('daily_logs').select('date,sales,refund,blog').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr),
-    sb.from('cal_date_tags').select('*').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr)
+    sb.from('cal_date_tags').select('*').gte('date',startStr).lte('date',endStr)
   ]);
 
   const allTagIds=[...new Set((dateTagData||[]).map(d=>d.tag_id))];
@@ -1626,6 +1626,12 @@ async function renderCalendar(){
   allDateTags.forEach(d=>{
     if(!calTagData[d.date])calTagData[d.date]=[];
     calTagData[d.date].push(d);
+  });
+  // 본인 태그 + 공용 태그만 표시
+  Object.keys(calTagData).forEach(date=>{
+    calTagData[date]=calTagData[date].filter(d=>
+      d.cal_tags.scope==='shared'||d.user_id===currentUser.id
+    );
   });
   // 배경형: personal 우선(1개), 배지형: 전부 표시
   Object.keys(calTagData).forEach(date=>{
