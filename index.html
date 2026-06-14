@@ -377,7 +377,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v86</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v87</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1682,6 +1682,7 @@ async function renderCalendar(){
         ${inPeriod?`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;${dDayStyle}">${dDayLabel}</span>`:''}
       </div>
       
+      ${dateTags.filter(t=>(t.cal_tags.display_type||'bg')==='bg').map(t=>`<div style="font-size:10px;font-weight:700;color:${pickTextColor(t.cal_tags.color||'#888')};margin-bottom:1px;line-height:1.3">${t.cal_tags.text}</div>`).join('')}
       ${(()=>{
         // 최대 7줄: 근무유형(1) + 매출(1) + 개강일정(최대n) + 할일(나머지)
         let lines=0;
