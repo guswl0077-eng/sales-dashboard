@@ -93,8 +93,8 @@ input:-webkit-autofill,input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 100
 .todo-drag:active{cursor:grabbing}
 .todo-edit-input{flex:1;border:none;border-bottom:1.5px solid #1a1a1a;outline:none;font-size:13px;background:transparent;padding:1px 0}
 .todo-item:last-child{border-bottom:none}
-.todo-text{flex:1;font-size:13px;color:var(--text)}
-.todo-text.done-text{text-decoration:line-through;color:#bbb}
+.todo-text{flex:1;font-size:13px;color:var(--text);font-weight:600}
+.todo-text.done-text{text-decoration:line-through;color:#aaa}
 .todo-text.cancelled-text{text-decoration:line-through}
 .todo-fixed{font-size:10px;color:var(--text2);background:var(--bg);padding:1px 6px;border-radius:10px;flex-shrink:0}
 .todo-del{font-size:16px;color:#ddd;cursor:pointer;padding:0 4px}
@@ -144,6 +144,7 @@ td{padding:8px 10px;border-top:1px solid var(--border2);border-bottom:1px solid 
 .cal-cell.today{outline:2px solid #1a1a1a;outline-offset:-2px}
 .cal-cell.out-period{background:#e0e0e0!important;cursor:default!important}
 body.dark .cal-cell.out-period{background:var(--bg)!important}
+body.dark .todo-text.done-text{color:#6e6e6e}
 body.dark .cal-cell:not(.out-period){background:#5a5a5a}
 .cal-date{font-size:12px;font-weight:600;margin-bottom:3px}
 .cal-date-inner{background:#1a1a1a;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
@@ -377,7 +378,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v87</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v88</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1633,15 +1634,11 @@ async function renderCalendar(){
       d.cal_tags.scope==='shared'||d.user_id===currentUser.id
     );
   });
-  // 배경형: personal 우선(1개), 배지형: 전부 표시
+  // 태그 필터: 공용+내것만, 전부 유지 (배경 우선순위는 렌더에서 처리)
   Object.keys(calTagData).forEach(date=>{
-    const all=calTagData[date];
-    const bgs=all.filter(d=>(d.cal_tags.display_type||'bg')==='bg');
-    const badges=all.filter(d=>(d.cal_tags.display_type||'bg')==='badge');
-    // 배경형은 personal 있으면 personal, 없으면 shared 중 1개만
-    const myBg=bgs.filter(d=>d.cal_tags.scope==='personal'&&d.user_id===currentUser.id);
-    const pickBg=myBg.length?myBg.slice(0,1):bgs.filter(d=>d.cal_tags.scope==='shared').slice(0,1);
-    calTagData[date]=[...pickBg,...badges];
+    calTagData[date]=calTagData[date].filter(d=>
+      d.cal_tags.scope==='shared'||d.user_id===currentUser.id
+    );
   });
 
   let html='';
@@ -1659,7 +1656,10 @@ async function renderCalendar(){
     const cls=WORK_CLASS[wType]||'기타';
     // 배경: 태그 색만 사용 (근무유형은 배지로만 표시)
     const _isDark=document.body.classList.contains('dark');
-    const bgTag=inPeriod?dateTags.find(t=>(t.cal_tags.display_type||'bg')==='bg'):null;
+    const _bgs=inPeriod?dateTags.filter(t=>(t.cal_tags.display_type||'bg')==='bg'):[];
+    const _myBg=_bgs.filter(t=>t.cal_tags.scope==='personal'&&t.user_id===currentUser.id);
+    const _sharedBg=_bgs.filter(t=>t.cal_tags.scope==='shared');
+    const bgTag=_myBg.length?_myBg[0]:(_sharedBg.length?_sharedBg[0]:null);
     const tagBg=bgTag?(_isDark&&bgTag.cal_tags.color?hexToRgba(bgTag.cal_tags.color,0.75):bgTag.cal_tags.color):'';
     const bg=tagBg;
     const style=bg?`background:${bg};`:'';
@@ -1677,12 +1677,16 @@ async function renderCalendar(){
       <div class="cal-date" style="display:flex;justify-content:space-between;align-items:flex-start;gap:3px;${tc}">
         <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;flex:1;min-width:0">
           <span style="flex-shrink:0">${isToday?`<span class="cal-date-inner">${day}</span>`:day}</span>
-          ${inPeriod?dateTags.filter(t=>(t.cal_tags.display_type||'bg')==='badge').map(t=>{const c=t.cal_tags.color||'#888';return `<span class="cal-work-badge" style="background:${c};color:${pickTextColor(c)};font-weight:700">${t.cal_tags.text}</span>`;}).join(''):''}
+          ${inPeriod?(()=>{
+            const _shBg=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='bg');
+            const _shBadge=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='badge');
+            const _myBadge=dateTags.filter(t=>t.user_id===currentUser.id&&(t.cal_tags.display_type||'bg')==='badge');
+            return [..._shBg,..._shBadge,..._myBadge].map(t=>{const c=t.cal_tags.color||'#888';return `<span class="cal-work-badge" style="background:${c};color:${pickTextColor(c)};font-weight:700">${t.cal_tags.text}</span>`;}).join('');
+          })():''}
         </div>
         ${inPeriod?`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;${dDayStyle}">${dDayLabel}</span>`:''}
       </div>
       
-      ${dateTags.filter(t=>(t.cal_tags.display_type||'bg')==='bg').map(t=>`<div style="font-size:10px;font-weight:700;color:${pickTextColor(t.cal_tags.color||'#888')};margin-bottom:1px;line-height:1.3">${t.cal_tags.text}</div>`).join('')}
       ${(()=>{
         // 최대 7줄: 근무유형(1) + 매출(1) + 개강일정(최대n) + 할일(나머지)
         let lines=0;
