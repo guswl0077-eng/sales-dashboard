@@ -1697,8 +1697,9 @@ async function renderCalendar(){
         let shownTodos=0;
         for(const t of todoList){
           if(lines>=7)break;
-          const _tc=tagBg?pickTextColor(tagBg):'var(--text)';
-          out+=`<div style="font-size:10px;color:${_tc};line-height:1.3;opacity:${t.done?0.4:0.9};${t.done?'text-decoration:line-through':''}">${t.content}</div>`;
+          const _bgHex=bgTag?bgTag.cal_tags.color:'';
+          const _tc=_bgHex?pickTextColor(_bgHex):'var(--text)';
+          out+=`<div style="font-size:11px;font-weight:500;color:${_tc};line-height:1.4;opacity:${t.done?0.4:1};${t.done?'text-decoration:line-through':''}">${t.content}</div>`;
           lines++;shownTodos++;
         }
         return out;
