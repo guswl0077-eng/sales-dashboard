@@ -378,7 +378,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v91</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v92</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -916,11 +916,11 @@ async function loadTodayBadges(){
   if(!data||!data.length){el.innerHTML='';return;}
   const badges=data.filter(d=>d.cal_tags&&(d.cal_tags.display_type||'bg')==='badge'&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
   if(!badges.length){el.innerHTML='';return;}
-  el.innerHTML=`<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:8px 0 4px">
-    <span style="font-size:11px;color:var(--text3);flex-shrink:0">오늘 태그</span>
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0 4px">
+    <span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">오늘 태그</span>
     ${badges.map(d=>{
       const c=d.cal_tags.color||'#888';
-      return `<span style="background:${c};color:${pickTextColor(c)};padding:2px 9px;border-radius:5px;font-size:11px;font-weight:700">${d.cal_tags.text}</span>`;
+      return `<span style="background:${c};color:${pickTextColor(c)};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${d.cal_tags.text}</span>`;
     }).join('')}
   </div>`;
 }
