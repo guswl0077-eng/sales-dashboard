@@ -378,7 +378,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v92</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v93</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -703,6 +703,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <div class="form-group"><label class="form-label">상담잡기</label><input class="form-input" type="number" id="dm-cs" placeholder="0"></div>
       <div class="form-group"><label class="form-label">블로그</label><input class="form-input" type="number" id="dm-blog" placeholder="0"></div>
     </div>
+    <div id="dm-badge-box"></div>
     <div id="dm-schedule-box"></div>
     <div style="border-top:1px solid var(--border2);margin:12px 0;padding-top:12px">
       <div class="form-label" style="font-size:12px;color:#888;font-weight:500;margin-bottom:8px">할 일</div>
@@ -915,14 +916,21 @@ async function loadTodayBadges(){
   const {data}=await sb.from('cal_date_tags').select('*,cal_tags(*)').eq('date',today);
   if(!data||!data.length){el.innerHTML='';return;}
   const badges=data.filter(d=>d.cal_tags&&(d.cal_tags.display_type||'bg')==='badge'&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
-  if(!badges.length){el.innerHTML='';return;}
-  el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0 4px">
-    <span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">오늘 태그</span>
-    ${badges.map(d=>{
-      const c=d.cal_tags.color||'#888';
-      return `<span style="background:${c};color:${pickTextColor(c)};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${d.cal_tags.text}</span>`;
-    }).join('')}
-  </div>`;
+  // 오늘 근무유형
+  const {data:wf}=await sb.from('work_schedules').select('work_type').eq('user_id',currentUser.id).eq('date',today).single();
+  const wt=wf?.work_type||'';
+  if(!badges.length&&!wt){el.innerHTML='';return;}
+  let html='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0 4px">';
+  if(wt){
+    const wbg=WORK_BG[wt]||'#e8f0fe', wtc=WORK_TC[wt]||'#1a56db';
+    html+=`<span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">근무</span><span style="background:${wbg};color:${wtc};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${wt}</span>`;
+  }
+  if(badges.length){
+    html+=`<span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">오늘 태그</span>`;
+    html+=badges.map(d=>{const c=d.cal_tags.color||'#888';return `<span style="background:${c};color:${pickTextColor(c)};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${d.cal_tags.text}</span>`;}).join('');
+  }
+  html+='</div>';
+  el.innerHTML=html;
 }
 async function loadTodayLog(){
   const {data}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).eq('date',todayKey()).single();
@@ -1736,6 +1744,7 @@ async function openDayModal(dateStr){
   selectedWorkType=workFresh?.work_type||null;
   document.getElementById('work-type-custom').value=WORK_TYPES.includes(selectedWorkType)?'':selectedWorkType||'';
   renderWorkTypeBtns();
+  loadDmBadges(dateStr);
   const {data:log}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).eq('date',dateStr).single();
   document.getElementById('dm-sale').value=log?.sales||'';
   document.getElementById('dm-refund').value=log?.refund||'';
@@ -1799,13 +1808,33 @@ async function renderDmTodos(dateStr){
   renderDmTodoList();
 }
 
+async function loadDmBadges(dateStr){
+  const el=document.getElementById('dm-badge-box');
+  if(!el)return;
+  el.innerHTML='';
+  // 근무유형 (selectedWorkType 이미 로드됨)
+  const parts=[];
+  if(selectedWorkType){
+    const bg=WORK_BG[selectedWorkType]||'#e8f0fe', tc=WORK_TC[selectedWorkType]||'#1a56db';
+    parts.push(`<span style="background:${bg};color:${tc};padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">${selectedWorkType}</span>`);
+  }
+  // 태그 (배경형+배지형, 공용+내것)
+  const {data}=await sb.from('cal_date_tags').select('*,cal_tags(*)').eq('date',dateStr);
+  const tags=(data||[]).filter(d=>d.cal_tags&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
+  tags.forEach(d=>{
+    const c=d.cal_tags.color||'#888';
+    parts.push(`<span style="background:${c};color:${pickTextColor(c)};padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">${d.cal_tags.text}</span>`);
+  });
+  if(!parts.length){el.innerHTML='';return;}
+  el.innerHTML=`<div style="background:var(--bg3);border-radius:8px;padding:8px 10px;margin-bottom:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${parts.join('')}</div>`;
+}
 function renderDmTodoList(){
   const el=document.getElementById('dm-todo-list');
   if(!el)return;
   el.innerHTML=dmTodos.length?dmTodos.map(t=>`
     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border2)">
       <div class="chk ${t.done?'done':''}" onclick="toggleDmTodo('${t.id}')"></div>
-      <span style="flex:1;font-size:13px;${t.done?'text-decoration:line-through;color:#bbb':'color:var(--text)'}">${t.content}</span>
+      <span onclick="editDmTodoInline(this,'${t.id}')" style="flex:1;font-size:13px;cursor:text;${t.done?'text-decoration:line-through;color:#bbb':'color:var(--text)'}">${t.content}</span>
       <span style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px" onclick="deleteDmTodo('${t.id}')">×</span>
     </div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:4px 0">할 일을 추가해보세요</div>';
 }
@@ -1861,6 +1890,21 @@ async function toggleDmTodo(id){
   if(dayModalDate===todayKey())loadTodos();
 }
 
+async function editDmTodoInline(span,id){
+  const cur=span.textContent;
+  const inp=document.createElement('input');
+  inp.value=cur;inp.className='form-input';
+  inp.style.cssText='flex:1;font-size:13px;padding:2px 6px';
+  span.replaceWith(inp);inp.focus();
+  const save=async()=>{
+    const val=inp.value.trim();
+    if(val&&val!==cur){await sb.from('todos').update({content:val}).eq('id',id);const t=dmTodos.find(x=>x.id===id);if(t)t.content=val;}
+    renderDmTodoList();
+    if(dayModalDate===todayKey())loadTodos();
+  };
+  inp.onblur=save;
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();inp.blur();}};
+}
 async function deleteDmTodo(id){
   await sb.from('todos').delete().eq('id',id);
   dmTodos=dmTodos.filter(t=>t.id!==id);
