@@ -378,7 +378,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v93</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v94</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -794,6 +794,10 @@ const WORK_CLASS={'늦출':'늦출','당직':'당직','당직+추당':'당직추
 const WORK_BG={'늦출':'#bae6fd','당직':'#fef08a','당직+추당':'#fef08a','주말당직':'#fed7aa','주말+추당':'#fed7aa','근무':'#166534','휴무':'#fee2e2'};
 const WORK_TC={'늦출':'#0369a1','당직':'#854d0e','당직+추당':'#854d0e','주말당직':'#9a3412','주말+추당':'#9a3412','근무':'#fff','휴무':'#991b1b'};
 const DAYS=['일','월','화','수','목','금','토'];
+const HOLIDAYS={
+  '2026-01-01':'신정','2026-02-16':'설날','2026-02-17':'설날','2026-02-18':'설날','2026-03-01':'삼일절','2026-03-02':'대체공휴일','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-05-25':'대체공휴일','2026-06-03':'지방선거','2026-06-06':'현충일','2026-08-15':'광복절','2026-08-17':'대체공휴일','2026-09-24':'추석','2026-09-25':'추석','2026-09-26':'추석','2026-10-03':'개천절','2026-10-05':'대체공휴일','2026-10-09':'한글날','2026-12-25':'성탄절',
+  '2027-01-01':'신정','2027-02-06':'설날','2027-02-07':'설날','2027-02-08':'설날','2027-02-09':'대체공휴일','2027-03-01':'삼일절','2027-05-05':'어린이날','2027-05-13':'부처님오신날','2027-06-06':'현충일','2027-08-15':'광복절','2027-08-16':'대체공휴일','2027-09-14':'추석','2027-09-15':'추석','2027-09-16':'추석','2027-10-03':'개천절','2027-10-04':'대체공휴일','2027-10-09':'한글날','2027-12-25':'성탄절'
+};
 const fmt=n=>Number(n||0).toLocaleString()+'원';
 const pct=(v,t)=>t>0?Math.min(100,Math.round(v/t*10000)/100):0;
 const fillColor=p=>p>=100?'#1a8a50':p>=60?'#f59e0b':'#ef4444';
@@ -1668,10 +1672,26 @@ async function renderCalendar(){
     const _myBg=_bgs.filter(t=>t.cal_tags.scope==='personal'&&t.user_id===currentUser.id);
     const _sharedBg=_bgs.filter(t=>t.cal_tags.scope==='shared');
     const bgTag=_myBg.length?_myBg[0]:(_sharedBg.length?_sharedBg[0]:null);
-    const tagBg=bgTag?(_isDark&&bgTag.cal_tags.color?hexToRgba(bgTag.cal_tags.color,0.75):bgTag.cal_tags.color):'';
-    const bg=tagBg;
+    const tagBg=bgTag?(_isDark&&bgTag.cal_tags.color?hexToRgba(bgTag.cal_tags.color,0.45):bgTag.cal_tags.color):'';
+    const _dow=cur.getDay();
+    const _holiName=HOLIDAYS[dateStr]||'';
+    const _isHoli=!!_holiName;
+    const _isSun=_dow===0||_isHoli;
+    const _isSat=_dow===6&&!_isHoli;
+    // 주말/공휴일 배경 (태그 배경 없을 때만, 표시용 옅게)
+    let _wkBg='';
+    if(!tagBg&&inPeriod){
+      if(_isSun)_wkBg=_isDark?'rgba(231,76,60,0.15)':'rgba(231,76,60,0.10)';
+      else if(_isSat)_wkBg=_isDark?'rgba(100,150,230,0.15)':'rgba(60,120,220,0.10)';
+    }
+    const bg=tagBg||_wkBg;
     const style=bg?`background:${bg};`:'';
-    const tc=tagBg?'color:#fff':'';
+    // 날짜 숫자 색: 토=파랑, 일/공휴일=빨강 (태그배경 있으면 흰색 유지)
+    let tc='';
+    if(tagBg)tc='color:#fff';
+    else if(inPeriod&&_isSun)tc=_isDark?'color:#e8918a':'color:#d9534f';
+    else if(inPeriod&&_isSat)tc=_isDark?'color:#8ab0e8':'color:#3a78dc';
+    const _holiColor=_isDark?'#e8918a':'#d9534f';
     const wBg='';
     const day=cur.getDate();
     // D-day 계산
@@ -1685,11 +1705,12 @@ async function renderCalendar(){
       <div class="cal-date" style="display:flex;justify-content:space-between;align-items:flex-start;gap:3px;${tc}">
         <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;flex:1;min-width:0">
           <span style="flex-shrink:0">${isToday?`<span class="cal-date-inner">${day}</span>`:day}</span>
+          ${_isHoli&&inPeriod?`<span style="font-size:10px;font-weight:700;color:${tagBg?'#fff':_holiColor};flex-shrink:0">${_holiName}</span>`:''}
           ${inPeriod?(()=>{
             const _shBg=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='bg');
             const _shBadge=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='badge');
             const _myBadge=dateTags.filter(t=>t.cal_tags.scope!=='shared'&&t.user_id===currentUser.id&&(t.cal_tags.display_type||'bg')==='badge');
-            return [..._shBg,..._shBadge,..._myBadge].map(t=>{const c=t.cal_tags.color||'#888';return `<span class="cal-work-badge" style="background:${c};color:${pickTextColor(c)};font-weight:700">${t.cal_tags.text}</span>`;}).join('');
+            return [..._shBg,..._shBadge,..._myBadge].map(t=>{const c=t.cal_tags.color||'#888';const _bbg=_isDark?hexToRgba(c,0.45):c;const _btc=_isDark?'#f0efed':pickTextColor(c);return `<span class="cal-work-badge" style="background:${_bbg};color:${_btc};font-weight:700">${t.cal_tags.text}</span>`;}).join('');
           })():''}
         </div>
         ${inPeriod?`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;${dDayStyle}">${dDayLabel}</span>`:''}
