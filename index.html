@@ -166,7 +166,7 @@ body.dark .cal-cell:not(.out-period){background:#5a5a5a}
 .tag-chip-del{font-size:14px;line-height:1;color:rgba(0,0,0,.3);margin-left:2px}
 .tag-chip-del:hover{color:rgba(0,0,0,.7)}
 .tag-add-row{display:flex;gap:6px;align-items:center}
-.color-palette-popup{position:absolute;top:40px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;z-index:150;box-shadow:0 4px 20px rgba(0,0,0,.15);width:232px}
+.color-palette-popup{position:absolute;top:40px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;z-index:150;box-shadow:0 4px 20px rgba(0,0,0,.15);width:232px;max-width:calc(100vw - 24px)}
 .palette-basic{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-bottom:8px}
 .palette-full{display:none}
 .palette-color{width:20px;height:20px;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:transform .1s}
@@ -394,7 +394,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v99</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v100</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -440,7 +440,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div class="card">
             <div class="row-item"><span class="row-label">콜 수</span><input class="num-input" type="number" min="0" id="f-calls" placeholder="0" oninput="updateBars();triggerAutoSave()"><span class="row-target">목표 10콜</span><div class="pbar"><div class="pbar-fill" id="pb-calls"></div></div></div>
             <div class="row-item"><span class="row-label">분 수</span><input class="num-input" type="number" min="0" id="f-mins" placeholder="0" oninput="updateBars();triggerAutoSave()"><span class="row-target">목표 40분</span><div class="pbar"><div class="pbar-fill" id="pb-mins"></div></div></div>
-            <div class="row-item"><span class="row-label">블로그</span><input class="num-input" type="number" min="0" id="f-blog" placeholder="0" oninput="updateBars();triggerAutoSave()"><span class="row-target">목표 2건</span><div class="pbar"><div class="pbar-fill" id="pb-blog"></div></div></div>
+            <div class="row-item" style="display:none"><span class="row-label">블로그</span><input class="num-input" type="number" min="0" id="f-blog" placeholder="0"><span class="row-target">목표 2건</span><div class="pbar"><div class="pbar-fill" id="pb-blog"></div></div></div>
           </div>
           <div class="sec-title">오늘 할 일</div>
           <div class="card">
@@ -487,7 +487,11 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <!-- 달력 -->
     <div class="tabs-page" id="tab-calendar">
       <div class="tag-palette admin-only" id="shared-tag-palette" style="display:none">
-        <div class="tag-palette-title">🏷️ 공용 태그 <span style="font-size:10px;color:#bbb">(관리자 설정 · 전체 동기화)</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleTagSection('shared')">
+          <div class="tag-palette-title" style="margin-bottom:0">🏷️ 공용 태그 <span style="font-size:10px;color:#bbb">(관리자 설정 · 전체 동기화)</span></div>
+          <span id="shared-section-toggle" style="font-size:12px;color:var(--text3);flex-shrink:0;padding:4px 8px">펼치기 ∨</span>
+        </div>
+        <div id="shared-section-body" style="display:none;margin-top:8px">
         <div class="tag-list" id="shared-tag-list"></div>
         <div class="tag-add-row" id="shared-tag-add" style="display:none">
           <div style="position:relative">
@@ -501,9 +505,14 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           </div>
           <button class="btn btn-primary btn-sm" onclick="addTag('shared')">추가</button>
         </div>
+        </div>
       </div>
-      <div class="tag-palette">
-        <div class="tag-palette-title">🏷️ 내 태그 <span style="font-size:10px;color:#bbb">(개인용)</span></div>
+      <div class="tag-palette" id="personal-tag-palette-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleTagSection('personal')">
+          <div class="tag-palette-title" style="margin-bottom:0">🏷️ 내 태그 <span style="font-size:10px;color:#bbb">(개인용)</span></div>
+          <span id="personal-section-toggle" style="font-size:12px;color:var(--text3);flex-shrink:0;padding:4px 8px">펼치기 ∨</span>
+        </div>
+        <div id="personal-section-body" style="display:none;margin-top:8px">
         <div class="tag-list" id="personal-tag-list"></div>
         <div class="tag-add-row">
           <div style="position:relative">
@@ -516,6 +525,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
             <button id="personal-dtype-badge" onclick="setTagDisplayType('personal','badge')" style="padding:5px 9px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:11px;cursor:pointer;white-space:nowrap">🏷️ 배지</button>
           </div>
           <button class="btn btn-primary btn-sm" onclick="addTag('personal')">추가</button>
+        </div>
         </div>
       </div>
       <div class="cal-wrap">
@@ -716,8 +726,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         <div class="form-group" style="flex:1"><label class="form-label">콜 수</label><input class="form-input" type="number" id="dm-calls" placeholder="0"></div>
         <div class="form-group" style="flex:1"><label class="form-label">분 수</label><input class="form-input" type="number" id="dm-mins" placeholder="0"></div>
       </div>
-      <div class="form-group"><label class="form-label">상담잡기</label><input class="form-input" type="number" id="dm-cs" placeholder="0"></div>
-      <div class="form-group"><label class="form-label">블로그</label><input class="form-input" type="number" id="dm-blog" placeholder="0"></div>
+      <div style="display:flex;gap:8px"><div class="form-group" style="flex:1"><label class="form-label">상담잡기</label><input class="form-input" type="number" id="dm-cs" placeholder="0"></div><div class="form-group" style="flex:1"><label class="form-label">상담완료</label><input class="form-input" type="number" id="dm-blog" placeholder="0"></div></div>
     </div>
     <div id="dm-badge-box"></div>
     <div id="dm-schedule-box"></div>
@@ -1621,6 +1630,16 @@ document.addEventListener('click',e=>{
   });
 });
 
+function toggleTagSection(scope){
+  const body=document.getElementById(scope+'-section-body');
+  const btn=document.getElementById(scope+'-section-toggle');
+  const addRow=document.getElementById(scope+'-tag-add');
+  if(!body)return;
+  const isOpen=body.style.display!=='none';
+  body.style.display=isOpen?'none':'block';
+  if(btn)btn.textContent=isOpen?'펼치기 ∨':'접기 ∧';
+  if(addRow)addRow.style.display=isOpen?'none':'flex';
+}
 async function loadTags(){
   const [{data:shared},{data:personal}]=await Promise.all([
     sb.from('cal_tags').select('*').eq('scope','shared').order('created_at'),
