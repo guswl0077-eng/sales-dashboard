@@ -166,7 +166,7 @@ body.dark .cal-cell:not(.out-period){background:#5a5a5a}
 .tag-chip-del{font-size:14px;line-height:1;color:rgba(0,0,0,.3);margin-left:2px}
 .tag-chip-del:hover{color:rgba(0,0,0,.7)}
 .tag-add-row{display:flex;gap:6px;align-items:center}
-.color-palette-popup{position:absolute;top:40px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;z-index:150;box-shadow:0 4px 20px rgba(0,0,0,.15);width:232px;max-width:calc(100vw - 24px)}
+.color-palette-popup{position:absolute;top:40px;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;z-index:150;box-shadow:0 4px 20px rgba(0,0,0,.15);width:232px}
 .palette-basic{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-bottom:8px}
 .palette-full{display:none}
 .palette-color{width:20px;height:20px;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:transform .1s}
@@ -363,22 +363,6 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <div class="field"><label>비밀번호</label><input id="lp" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="auth-btn" id="login-btn" onclick="doLogin()">로그인</button>
       <div class="msg err" id="login-msg"></div>
-      <div style="text-align:center;margin-top:12px">
-        <span onclick="switchAuth('reset')" style="font-size:13px;color:#888;cursor:pointer;text-decoration:underline">비밀번호 찾기</span>
-      </div>
-    </div>
-    <div class="auth-form" id="form-reset">
-      <div style="background:#fff8e8;border:1px solid #ffe0a0;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#92600a;line-height:1.6">
-        ⚠️ 본 사이트는 별도 인증 없이 가입이 가능하여 비밀번호 재설정으로 진행합니다.<br>재설정 완료 시 <b>관리자에게 알림</b>이 전송됩니다.
-      </div>
-      <div class="field"><label>아이디</label><input id="reset-id" placeholder="현재 아이디 입력"></div>
-      <div class="field"><label>새 비밀번호</label><input id="reset-pw" type="password" placeholder="새 비밀번호 입력"></div>
-      <div class="field"><label>새 비밀번호 확인</label><input id="reset-pw2" type="password" placeholder="새 비밀번호 다시 입력"></div>
-      <button class="auth-btn" onclick="doResetPassword()">재설정 완료</button>
-      <div class="msg err" id="reset-msg"></div>
-      <div style="text-align:center;margin-top:12px">
-        <span onclick="switchAuth('login')" style="font-size:13px;color:#888;cursor:pointer;text-decoration:underline">← 로그인으로 돌아가기</span>
-      </div>
     </div>
     <div class="auth-form" id="form-signup">
       <div class="field"><label>아이디</label><input id="si" placeholder="아이디 (2자 이상)"></div>
@@ -394,7 +378,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v101</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v97</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -440,7 +424,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div class="card">
             <div class="row-item"><span class="row-label">콜 수</span><input class="num-input" type="number" min="0" id="f-calls" placeholder="0" oninput="updateBars();triggerAutoSave()"><span class="row-target">목표 10콜</span><div class="pbar"><div class="pbar-fill" id="pb-calls"></div></div></div>
             <div class="row-item"><span class="row-label">분 수</span><input class="num-input" type="number" min="0" id="f-mins" placeholder="0" oninput="updateBars();triggerAutoSave()"><span class="row-target">목표 40분</span><div class="pbar"><div class="pbar-fill" id="pb-mins"></div></div></div>
-            <div class="row-item" style="display:none"><span class="row-label">블로그</span><input class="num-input" type="number" min="0" id="f-blog" placeholder="0"><span class="row-target">목표 2건</span><div class="pbar"><div class="pbar-fill" id="pb-blog"></div></div></div>
+            <div class="row-item"><span class="row-label">블로그</span><input class="num-input" type="number" min="0" id="f-blog" placeholder="0" oninput="updateBars();triggerAutoSave()"><span class="row-target">목표 2건</span><div class="pbar"><div class="pbar-fill" id="pb-blog"></div></div></div>
           </div>
           <div class="sec-title">오늘 할 일</div>
           <div class="card">
@@ -487,11 +471,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <!-- 달력 -->
     <div class="tabs-page" id="tab-calendar">
       <div class="tag-palette admin-only" id="shared-tag-palette" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleTagSection('shared')">
-          <div class="tag-palette-title" style="margin-bottom:0">🏷️ 공용 태그 <span style="font-size:10px;color:#bbb">(관리자 설정 · 전체 동기화)</span></div>
-          <span id="shared-section-toggle" style="font-size:12px;color:var(--text3);flex-shrink:0;padding:4px 8px">펼치기 ∨</span>
-        </div>
-        <div id="shared-section-body" style="display:none;margin-top:8px">
+        <div class="tag-palette-title">🏷️ 공용 태그 <span style="font-size:10px;color:#bbb">(관리자 설정 · 전체 동기화)</span></div>
         <div class="tag-list" id="shared-tag-list"></div>
         <div class="tag-add-row" id="shared-tag-add" style="display:none">
           <div style="position:relative">
@@ -505,14 +485,9 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           </div>
           <button class="btn btn-primary btn-sm" onclick="addTag('shared')">추가</button>
         </div>
-        </div>
       </div>
-      <div class="tag-palette" id="personal-tag-palette-wrap">
-        <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleTagSection('personal')">
-          <div class="tag-palette-title" style="margin-bottom:0">🏷️ 내 태그 <span style="font-size:10px;color:#bbb">(개인용)</span></div>
-          <span id="personal-section-toggle" style="font-size:12px;color:var(--text3);flex-shrink:0;padding:4px 8px">펼치기 ∨</span>
-        </div>
-        <div id="personal-section-body" style="display:none;margin-top:8px">
+      <div class="tag-palette">
+        <div class="tag-palette-title">🏷️ 내 태그 <span style="font-size:10px;color:#bbb">(개인용)</span></div>
         <div class="tag-list" id="personal-tag-list"></div>
         <div class="tag-add-row">
           <div style="position:relative">
@@ -525,7 +500,6 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
             <button id="personal-dtype-badge" onclick="setTagDisplayType('personal','badge')" style="padding:5px 9px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:11px;cursor:pointer;white-space:nowrap">🏷️ 배지</button>
           </div>
           <button class="btn btn-primary btn-sm" onclick="addTag('personal')">추가</button>
-        </div>
         </div>
       </div>
       <div class="cal-wrap">
@@ -726,7 +700,8 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         <div class="form-group" style="flex:1"><label class="form-label">콜 수</label><input class="form-input" type="number" id="dm-calls" placeholder="0"></div>
         <div class="form-group" style="flex:1"><label class="form-label">분 수</label><input class="form-input" type="number" id="dm-mins" placeholder="0"></div>
       </div>
-      <div style="display:flex;gap:8px"><div class="form-group" style="flex:1"><label class="form-label">상담잡기</label><input class="form-input" type="number" id="dm-cs" placeholder="0"></div><div class="form-group" style="flex:1"><label class="form-label">상담완료</label><input class="form-input" type="number" id="dm-blog" placeholder="0"></div></div>
+      <div class="form-group"><label class="form-label">상담잡기</label><input class="form-input" type="number" id="dm-cs" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">블로그</label><input class="form-input" type="number" id="dm-blog" placeholder="0"></div>
     </div>
     <div id="dm-badge-box"></div>
     <div id="dm-schedule-box"></div>
@@ -870,27 +845,6 @@ function switchAuth(mode){
   ['login-msg','signup-msg','signup-ok'].forEach(id=>document.getElementById(id).textContent='');
 }
 
-async function doResetPassword(){
-  const id=document.getElementById('reset-id').value.trim();
-  const pw=document.getElementById('reset-pw').value;
-  const pw2=document.getElementById('reset-pw2').value;
-  const msg=document.getElementById('reset-msg');
-  if(!id||!pw){msg.textContent='아이디와 새 비밀번호를 입력해주세요';return;}
-  if(pw!==pw2){msg.textContent='비밀번호가 일치하지 않습니다';return;}
-  if(pw.length<6){msg.textContent='비밀번호는 6자 이상이어야 합니다';return;}
-  msg.textContent='처리 중...';
-  const {data:users,error:ue}=await sb.from('profiles').select('id,name').eq('username',id);
-  if(ue||!users||!users.length){msg.textContent='존재하지 않는 아이디입니다';return;}
-  const user=users[0];
-  const {error:pe}=await sb.from('profiles').update({password:pw}).eq('id',user.id);
-  if(pe){msg.textContent='재설정 실패: '+pe.message;return;}
-  const {data:admin}=await sb.from('profiles').select('id').eq('role','admin').single();
-  if(admin) await sb.from('notifications').insert({user_id:admin.id,message:`${user.name||id}님이 비밀번호를 재설정했습니다.`});
-  msg.style.color='#1a8a50';
-  msg.textContent='비밀번호가 재설정되었습니다. 로그인 해주세요.';
-  setTimeout(()=>{switchAuth('login');},2000);
-}
-
 async function doLogin(){
   const id=document.getElementById('li').value.trim();
   const pw=document.getElementById('lp').value;
@@ -965,7 +919,6 @@ async function loadTodayBadges(){
   const today=todayKey();
   const {data}=await sb.from('cal_date_tags').select('*,cal_tags(*)').eq('date',today);
   if(!data||!data.length){el.innerHTML='';return;}
-  const allTags=data.filter(d=>d.cal_tags&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
   const badges=data.filter(d=>d.cal_tags&&(d.cal_tags.display_type||'bg')==='badge'&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
   // 오늘 근무유형
   const {data:wf}=await sb.from('work_schedules').select('work_type').eq('user_id',currentUser.id).eq('date',today).single();
@@ -976,10 +929,9 @@ async function loadTodayBadges(){
     const wbg=WORK_BG[wt]||'#e8f0fe', wtc=WORK_TC[wt]||'#1a56db';
     html+=`<span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">근무</span><span style="background:${wbg};color:${wtc};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${wt}</span>`;
   }
-  if(badges.length||allTags.length){
-    const displayTags=allTags.length?allTags:badges;
+  if(badges.length){
     html+=`<span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">오늘 태그</span>`;
-    html+=displayTags.map(d=>{const c=d.cal_tags.color||'#888';return `<span style="color:${c};font-size:16px;font-weight:700;padding:0 4px">${d.cal_tags.text}</span>`;}).join('');
+    html+=badges.map(d=>{const c=d.cal_tags.color||'#888';return `<span style="background:${c};color:${pickTextColor(c)};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${d.cal_tags.text}</span>`;}).join('');
   }
   html+='</div>';
   el.innerHTML=html;
@@ -1630,16 +1582,6 @@ document.addEventListener('click',e=>{
   });
 });
 
-function toggleTagSection(scope){
-  const body=document.getElementById(scope+'-section-body');
-  const btn=document.getElementById(scope+'-section-toggle');
-  const addRow=document.getElementById(scope+'-tag-add');
-  if(!body)return;
-  const isOpen=body.style.display!=='none';
-  body.style.display=isOpen?'none':'block';
-  if(btn)btn.textContent=isOpen?'펼치기 ∨':'접기 ∧';
-  if(addRow)addRow.style.display=isOpen?'none':'flex';
-}
 async function loadTags(){
   const [{data:shared},{data:personal}]=await Promise.all([
     sb.from('cal_tags').select('*').eq('scope','shared').order('created_at'),
@@ -1842,7 +1784,7 @@ async function renderCalendar(){
     const style=bg?`background:${bg};`:'';
     // 날짜 숫자 색: 토=파랑, 일/공휴일=빨강 (태그배경 있으면 흰색 유지)
     let tc='';
-    if(tagBg){const _bgHexForTc=bgTag?bgTag.cal_tags.color:'';tc='color:'+pickTextColor(_bgHexForTc);}
+    if(tagBg)tc='color:#fff';
     else if(inPeriod&&_isSun)tc=_isDark?'color:#e8918a':'color:#d9534f';
     else if(inPeriod&&_isSat)tc=_isDark?'color:#8ab0e8':'color:#3a78dc';
     const _holiColor=_isDark?'#e8918a':'#d9534f';
@@ -1864,23 +1806,7 @@ async function renderCalendar(){
             const _shBg=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='bg');
             const _shBadge=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='badge');
             const _myBadge=dateTags.filter(t=>t.cal_tags.scope!=='shared'&&t.user_id===currentUser.id&&(t.cal_tags.display_type||'bg')==='badge');
-            return [
-              ..._shBg.map(t=>({...t,_isBg:true})),
-              ..._shBadge.map(t=>({...t,_isBg:false})),
-              ..._myBadge.map(t=>({...t,_isBg:false}))
-            ].map(t=>{
-              const c=t.cal_tags.color||'#888';
-              if(t._isBg){
-                // 배경형: 글자색만, 배경칩 없음 - pickTextColor로 자동 대비
-                const _tc=pickTextColor(c);
-                return `<span style="color:${_tc};font-size:10px;font-weight:700;flex-shrink:0">${t.cal_tags.text}</span>`;
-              } else {
-                // 배지형: 칩 그대로 유지
-                const _bbg=_isDark?hexToRgba(c,0.45):c;
-                const _btc=_isDark?'#f0efed':pickTextColor(c);
-                return `<span class="cal-work-badge" style="background:${_bbg};color:${_btc};font-weight:700">${t.cal_tags.text}</span>`;
-              }
-            }).join('');
+            return [..._shBg,..._shBadge,..._myBadge].map(t=>{const c=t.cal_tags.color||'#888';const _bbg=_isDark?hexToRgba(c,0.45):c;const _btc=_isDark?'#f0efed':pickTextColor(c);return `<span class="cal-work-badge" style="background:${_bbg};color:${_btc};font-weight:700">${t.cal_tags.text}</span>`;}).join('');
           })():''}
         </div>
         ${inPeriod?`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;${dDayStyle}">${dDayLabel}</span>`:''}
@@ -3013,11 +2939,7 @@ async function uploadStudentExcel(input){
       if(error){showToast('저장 실패: '+stu.name);continue;}
       added++;
       if(stu.subjects.length){
-        const subjsToInsert=stu.subjects.map(s=>({...s,student_id:ins.id}));
-        console.log('[업로드] 과목 삽입 시도:', stu.name, subjsToInsert);
-        const {error:se}=await sb.from('student_subjects').insert(subjsToInsert);
-        if(se){console.error('[업로드] 과목 삽입 실패:', stu.name, se.message, subjsToInsert);}
-        else{console.log('[업로드] 과목 삽입 성공:', stu.name);}
+        await sb.from('student_subjects').insert(stu.subjects.map(s=>({...s,student_id:ins.id})));
       }
     }
     showToast(skipped>0?`${added}명 추가, ${skipped}명 이미 존재`:`${added}명 추가됐어요 ✓`);
@@ -3382,7 +3304,7 @@ function reportCard(dateStr, log, todoTotal, todoDone){
         ['상담완료', cd+'건', ''],
         ['콜', calls+'콜', ''],
         ['분', mins+'분', ''],
-        ...(blog>0?[['블로그', blog+'건', '']]:[[null,'','']].filter(x=>x[0])),
+        ['블로그', blog+'건', ''],
       ].map(([l,v,c])=>`<div style="background:var(--bg3);border-radius:7px;padding:6px 8px">
         <div style="font-size:10px;color:var(--text2)">${l}</div>
         <div style="font-size:12px;font-weight:600;margin-top:2px;color:${c||'var(--text)'}">${v}</div>
@@ -3477,7 +3399,7 @@ async function renderReportYearly(){
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">상담완료</span><span style="font-weight:600;color:var(--text)">${cd}건</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">콜 수</span><span style="font-weight:600;color:var(--text)">${calls}콜</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">총 분 수</span><span style="font-weight:600;color:var(--text)">${mins}분</span></div>
-        ${blog>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">블로그</span><span style="font-weight:600;color:var(--text)">${blog}건</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">블로그</span><span style="font-weight:600;color:var(--text)">${blog}건</span></div>
         <div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11px;color:var(--text2)">
           할 일
           <div style="flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden"><div style="width:${pctTodo}%;height:100%;border-radius:2px;background:${barColor}"></div></div>
