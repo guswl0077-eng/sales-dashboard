@@ -363,6 +363,22 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <div class="field"><label>비밀번호</label><input id="lp" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="auth-btn" id="login-btn" onclick="doLogin()">로그인</button>
       <div class="msg err" id="login-msg"></div>
+      <div style="text-align:center;margin-top:12px">
+        <span onclick="switchAuth('reset')" style="font-size:13px;color:#888;cursor:pointer;text-decoration:underline">비밀번호 찾기</span>
+      </div>
+    </div>
+    <div class="auth-form" id="form-reset">
+      <div style="background:#fff8e8;border:1px solid #ffe0a0;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#92600a;line-height:1.6">
+        ⚠️ 본 사이트는 별도 인증 없이 가입이 가능하여 비밀번호 재설정으로 진행합니다.<br>재설정 완료 시 <b>관리자에게 알림</b>이 전송됩니다.
+      </div>
+      <div class="field"><label>아이디</label><input id="reset-id" placeholder="현재 아이디 입력"></div>
+      <div class="field"><label>새 비밀번호</label><input id="reset-pw" type="password" placeholder="새 비밀번호 입력"></div>
+      <div class="field"><label>새 비밀번호 확인</label><input id="reset-pw2" type="password" placeholder="새 비밀번호 다시 입력"></div>
+      <button class="auth-btn" onclick="doResetPassword()">재설정 완료</button>
+      <div class="msg err" id="reset-msg"></div>
+      <div style="text-align:center;margin-top:12px">
+        <span onclick="switchAuth('login')" style="font-size:13px;color:#888;cursor:pointer;text-decoration:underline">← 로그인으로 돌아가기</span>
+      </div>
     </div>
     <div class="auth-form" id="form-signup">
       <div class="field"><label>아이디</label><input id="si" placeholder="아이디 (2자 이상)"></div>
@@ -378,7 +394,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v97</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v98</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -845,6 +861,27 @@ function switchAuth(mode){
   ['login-msg','signup-msg','signup-ok'].forEach(id=>document.getElementById(id).textContent='');
 }
 
+async function doResetPassword(){
+  const id=document.getElementById('reset-id').value.trim();
+  const pw=document.getElementById('reset-pw').value;
+  const pw2=document.getElementById('reset-pw2').value;
+  const msg=document.getElementById('reset-msg');
+  if(!id||!pw){msg.textContent='아이디와 새 비밀번호를 입력해주세요';return;}
+  if(pw!==pw2){msg.textContent='비밀번호가 일치하지 않습니다';return;}
+  if(pw.length<6){msg.textContent='비밀번호는 6자 이상이어야 합니다';return;}
+  msg.textContent='처리 중...';
+  const {data:users,error:ue}=await sb.from('profiles').select('id,name').eq('username',id);
+  if(ue||!users||!users.length){msg.textContent='존재하지 않는 아이디입니다';return;}
+  const user=users[0];
+  const {error:pe}=await sb.from('profiles').update({password:pw}).eq('id',user.id);
+  if(pe){msg.textContent='재설정 실패: '+pe.message;return;}
+  const {data:admin}=await sb.from('profiles').select('id').eq('role','admin').single();
+  if(admin) await sb.from('notifications').insert({user_id:admin.id,message:`${user.name||id}님이 비밀번호를 재설정했습니다.`});
+  msg.style.color='#1a8a50';
+  msg.textContent='비밀번호가 재설정되었습니다. 로그인 해주세요.';
+  setTimeout(()=>{switchAuth('login');},2000);
+}
+
 async function doLogin(){
   const id=document.getElementById('li').value.trim();
   const pw=document.getElementById('lp').value;
@@ -919,6 +956,7 @@ async function loadTodayBadges(){
   const today=todayKey();
   const {data}=await sb.from('cal_date_tags').select('*,cal_tags(*)').eq('date',today);
   if(!data||!data.length){el.innerHTML='';return;}
+  const allTags=data.filter(d=>d.cal_tags&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
   const badges=data.filter(d=>d.cal_tags&&(d.cal_tags.display_type||'bg')==='badge'&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
   // 오늘 근무유형
   const {data:wf}=await sb.from('work_schedules').select('work_type').eq('user_id',currentUser.id).eq('date',today).single();
@@ -929,9 +967,10 @@ async function loadTodayBadges(){
     const wbg=WORK_BG[wt]||'#e8f0fe', wtc=WORK_TC[wt]||'#1a56db';
     html+=`<span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">근무</span><span style="background:${wbg};color:${wtc};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${wt}</span>`;
   }
-  if(badges.length){
+  if(badges.length||allTags.length){
+    const displayTags=allTags.length?allTags:badges;
     html+=`<span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">오늘 태그</span>`;
-    html+=badges.map(d=>{const c=d.cal_tags.color||'#888';return `<span style="background:${c};color:${pickTextColor(c)};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${d.cal_tags.text}</span>`;}).join('');
+    html+=displayTags.map(d=>{const c=d.cal_tags.color||'#888';return `<span style="color:${c};font-size:16px;font-weight:700;padding:0 4px">${d.cal_tags.text}</span>`;}).join('');
   }
   html+='</div>';
   el.innerHTML=html;
@@ -1806,7 +1845,23 @@ async function renderCalendar(){
             const _shBg=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='bg');
             const _shBadge=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='badge');
             const _myBadge=dateTags.filter(t=>t.cal_tags.scope!=='shared'&&t.user_id===currentUser.id&&(t.cal_tags.display_type||'bg')==='badge');
-            return [..._shBg,..._shBadge,..._myBadge].map(t=>{const c=t.cal_tags.color||'#888';const _bbg=_isDark?hexToRgba(c,0.45):c;const _btc=_isDark?'#f0efed':pickTextColor(c);return `<span class="cal-work-badge" style="background:${_bbg};color:${_btc};font-weight:700">${t.cal_tags.text}</span>`;}).join('');
+            return [
+              ..._shBg.map(t=>({...t,_isBg:true})),
+              ..._shBadge.map(t=>({...t,_isBg:false})),
+              ..._myBadge.map(t=>({...t,_isBg:false}))
+            ].map(t=>{
+              const c=t.cal_tags.color||'#888';
+              if(t._isBg){
+                // 배경형: 글자색만, 배경칩 없음
+                const _tc=_isDark?hexToRgba(c,0.9):c;
+                return `<span style="color:${_tc};font-size:10px;font-weight:700;flex-shrink:0">${t.cal_tags.text}</span>`;
+              } else {
+                // 배지형: 칩 그대로 유지
+                const _bbg=_isDark?hexToRgba(c,0.45):c;
+                const _btc=_isDark?'#f0efed':pickTextColor(c);
+                return `<span class="cal-work-badge" style="background:${_bbg};color:${_btc};font-weight:700">${t.cal_tags.text}</span>`;
+              }
+            }).join('');
           })():''}
         </div>
         ${inPeriod?`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;${dDayStyle}">${dDayLabel}</span>`:''}
@@ -2939,7 +2994,11 @@ async function uploadStudentExcel(input){
       if(error){showToast('저장 실패: '+stu.name);continue;}
       added++;
       if(stu.subjects.length){
-        await sb.from('student_subjects').insert(stu.subjects.map(s=>({...s,student_id:ins.id})));
+        const subjsToInsert=stu.subjects.map(s=>({...s,student_id:ins.id}));
+        console.log('[업로드] 과목 삽입 시도:', stu.name, subjsToInsert);
+        const {error:se}=await sb.from('student_subjects').insert(subjsToInsert);
+        if(se){console.error('[업로드] 과목 삽입 실패:', stu.name, se.message, subjsToInsert);}
+        else{console.log('[업로드] 과목 삽입 성공:', stu.name);}
       }
     }
     showToast(skipped>0?`${added}명 추가, ${skipped}명 이미 존재`:`${added}명 추가됐어요 ✓`);
