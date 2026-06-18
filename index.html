@@ -394,7 +394,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v100</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v102</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -440,7 +440,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div class="card">
             <div class="row-item"><span class="row-label">콜 수</span><input class="num-input" type="number" min="0" id="f-calls" placeholder="0" oninput="updateBars();triggerAutoSave()"><span class="row-target">목표 10콜</span><div class="pbar"><div class="pbar-fill" id="pb-calls"></div></div></div>
             <div class="row-item"><span class="row-label">분 수</span><input class="num-input" type="number" min="0" id="f-mins" placeholder="0" oninput="updateBars();triggerAutoSave()"><span class="row-target">목표 40분</span><div class="pbar"><div class="pbar-fill" id="pb-mins"></div></div></div>
-            <div class="row-item" style="display:none"><span class="row-label">블로그</span><input class="num-input" type="number" min="0" id="f-blog" placeholder="0"><span class="row-target">목표 2건</span><div class="pbar"><div class="pbar-fill" id="pb-blog"></div></div></div>
+            </div></div>
           </div>
           <div class="sec-title">오늘 할 일</div>
           <div class="card">
@@ -993,7 +993,6 @@ async function loadTodayLog(){
     document.getElementById('f-cd').value=data.counsel_done||'';
     document.getElementById('f-calls').value=data.calls||'';
     document.getElementById('f-mins').value=data.mins||'';
-    document.getElementById('f-blog').value=data.blog||'';
     document.getElementById('f-memo').value=data.memo||'';
   }
   updateBars();
@@ -1364,7 +1363,7 @@ function updateDmRefundRate(){
 }
 
 function updateBars(){
-  [['pb-cs','f-cs',2],['pb-calls','f-calls',10],['pb-mins','f-mins',40],['pb-blog','f-blog',2]].forEach(([pbId,inputId,target])=>{
+  [['pb-cs','f-cs',2],['pb-calls','f-calls',10],['pb-mins','f-mins',40]].forEach(([pbId,inputId,target])=>{
     const v=Number(document.getElementById(inputId).value)||0;
     const p=pct(v,target);
     const el=document.getElementById(pbId);
@@ -1373,7 +1372,7 @@ function updateBars(){
 }
 
 function clearDay(){
-  ['f-sale','f-refund','f-cs','f-cd','f-calls','f-mins','f-blog'].forEach(id=>document.getElementById(id).value='');
+  ['f-sale','f-refund','f-cs','f-cd','f-calls','f-mins'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-memo').value='';
   updateBars();showToast('초기화됐어요');
 }
@@ -1410,7 +1409,7 @@ async function _doSave(){
     counsel_done:Number(document.getElementById('f-cd').value)||0,
     calls:Number(document.getElementById('f-calls').value)||0,
     mins:Number(document.getElementById('f-mins').value)||0,
-    blog:Number(document.getElementById('f-blog').value)||0,
+    blog:0,
     memo:document.getElementById('f-memo').value};
   await sb.from('daily_logs').upsert(payload,{onConflict:'user_id,date'});
 }
@@ -3382,7 +3381,7 @@ function reportCard(dateStr, log, todoTotal, todoDone){
         ['상담완료', cd+'건', ''],
         ['콜', calls+'콜', ''],
         ['분', mins+'분', ''],
-        ['블로그', blog+'건', ''],
+        ...(blog>0?[['블로그', blog+'건', '']]:[[null,'','']].filter(x=>x[0])),
       ].map(([l,v,c])=>`<div style="background:var(--bg3);border-radius:7px;padding:6px 8px">
         <div style="font-size:10px;color:var(--text2)">${l}</div>
         <div style="font-size:12px;font-weight:600;margin-top:2px;color:${c||'var(--text)'}">${v}</div>
@@ -3477,7 +3476,7 @@ async function renderReportYearly(){
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">상담완료</span><span style="font-weight:600;color:var(--text)">${cd}건</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">콜 수</span><span style="font-weight:600;color:var(--text)">${calls}콜</span></div>
         <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">총 분 수</span><span style="font-weight:600;color:var(--text)">${mins}분</span></div>
-        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">블로그</span><span style="font-weight:600;color:var(--text)">${blog}건</span></div>
+        ${blog>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border2)"><span style="color:var(--text2)">블로그</span><span style="font-weight:600;color:var(--text)">${blog}건</span></div>`:''}
         <div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11px;color:var(--text2)">
           할 일
           <div style="flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden"><div style="width:${pctTodo}%;height:100%;border-radius:2px;background:${barColor}"></div></div>
