@@ -3249,7 +3249,7 @@ async function renderPeriod(){
 }
 
 async function loadAccountList(){
-  const {data}=await sb.from('profiles').select('username,role,last_login').order('username',{ascending:true});
+  const {data}=await sb.from('profiles').select('username,role,last_login,created_at').order('created_at',{ascending:false});
   const list=data||[];
   const box=document.getElementById('account-list-box');
   if(!list.length){box.innerHTML='<div style="text-align:center;color:#bbb;padding:20px;font-size:13px">없어요</div>';return;}
