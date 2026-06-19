@@ -369,7 +369,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <div class="msg err" id="login-msg"></div>
     </div>
     <div class="auth-form" id="form-signup">
-      <div class="field"><label>아이디</label><input id="si" placeholder="아이디 (2자 이상)"></div>
+      <div class="field"><label>아이디 <span style="font-size:11px;color:#aaa;font-weight:400">(한글 아이디 가능)</span></label><input id="si" placeholder="아이디 (2자 이상)"></div>
       <div class="field"><label>비밀번호</label><input id="sp" type="password" placeholder="비밀번호 (6자 이상)"></div>
       <div class="field"><label>비밀번호 확인</label><input id="sp2" type="password" placeholder="비밀번호 재입력" onkeydown="if(event.key==='Enter')doSignup()"></div>
       <button class="auth-btn" id="signup-btn" onclick="doSignup()">회원가입</button>
@@ -1623,12 +1623,14 @@ document.addEventListener('click',e=>{
   });
 });
 
+let tagSectionOpen={shared:false,personal:false};
 function toggleTagSection(scope){
   const list=document.getElementById(scope+'-tag-list');
   const addRow=document.getElementById(scope+'-tag-add');
   const btn=document.getElementById(scope+'-section-btn');
   if(!list)return;
   const isOpen=list.style.display==='flex'||list.style.display==='block';
+  tagSectionOpen[scope]=!isOpen;
   list.style.display=isOpen?'none':'flex';
   if(addRow)addRow.style.display=isOpen?'none':'flex';
   if(btn)btn.textContent=isOpen?'펼치기 ∨':'접기 ∧';
@@ -1637,8 +1639,11 @@ function initTagSections(){
   ['shared','personal'].forEach(s=>{
     const list=document.getElementById(s+'-tag-list');
     const addRow=document.getElementById(s+'-tag-add');
-    if(list)list.style.display='none';
-    if(addRow)addRow.style.display='none';
+    const btn=document.getElementById(s+'-section-btn');
+    const open=tagSectionOpen[s];
+    if(list)list.style.display=open?'flex':'none';
+    if(addRow)addRow.style.display=open?'flex':'none';
+    if(btn)btn.textContent=open?'접기 ∧':'펼치기 ∨';
   });
 }
 async function loadTags(){
