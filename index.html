@@ -878,7 +878,7 @@ async function doLogin(){
   btn.disabled=false;btn.textContent='로그인';
   if(error){msgEl.textContent='아이디 또는 비밀번호가 틀렸어요.';return;}
   currentUser=data.user;
-  sb.from('profiles').update({last_login:new Date().toISOString()}).eq('id',data.user.id).catch(()=>{});
+  sb.from('profiles').update({last_login:new Date().toISOString()}).eq('id',data.user.id).then(()=>{},()=>{});
   await loadProfile();enterApp();
 }
 
@@ -3253,10 +3253,10 @@ async function loadAccountList(){
   const list=data||[];
   const box=document.getElementById('account-list-box');
   if(!list.length){box.innerHTML='<div style="text-align:center;color:#bbb;padding:20px;font-size:13px">없어요</div>';return;}
-  box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 16px">${list.map((p,i)=>{
+  box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px 12px">${list.map((p,i)=>{
     const last=p.last_login?new Date(p.last_login):null;
     const lastStr=last?`${String(last.getMonth()+1).padStart(2,'0')}-${String(last.getDate()).padStart(2,'0')}`:'없음';
-    const isLastRow=i>=list.length-3;
+    const isLastRow=i>=list.length-5;
     return `<div style="padding:4px 0;${isLastRow?'':'border-bottom:0.5px solid var(--border2)'};font-size:12px"><span style="font-weight:600;color:var(--text)">${p.username||'-'}</span>${p.role==='admin'?' <span style="font-size:10px;color:#1a56db">관리자</span>':''}<br><span style="color:var(--text3);font-size:10px">${lastStr}</span></div>`;
   }).join('')}</div>`;
 }
