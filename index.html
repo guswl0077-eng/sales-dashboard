@@ -367,7 +367,6 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <div class="field"><label>비밀번호</label><input id="lp" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="auth-btn" id="login-btn" onclick="doLogin()">로그인</button>
       <div class="msg err" id="login-msg"></div>
-      <div style="text-align:center;margin-top:14px"><span onclick="document.getElementById('pw-reset-modal').style.display='flex'" style="font-size:13px;color:#aaa;cursor:pointer;text-decoration:underline">비밀번호 찾기</span></div>
     </div>
     <div class="auth-form" id="form-signup">
       <div class="field"><label>아이디</label><input id="si" placeholder="아이디 (2자 이상)"></div>
@@ -669,6 +668,9 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <!-- 영업일 관리 -->
     <div class="tabs-page" id="tab-period">
       <div class="admin-notice">⚙️ 관리자 전용 — 영업일 설정은 모든 사용자에게 적용돼요</div>
+      <div class="sec-title" style="margin-top:0">📋 계정 목록</div>
+      <div class="card"><div class="tbl-wrap"><table><thead><tr><th>아이디</th><th>권한</th></tr></thead><tbody id="account-tbody"></tbody></table></div></div>
+      <div style="margin-bottom:16px"></div>
       <div class="card">
         <div style="font-size:14px;font-weight:600;margin-bottom:12px">📢 공지 (업데이트 / 중요)</div>
         <div style="display:flex;gap:6px;margin-bottom:10px">
@@ -862,21 +864,6 @@ function switchAuth(mode){
   ['login-msg','signup-msg','signup-ok'].forEach(id=>document.getElementById(id).textContent='');
 }
 
-async function doResetPw(){
-  const id=document.getElementById('rp-id').value.trim(),pw=document.getElementById('rp-pw').value,pw2=document.getElementById('rp-pw2').value,msg=document.getElementById('rp-msg');
-  if(!id||!pw){msg.textContent='아이디와 비밀번호를 입력해주세요';return;}
-  if(pw!==pw2){msg.textContent='비밀번호가 일치하지 않습니다';return;}
-  if(pw.length<6){msg.textContent='6자 이상 입력해주세요';return;}
-  msg.style.color='#888';msg.textContent='처리 중...';
-  const {data:u}=await sb.from('profiles').select('id,name').eq('username',id);
-  if(!u||!u.length){msg.style.color='#e74c3c';msg.textContent='존재하지 않는 아이디입니다';return;}
-  const {error:pe}=await sb.from('profiles').update({password:pw}).eq('id',u[0].id);
-  if(pe){msg.style.color='#e74c3c';msg.textContent='실패: '+pe.message;return;}
-  const {data:adm}=await sb.from('profiles').select('id').eq('role','admin').single();
-  if(adm)await sb.from('notifications').insert({user_id:adm.id,message:`${u[0].name||id}님이 비밀번호를 재설정했습니다.`}).catch(()=>{});
-  msg.style.color='#1a8a50';msg.textContent='완료! 로그인 해주세요.';
-  setTimeout(()=>document.getElementById('pw-reset-modal').style.display='none',2000);
-}
 async function doLogin(){
   const id=document.getElementById('li').value.trim();
   const pw=document.getElementById('lp').value;
@@ -1449,7 +1436,7 @@ function switchTab(name){
   if(name==='schedule'){renderSchedule();setTimeout(initSchedColorPopup,100);}
   if(name==='students'){renderStudents();}
   if(name==='report'){renderReportDaily();}
-  if(name==='period'){renderPeriod();loadNotice();}
+  if(name==='period'){renderPeriod();loadNotice();loadAccountList();}
 }
 
 async function renderSales(){
@@ -3259,6 +3246,13 @@ async function renderPeriod(){
   document.getElementById('period-tbody').innerHTML=periods.length?periods.map(p=>`<tr><td style="font-weight:500">${p.name}</td><td style="font-size:12px;color:var(--text2)">${p.start_date||''}~${p.end_date||''}</td><td><span onclick="deletePeriod('${p.id}')" style="color:#ddd;cursor:pointer;font-size:18px;padding:0 4px">×</span></td></tr>`).join(''):'<tr><td colspan="2" style="text-align:center;color:#bbb;padding:20px">없어요</td></tr>';
 }
 
+async function loadAccountList(){
+  const {data}=await sb.from('profiles').select('username,role').order('username',{ascending:true});
+  const list=data||[];
+  document.getElementById('account-tbody').innerHTML=list.length?list.map(p=>`<tr><td style="font-weight:500">${p.username||'-'}</td><td style="font-size:12px;color:var(--text2)">${p.role==='admin'?'관리자':'일반'}</td></tr>`).join(''):'<tr><td colspan="2" style="text-align:center;color:#bbb;padding:20px">없어요</td></tr>';
+}
+
+
 async function deletePeriod(id){
   if(!confirm('이 영업일을 삭제할까요?'))return;
   await sb.from('periods').delete().eq('id',id);
@@ -3612,19 +3606,6 @@ sb.auth.getSession().then(({data:{session}})=>{
   </div>
 
 
-
-<div id="pw-reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
-  <div style="background:#f9f8f6;border-radius:16px;padding:28px;width:90%;max-width:380px">
-    <div style="font-size:17px;font-weight:700;text-align:center;margin-bottom:10px">🔑 비밀번호 재설정</div>
-    <div style="background:#fff8e8;border:1px solid #ffe0a0;border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#92600a;line-height:1.6">⚠️ 별도 인증 없이 가입되는 사이트이므로 재설정으로 진행합니다. 완료 시 <b>관리자에게 알림</b>이 전송됩니다.</div>
-    <div style="margin-bottom:8px"><label style="font-size:12px;color:#888;display:block;margin-bottom:3px">아이디</label><input class="auth-input" id="rp-id" placeholder="현재 아이디" style="width:100%;box-sizing:border-box"></div>
-    <div style="margin-bottom:8px"><label style="font-size:12px;color:#888;display:block;margin-bottom:3px">새 비밀번호</label><input class="auth-input" id="rp-pw" type="password" placeholder="6자 이상" style="width:100%;box-sizing:border-box"></div>
-    <div style="margin-bottom:14px"><label style="font-size:12px;color:#888;display:block;margin-bottom:3px">새 비밀번호 확인</label><input class="auth-input" id="rp-pw2" type="password" placeholder="다시 입력" style="width:100%;box-sizing:border-box"></div>
-    <button onclick="doResetPw()" style="width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">재설정 완료</button>
-    <div id="rp-msg" style="text-align:center;font-size:12px;color:#e74c3c;margin-bottom:6px"></div>
-    <div style="text-align:center"><span onclick="document.getElementById('pw-reset-modal').style.display='none'" style="font-size:12px;color:#aaa;cursor:pointer;text-decoration:underline">← 로그인으로</span></div>
-  </div>
-</div>
 </body>
 
 </html>
