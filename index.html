@@ -1140,13 +1140,17 @@ async function loadTodaySchedule(){
     </div>`;
   }).join('');
   if(!box)return;
+  const _hasGaeContent=((schedData||[]).length||gaegangData.length||jonggangData.length)>0;
+  const _gaeFlex=_hasGaeContent?'1 1 0':'0 0 auto';
+  const _payFlex=_payStudents.length?'1 1 0':'0 0 auto';
+  const _leftAlign=(_hasGaeContent||_payStudents.length)?'stretch':'flex-start';
   if(window.innerWidth<=640){
     box.removeAttribute('style'); // 모바일: 인라인 스타일 없애서 블록 기본값 사용
   } else {
     box.setAttribute('style','display:flex;gap:12px;align-items:stretch;flex-wrap:wrap');
   }
-  box.innerHTML=`<div style="flex:3;min-width:0;display:flex;flex-direction:column;gap:12px">
-    <div class="today-schedule" style="flex:1 1 0;min-width:0;width:100%">
+  box.innerHTML=`<div style="flex:3;min-width:0;display:flex;flex-direction:column;gap:12px;align-self:${_leftAlign}">
+    <div class="today-schedule" style="flex:${_gaeFlex};min-width:0;width:100%">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div class="today-schedule-title">&#128197; 이번 주 개강 일정</div>
       <div style="display:flex;gap:8px;font-size:10px;color:var(--sched-muted)">
@@ -1156,7 +1160,7 @@ async function loadTodaySchedule(){
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cols}</div>
     </div>
-    <div class="today-schedule" style="flex:1 1 0;min-width:0;width:100%">
+    <div class="today-schedule" style="flex:${_payFlex};min-width:0;width:100%">
       <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">&#128179; 결제 리스트</div>
       ${_payRows}
     </div>
