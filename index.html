@@ -1079,6 +1079,18 @@ async function loadTodaySchedule(){
   const {data:profiles}=await sb.from('student_profiles').select('id,name').eq('user_id',currentUser.id);
   const studentIds=(profiles||[]).map(p=>p.id);
   const nameMap={};(profiles||[]).forEach(p=>nameMap[p.id]=p.name);
+  // 현재 영업일 + 미결제(결제리스트) 조회
+  const _tk=todayKey();
+  const {data:_periods}=await sb.from('periods').select('name,start_date,end_date').order('start_date',{ascending:true});
+  const _curPeriod=(_periods||[]).find(p=>p.start_date<=_tk&&p.end_date>=_tk)||(_periods||[])[(_periods||[]).length-1]||{};
+  let _payStudents=[];
+  if(_curPeriod.name){
+    const {data:_ps}=await sb.from('students').select('name,amount,status,period').eq('user_id',currentUser.id).eq('period',_curPeriod.name);
+    _payStudents=(_ps||[]).filter(s=>!['결제','결제 후 환불','취소'].includes(s.status||''));
+  }
+  const _payRows=_payStudents.length
+    ?`<div style="column-count:3;column-gap:16px">`+_payStudents.map(s=>`<div style="break-inside:avoid;padding:3px 0;font-size:12px;color:var(--text)">${s.name||'?'} <span style="color:var(--text2);font-size:11px">· ${s.amount?Number(s.amount).toLocaleString()+'원':'-'}</span></div>`).join('')+`</div>`
+    :'<div style="font-size:12px;color:var(--text3);padding-top:4px">미결제 없음</div>';
   let gaegangData=[],jonggangData=[],todayClassSubjs=[];
   if(studentIds.length){
     const [gr,jr,tr]=await Promise.all([
@@ -1131,9 +1143,10 @@ async function loadTodaySchedule(){
   if(window.innerWidth<=640){
     box.removeAttribute('style'); // 모바일: 인라인 스타일 없애서 블록 기본값 사용
   } else {
-    box.setAttribute('style','display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap');
+    box.setAttribute('style','display:flex;gap:12px;align-items:stretch;flex-wrap:wrap');
   }
-  box.innerHTML=`<div class="today-schedule" style="flex:3;min-width:0;width:100%">
+  box.innerHTML=`<div style="flex:3;min-width:0;display:flex;flex-direction:column;gap:12px">
+    <div class="today-schedule" style="flex:1 1 0;min-width:0;width:100%">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div class="today-schedule-title">&#128197; 이번 주 개강 일정</div>
       <div style="display:flex;gap:8px;font-size:10px;color:var(--sched-muted)">
@@ -1142,6 +1155,11 @@ async function loadTodaySchedule(){
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cols}</div>
+    </div>
+    <div class="today-schedule" style="flex:1 1 0;min-width:0;width:100%">
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">&#128179; 결제 리스트</div>
+      ${_payRows}
+    </div>
   </div>
   <div class="today-schedule" style="flex:1;min-width:0;width:100%">
     <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">&#127979; 오늘 수업 일정</div>
