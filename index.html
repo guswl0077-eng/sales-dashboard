@@ -1756,6 +1756,8 @@ function colorSortKey(hex){
   else if(max===g)hue=(b-r)/d+2;
   else hue=(r-g)/d+4;
   hue*=60;if(hue<0)hue+=360;
+  // 빨강이 색상환 양끝(0/360)에 걸쳐 갈라지지 않게: 진빨강·분홍(320~360)을 앞으로 당김
+  if(hue>=320)hue-=360;
   return [0,hue];
 }
 function sortByColor(arr,getHex){
