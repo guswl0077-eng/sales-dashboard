@@ -1159,20 +1159,25 @@ async function loadTodaySchedule(){
     ${_classRows}
   </div>`;
 }
+// 할일 정렬 우선순위: 일반(0) → 취소(1) → 완료(2), 같은 그룹 내에선 sort_order 유지
+function todoRank(t){
+  if(t.done)return 2;
+  if(t.category==='취소됨')return 1;
+  return 0;
+}
 async function loadTodos(){
   const {data}=await sb.from('todos').select('*').eq('user_id',currentUser.id).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at');
   const today=todayKey();
-  fixedTodos=(data||[]).filter(t=>t.is_fixed).sort((a,b)=>(a.done===b.done)?0:a.done?1:-1);
-  todos=(data||[]).filter(t=>!t.is_fixed&&t.date===today).sort((a,b)=>(a.done===b.done)?0:a.done?1:-1);
+  fixedTodos=(data||[]).filter(t=>t.is_fixed);
+  todos=(data||[]).filter(t=>!t.is_fixed&&t.date===today);
   renderTodos();
 }
 
 function renderTodos(){
   const el=document.getElementById('todo-list');
-  // 완료 아래로 정렬
-  const undone=[...fixedTodos.map(t=>({...t,_fixed:true})),...todos].filter(t=>!t.done);
-  const done=[...fixedTodos.map(t=>({...t,_fixed:true})),...todos].filter(t=>t.done);
-  const all=[...undone,...done];
+  // 정렬: 일반 → 취소 → 완료 (sort_order 순서는 유지하며 그룹별로만 재배치)
+  const merged=[...fixedTodos.map(t=>({...t,_fixed:true})),...todos];
+  const all=merged.map((t,i)=>({t,i})).sort((a,b)=>(todoRank(a.t)-todoRank(b.t))||(a.i-b.i)).map(x=>x.t);
   if(!all.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:4px 0">할 일을 추가해보세요</div>';return;}
   el.innerHTML=all.map((t,i)=>`
     <div class="todo-item" draggable="true"
@@ -1219,6 +1224,7 @@ async function todoDrop(e,toIdx){
     console.warn('sort_order 저장 실패(컬럼 확인 필요):',err);
   }
   await loadTodos();
+  if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
 }
 
 async function editTodoInline(el,id,isFixed){
@@ -1796,8 +1802,12 @@ async function renderCalendar(){
 
   calWorkData={};(workData||[]).forEach(w=>calWorkData[w.date]=w);
   // 할일 데이터 로드
-  const {data:todoData}=await sb.from('todos').select('date,done,content,is_fixed').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr).eq('is_fixed',false);
+  const {data:todoData}=await sb.from('todos').select('date,done,content,is_fixed,category,sort_order,created_at').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr).eq('is_fixed',false);
   calTodoData={};(todoData||[]).forEach(t=>{if(!calTodoData[t.date])calTodoData[t.date]=[];calTodoData[t.date].push(t);});
+  // 내 할일과 동일 정렬: 일반 → 취소 → 완료 (그룹 내 sort_order 유지)
+  Object.keys(calTodoData).forEach(d=>{
+    calTodoData[d]=calTodoData[d].map((t,i)=>({t,i})).sort((a,b)=>(todoRank(a.t)-todoRank(b.t))||((a.t.sort_order??999)-(b.t.sort_order??999))||(a.i-b.i)).map(x=>x.t);
+  });
   calScheduleData={};(schedData||[]).forEach(s=>{if(!calScheduleData[s.date])calScheduleData[s.date]=[];calScheduleData[s.date].push(s.title)});
   calLogData={};(logData||[]).forEach(l=>calLogData[l.date]={real:(l.sales||0)-(l.refund||0),blog:l.blog||0});
   // 태그 우선순위: 내 태그(personal) > 공용 태그(shared)
@@ -2717,21 +2727,34 @@ async function renderStudents(){
     if(newStatus!==sub.status){_autoUpdate.push({id:sub.id,status:newStatus});sub.status=newStatus;}
   }));
   if(_autoUpdate.length)Promise.all(_autoUpdate.map(u=>sb.from('student_subjects').update({status:u.status}).eq('id',u.id)));
-  // 통합 검색 필터 (이름·원서번호·전화번호·과목명)
-  if(q) list=list.filter(s=>
-    (s.name||'').includes(q)||
-    (s.student_no||'').includes(q)||
-    (s.phone||'').includes(q)||
-    (subjMap[s.id]||[]).some(sub=>(sub.subject||'').includes(q))
-  );
+  // 통합 검색 + 진행현황 필터 (같은 과목에서 동시 충족)
+  // displaySubjMap: 학생별로 화면에 실제 표시할 과목 목록
+  const displaySubjMap={};
+  list=list.filter(s=>{
+    let subs=subjMap[s.id]||[];
+    // 검색어가 이 학생의 학생정보(이름·원서·전화)에 맞는지
+    const infoHit=q&&((s.name||'').includes(q)||(s.student_no||'').includes(q)||(s.phone||'').includes(q));
+    // 검색 필터: 과목명 매칭 (단, 학생정보로 맞았으면 과목명 조건은 면제)
+    if(q&&!infoHit){
+      subs=subs.filter(sub=>(sub.subject||'').includes(q));
+      if(!subs.length)return false;
+    }
+    // 진행현황 필터: 위에서 좁혀진 과목 중에서 평가 (같은 과목 기준)
+    if(_studentStatus){
+      subs=subs.filter(sub=>sub.status===_studentStatus);
+      if(!subs.length)return false;
+    }
+    displaySubjMap[s.id]=subs;
+    return true;
+  });
+  // 검색·필터가 걸린 경우엔 좁혀진 과목만, 아니면 전체 과목 표시
+  const _filtering=!!(q||_studentStatus);
   // 서브카테고리 필터 (입시 - 제과제빵/조리)
   if(_studentSubCat) list=list.filter(s=>s.sub_category===_studentSubCat);
-  // 진행현황 필터
-  if(_studentStatus) list=list.filter(s=>(subjMap[s.id]||[]).some(sub=>sub.status===_studentStatus));
   const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
   Object.values(counMap).forEach(arr=>arr.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)||new Date(b.created_at||0)-new Date(a.created_at||0)));
   el.innerHTML=list.map(s=>{
-    const subjs=subjMap[s.id]||[];
+    const subjs=_filtering?(displaySubjMap[s.id]||[]):(subjMap[s.id]||[]);
     const couns=counMap[s.id]||[];
     const subjRows=subjs.map((sub,si)=>`<tr draggable="true" ondragstart="subjDragStart(event,'${s.id}',${si})" ondragover="subjDragOver(event)" ondragleave="subjDragLeave(event)" ondrop="subjDrop(event,'${s.id}',${si})">
       <td style="text-align:left;font-weight:500;color:var(--text)"><span style="color:#ccc;cursor:grab;margin-right:3px;font-size:10px">⠇</span><span style="cursor:pointer" data-val="${sub.subject||''}" onclick="editSubjectCell(this,'${sub.id}','subject','text')">${sub.subject||'-'}</span></td>
