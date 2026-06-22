@@ -950,7 +950,7 @@ async function loadTodayBadges(){
     const wbg=WORK_BG[wt]||'#e8f0fe', wtc=WORK_TC[wt]||'#1a56db';
     html+=`<span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">근무</span><span style="background:${wbg};color:${wtc};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${wt}</span>`;
   }
-  const _allTags=data.filter(d=>d.cal_tags&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
+  const _allTags=sortByColor(data.filter(d=>d.cal_tags&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id)),d=>d.cal_tags.color);
   if(_allTags.length){html+=`<span style="font-size:13px;color:var(--text3);font-weight:600">오늘 태그</span>`;html+=_allTags.map(d=>`<span style="color:${d.cal_tags.color||'#888'};font-size:16px;font-weight:700;padding:0 4px">${d.cal_tags.text}</span>`).join('');}
   html+='</div>';
   el.innerHTML=html;
@@ -1657,7 +1657,7 @@ async function loadTags(){
     sb.from('cal_tags').select('*').eq('scope','shared').order('created_at'),
     sb.from('cal_tags').select('*').eq('scope','personal').eq('user_id',currentUser.id).order('created_at')
   ]);
-  sharedTags=shared||[];personalTags=personal||[];
+  sharedTags=sortByColor(shared||[],t=>t.color);personalTags=sortByColor(personal||[],t=>t.color);
   renderTagPalette();
   initTagSections();
 }
@@ -1742,6 +1742,27 @@ function pickTextColor(hex){
   return lum>0.6?'#1a1a1a':'#fff';
 }
 function hexToRgba(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+// 색 정렬용: 무지개 순(빨강0→보라), 무채색(회색·검정·흰색)은 맨 뒤
+function colorSortKey(hex){
+  if(!hex||hex[0]!=='#')return [2,0];
+  let h=hex.slice(1);
+  if(h.length===3)h=h.split('').map(c=>c+c).join('');
+  const r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+  // 채도 낮으면 무채색 그룹(뒤로), 그룹 내에선 밝기 순
+  if(d<0.12)return [1,(r+g+b)/3];
+  let hue;
+  if(max===r)hue=((g-b)/d)%6;
+  else if(max===g)hue=(b-r)/d+2;
+  else hue=(r-g)/d+4;
+  hue*=60;if(hue<0)hue+=360;
+  return [0,hue];
+}
+function sortByColor(arr,getHex){
+  return arr.map((x,i)=>({x,i,k:colorSortKey(getHex(x))}))
+    .sort((a,b)=>(a.k[0]-b.k[0])||(a.k[1]-b.k[1])||(a.i-b.i))
+    .map(o=>o.x);
+}
 async function renderCalendar(){
   const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:true});
   allPeriods=periods||[];
@@ -1888,7 +1909,9 @@ async function renderCalendar(){
             const _myBg=dateTags.filter(t=>t.cal_tags.scope!=='shared'&&t.user_id===currentUser.id&&(t.cal_tags.display_type||'bg')==='bg');
             const _shBadge=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='badge');
             const _myBadge=dateTags.filter(t=>t.cal_tags.scope!=='shared'&&t.user_id===currentUser.id&&(t.cal_tags.display_type||'bg')==='badge');
-            return [..._shBg.map(t=>({...t,_bg:true})),..._myBg.map(t=>({...t,_bg:true})),..._shBadge,..._myBadge].map(t=>{const c=t.cal_tags.color||'#888';if(t._bg){const _bc=blendHex(c,_isDark?0.35:0.5,_isDark);return `<span style="color:${pickTextColor(_bc)};font-size:10px;font-weight:700">${t.cal_tags.text}</span>`;}const _b=_isDark?hexToRgba(c,0.45):c;return `<span class="cal-work-badge" style="background:${_b};color:${_isDark?'#f0efed':pickTextColor(c)};font-weight:700">${t.cal_tags.text}</span>`;}).join('');
+            const _bgAll=sortByColor([..._shBg,..._myBg],t=>t.cal_tags.color||'#888').map(t=>({...t,_bg:true}));
+            const _badgeAll=sortByColor([..._shBadge,..._myBadge],t=>t.cal_tags.color||'#888');
+            return [..._bgAll,..._badgeAll].map(t=>{const c=t.cal_tags.color||'#888';if(t._bg){const _bc=blendHex(c,_isDark?0.35:0.5,_isDark);return `<span style="color:${pickTextColor(_bc)};font-size:10px;font-weight:700">${t.cal_tags.text}</span>`;}const _b=_isDark?hexToRgba(c,0.45):c;return `<span class="cal-work-badge" style="background:${_b};color:${_isDark?'#f0efed':pickTextColor(c)};font-weight:700">${t.cal_tags.text}</span>`;}).join('');
           })():''}
         </div>
         ${inPeriod?`<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;${dDayStyle}">${dDayLabel}</span>`:''}
@@ -2020,7 +2043,7 @@ async function loadDmBadges(dateStr){
   }
   // 태그 (배경형+배지형, 공용+내것)
   const {data}=await sb.from('cal_date_tags').select('*,cal_tags(*)').eq('date',dateStr);
-  const tags=(data||[]).filter(d=>d.cal_tags&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id));
+  const tags=sortByColor((data||[]).filter(d=>d.cal_tags&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id)),d=>d.cal_tags.color||'#888');
   tags.forEach(d=>{
     const c=d.cal_tags.color||'#888';
     parts.push(`<span style="background:${c};color:${pickTextColor(c)};padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700">${d.cal_tags.text}</span>`);
@@ -2754,7 +2777,7 @@ async function renderStudents(){
   const counMap={};(counsels||[]).forEach(c=>{if(!counMap[c.student_id])counMap[c.student_id]=[];counMap[c.student_id].push(c);});
   Object.values(counMap).forEach(arr=>arr.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)||new Date(b.created_at||0)-new Date(a.created_at||0)));
   el.innerHTML=list.map(s=>{
-    const subjs=_filtering?(displaySubjMap[s.id]||[]):(subjMap[s.id]||[]);
+    const subjs=subjMap[s.id]||[];
     const couns=counMap[s.id]||[];
     const subjRows=subjs.map((sub,si)=>`<tr draggable="true" ondragstart="subjDragStart(event,'${s.id}',${si})" ondragover="subjDragOver(event)" ondragleave="subjDragLeave(event)" ondrop="subjDrop(event,'${s.id}',${si})">
       <td style="text-align:left;font-weight:500;color:var(--text)"><span style="color:#ccc;cursor:grab;margin-right:3px;font-size:10px">⠇</span><span style="cursor:pointer" data-val="${sub.subject||''}" onclick="editSubjectCell(this,'${sub.id}','subject','text')">${sub.subject||'-'}</span></td>
