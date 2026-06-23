@@ -245,6 +245,9 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 .std-subj-table td{padding:7px 8px;border-bottom:1px solid var(--border2);color:var(--text2);font-size:12px;text-align:center;vertical-align:middle}
 .std-subj-table td:first-child{text-align:left;font-weight:500;color:var(--text);font-size:12px}
 .std-subj-table tr:last-child td{border-bottom:none}
+.sgrid-cell{cursor:cell;user-select:none;position:relative}
+.sgrid-cell.sgsel{background:rgba(53,138,221,.18);box-shadow:inset 0 0 0 1px rgba(53,138,221,.55)}
+.sgrid-cell input{user-select:text}
 .std-badge{font-size:11px;padding:2px 8px;border-radius:8px;font-weight:600;display:inline-block}
 .sb-active{background:#f0fdf4;color:#166534}.dark .sb-active{background:#1a5c36;color:#a7f3c4}
 .sb-assigned{background:#dcfce7;color:#14532d}.dark .sb-assigned{background:#166534;color:#bbf7d0}
@@ -2672,7 +2675,9 @@ function setStudentSubCat(v){
 let _studentSort='new';
 function setStudentSort(v){_studentSort=v;renderStudents();}
 async function updateSubjectStatus(id,status){
-  await sb.from('student_subjects').update({status}).eq('id',id);
+  const patch={status};
+  if(status==='미배정'||status==='환불'){patch.day=null;patch.start_date=null;patch.end_date=null;patch.class_time=null;}
+  await sb.from('student_subjects').update(patch).eq('id',id);
   showToast('진행 변경됨 ✓');renderStudents();
 }
 async function deleteSubject(id){
@@ -2680,26 +2685,183 @@ async function deleteSubject(id){
   await sb.from('student_subjects').delete().eq('id',id);
   showToast('과목 삭제됨');renderStudents();
 }
-function editSubjectCell(el,id,field,type){
-  if(el.querySelector('input'))return;
-  const cur=el.getAttribute('data-val')||'';
+// ===== 엑셀식 과목 그리드 =====
+const SGRID_COLS=['subject','day','start_date','end_date','class_time','status'];
+const SGRID_TYPES=['text','text','date','date','text','status'];
+let sgrid={stu:null,a:null,f:null,dragging:false,extra:new Set()};
+function sgEl(stu,r,c){return document.querySelector(`.sgrid-cell[data-stu="${stu}"][data-r="${r}"][data-c="${c}"]`);}
+function sgMaxRow(stu){let m=-1;document.querySelectorAll(`.sgrid-cell[data-stu="${stu}"][data-c="0"]`).forEach(td=>{m=Math.max(m,+td.dataset.r);});return m;}
+function sgRect(){if(!sgrid.a||!sgrid.f)return null;return{r0:Math.min(sgrid.a.r,sgrid.f.r),r1:Math.max(sgrid.a.r,sgrid.f.r),c0:Math.min(sgrid.a.c,sgrid.f.c),c1:Math.max(sgrid.a.c,sgrid.f.c)};}
+function sgPaint(){
+  document.querySelectorAll('.sgrid-cell.sgsel').forEach(td=>td.classList.remove('sgsel'));
+  if(!sgrid.stu)return;
+  const rc=sgRect();
+  if(rc){for(let r=rc.r0;r<=rc.r1;r++)for(let c=rc.c0;c<=rc.c1;c++){const td=sgEl(sgrid.stu,r,c);if(td)td.classList.add('sgsel');}}
+  sgrid.extra.forEach(key=>{const[r,c]=key.split(',').map(Number);const td=sgEl(sgrid.stu,r,c);if(td)td.classList.add('sgsel');});
+}
+function sgClear(){sgrid.stu=null;sgrid.a=null;sgrid.f=null;sgrid.extra.clear();document.querySelectorAll('.sgrid-cell.sgsel').forEach(td=>td.classList.remove('sgsel'));}
+function sgSelectedCells(){
+  // 선택 영역의 경계 사각형 기준 셀 목록 (행우선)
+  const cells=[];let minR=99,maxR=-1,minC=9,maxC=-1;
+  const rc=sgRect();
+  const add=(r,c)=>{minR=Math.min(minR,r);maxR=Math.max(maxR,r);minC=Math.min(minC,c);maxC=Math.max(maxC,c);};
+  if(rc){for(let r=rc.r0;r<=rc.r1;r++)for(let c=rc.c0;c<=rc.c1;c++)add(r,c);}
+  sgrid.extra.forEach(k=>{const[r,c]=k.split(',').map(Number);add(r,c);});
+  if(maxR<0)return null;
+  return{minR,maxR,minC,maxC};
+}
+
+document.addEventListener('mousedown',e=>{
+  const td=e.target.closest('.sgrid-cell');
+  if(!td){if(!e.target.closest('.sgrid-cell input'))sgClear();return;}
+  if(e.target.closest('.subj-grip')||e.target.closest('input'))return;
+  const stu=td.dataset.stu,r=+td.dataset.r,c=+td.dataset.c;
+  if((e.ctrlKey||e.metaKey)&&sgrid.stu===stu){const k=r+','+c;if(sgrid.extra.has(k))sgrid.extra.delete(k);else sgrid.extra.add(k);sgrid.f={r,c};sgPaint();e.preventDefault();return;}
+  if(e.shiftKey&&sgrid.stu===stu&&sgrid.a){sgrid.f={r,c};}
+  else{sgrid.stu=stu;sgrid.a={r,c};sgrid.f={r,c};sgrid.extra.clear();}
+  sgrid.dragging=true;sgPaint();e.preventDefault();
+});
+document.addEventListener('mouseover',e=>{
+  if(!sgrid.dragging)return;
+  const td=e.target.closest('.sgrid-cell');
+  if(!td||td.dataset.stu!==sgrid.stu)return;
+  sgrid.f={r:+td.dataset.r,c:+td.dataset.c};sgPaint();
+});
+document.addEventListener('mouseup',()=>{sgrid.dragging=false;});
+document.addEventListener('dblclick',e=>{const td=e.target.closest('.sgrid-cell');if(td)editGridCell(td);});
+
+document.addEventListener('keydown',e=>{
+  if(document.querySelector('.sgrid-cell input'))return;
+  const ae=document.activeElement;
+  if(ae&&['INPUT','TEXTAREA','SELECT'].includes(ae.tagName))return;
+  if(!sgrid.stu||!sgrid.f)return;
+  const k=e.key;
+  if((e.ctrlKey||e.metaKey)&&(k==='c'||k==='C')){sgCopy();e.preventDefault();return;}
+  if((e.ctrlKey||e.metaKey)&&(k==='v'||k==='V')){return;} // paste 이벤트에서 처리
+  if(k==='ArrowRight'||k==='ArrowLeft'||k==='ArrowUp'||k==='ArrowDown'){sgMove(k,e.shiftKey);e.preventDefault();return;}
+  if(k==='Enter'||k==='F2'){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);e.preventDefault();return;}
+  if(k==='Delete'||k==='Backspace'){sgDeleteSel();e.preventDefault();return;}
+  if(k.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,k);}
+});
+document.addEventListener('paste',e=>{
+  if(!sgrid.stu||!sgrid.f)return;
+  if(document.querySelector('.sgrid-cell input'))return;
+  const ae=document.activeElement;
+  if(ae&&['INPUT','TEXTAREA','SELECT'].includes(ae.tagName))return;
+  const txt=(e.clipboardData||window.clipboardData).getData('text');
+  if(txt!=null&&txt!==''){sgPaste(txt);e.preventDefault();}
+});
+function sgMove(key,shift){
+  const max=sgMaxRow(sgrid.stu);let{r,c}=sgrid.f;
+  if(key==='ArrowRight')c=Math.min(5,c+1);
+  else if(key==='ArrowLeft')c=Math.max(0,c-1);
+  else if(key==='ArrowDown')r=Math.min(max,r+1);
+  else if(key==='ArrowUp')r=Math.max(0,r-1);
+  sgrid.f={r,c};if(!shift){sgrid.a={r,c};sgrid.extra.clear();}
+  sgPaint();
+  const td=sgEl(sgrid.stu,r,c);if(td&&td.scrollIntoView)td.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+async function sgDeleteSel(){
+  const box=sgSelectedCells();if(!box)return;
+  const updates=[];
+  for(let r=box.minR;r<=box.maxR;r++){
+    const td0=sgEl(sgrid.stu,r,0);if(!td0)continue;const sid=td0.dataset.sid;
+    const patch={};
+    for(let c=box.minC;c<=box.maxC;c++){const f=SGRID_COLS[c];if(f==='status')continue;patch[f]=null;}
+    if(Object.keys(patch).length)updates.push(sb.from('student_subjects').update(patch).eq('id',sid));
+  }
+  await Promise.all(updates);renderStudents();
+}
+function sgCopy(){
+  const box=sgSelectedCells();if(!box){return;}
+  const lines=[];
+  for(let r=box.minR;r<=box.maxR;r++){
+    const cells=[];
+    for(let c=box.minC;c<=box.maxC;c++){const td=sgEl(sgrid.stu,r,c);cells.push(td?(td.dataset.val||''):'');}
+    lines.push(cells.join('\t'));
+  }
+  const text=lines.join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(()=>showToast('복사됐어요 ✓'),()=>showToast('복사 실패'));
+  else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');showToast('복사됐어요 ✓');}catch(_){}document.body.removeChild(ta);}
+}
+async function sgPaste(text){
+  const startR=sgrid.f.r,startC=sgrid.f.c,stu=sgrid.stu;
+  const rows=text.replace(/\r/g,'').replace(/\n$/,'').split('\n').map(l=>l.split('\t'));
+  let maxR=sgMaxRow(stu);
+  // 행이 모자라면 새 과목 행 추가
+  const need=startR+rows.length-1-maxR;
+  if(need>0){
+    const ins=[];for(let i=0;i<need;i++)ins.push({student_id:stu,subject:'',status:'미배정'});
+    await sb.from('student_subjects').insert(ins);
+    await renderStudents();
+    maxR=sgMaxRow(stu);
+  }
+  const updatesBySid={};
+  for(let i=0;i<rows.length;i++){
+    const r=startR+i;const td0=sgEl(stu,r,0);if(!td0)continue;const sid=td0.dataset.sid;
+    for(let j=0;j<rows[i].length;j++){
+      const c=startC+j;if(c>5)break;const f=SGRID_COLS[c];let v=(rows[i][j]||'').trim();
+      if(f==='status'){if(!STATUS_OPTS.includes(v))continue;}
+      if(f==='start_date'||f==='end_date'){v=normDate(v);}
+      if(!updatesBySid[sid])updatesBySid[sid]={};
+      updatesBySid[sid][f]=v||null;
+    }
+  }
+  const ups=Object.entries(updatesBySid).map(([sid,patch])=>{
+    // 미배정/환불로 붙여넣으면 일정 비우기 규칙도 적용
+    if(patch.status==='미배정'||patch.status==='환불'){patch.day=null;patch.start_date=null;patch.end_date=null;patch.class_time=null;}
+    return sb.from('student_subjects').update(patch).eq('id',sid);
+  });
+  await Promise.all(ups);showToast('붙여넣었어요 ✓');renderStudents();
+}
+// 날짜 문자열 정규화: 2026.1.5 / 2026/01/05 / 1-5 등 → YYYY-MM-DD (불확실하면 원본 유지)
+function normDate(v){
+  if(!v)return '';
+  const m=v.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+  if(m)return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  return v;
+}
+function editGridCell(td,initialChar){
+  if(!td||td.querySelector('input'))return;
+  const field=td.dataset.field,type=td.dataset.type,sid=td.dataset.sid,stu=td.dataset.stu,r=+td.dataset.r,c=+td.dataset.c;
+  if(field==='status'){const sel=td.querySelector('select');if(sel)sel.focus();return;}
+  const cur=td.dataset.val||'';
+  const valSpan=td.querySelector('.sgrid-val');
   const input=document.createElement('input');
   input.type=type==='date'?'date':'text';
-  input.value=cur;
-  input.style.cssText='width:95%;border:1px solid #1a1a1a;border-radius:5px;padding:2px 4px;font-size:12px;outline:none';
-  el.innerHTML='';el.appendChild(input);input.focus();
-  let done=false;
-  const save=async()=>{
+  input.value=initialChar!=null?initialChar:cur;
+  input.style.cssText='width:96%;border:1px solid var(--text);border-radius:5px;padding:2px 4px;font-size:12px;outline:none;background:var(--card);color:var(--text)';
+  if(valSpan)valSpan.style.display='none';
+  td.appendChild(input);input.focus();
+  if(initialChar==null&&type!=='date')input.select();
+  let done=false,nav=null;
+  const commit=async()=>{
     if(done)return;done=true;
-    const val=input.value.trim();
-    await sb.from('student_subjects').update({[field]:val||null}).eq('id',id);
-    showToast('수정됐어요 ✓');renderStudents();
+    let val=input.value.trim();
+    if(type==='date')val=val||'';
+    await sb.from('student_subjects').update({[field]:val||null}).eq('id',sid);
+    td.dataset.val=val;
+    if(valSpan){valSpan.textContent=val||'-';valSpan.style.display='';}
+    if(input.parentElement)input.remove();
+    if(nav){const t=sgEl(stu,nav.r,nav.c);if(t){sgrid.stu=stu;sgrid.a={r:nav.r,c:nav.c};sgrid.f={r:nav.r,c:nav.c};sgrid.extra.clear();sgPaint();if(nav.edit)editGridCell(t);}}
   };
-  input.addEventListener('blur',save);
-  input.addEventListener('keydown',e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape'){done=true;renderStudents();}});
+  const moveTo=(nr,nc,edit)=>{nav={r:nr,c:nc,edit};input.blur();};
+  input.addEventListener('blur',commit);
+  input.addEventListener('keydown',ev=>{
+    const atEnd=input.selectionStart===input.value.length&&input.selectionEnd===input.value.length;
+    const atStart=input.selectionStart===0&&input.selectionEnd===0;
+    const max=sgMaxRow(stu);
+    if(ev.key==='Enter'){ev.preventDefault();moveTo(Math.min(max,r+1),c,false);}
+    else if(ev.key==='Tab'){ev.preventDefault();const nc=ev.shiftKey?Math.max(0,c-1):Math.min(5,c+1);moveTo(r,nc,true);}
+    else if(ev.key==='Escape'){done=true;if(input.parentElement)input.remove();if(valSpan){valSpan.textContent=cur||'-';valSpan.style.display='';}}
+    else if(ev.key==='ArrowRight'&&(atEnd||type==='date')){ev.preventDefault();moveTo(r,Math.min(5,c+1),true);}
+    else if(ev.key==='ArrowLeft'&&(atStart||type==='date')){ev.preventDefault();moveTo(r,Math.max(0,c-1),true);}
+    else if(ev.key==='ArrowDown'){ev.preventDefault();moveTo(Math.min(max,r+1),c,true);}
+    else if(ev.key==='ArrowUp'){ev.preventDefault();moveTo(Math.max(0,r-1),c,true);}
+  });
 }
 let _subjDrag={sid:null,idx:null};
-function subjDragStart(e,sid,idx){_subjDrag={sid,idx};e.currentTarget.style.opacity='.4';}
+function subjDragStart(e,sid,idx){_subjDrag={sid,idx};const tr=e.currentTarget.closest('tr');if(tr)tr.style.opacity='.4';}
 function subjDragOver(e){e.preventDefault();e.currentTarget.style.borderTop='2px solid #1a1a1a';}
 function subjDragLeave(e){e.currentTarget.style.borderTop='';}
 async function subjDrop(e,sid,toIdx){
@@ -2781,13 +2943,15 @@ async function renderStudents(){
   el.innerHTML=list.map(s=>{
     const subjs=subjMap[s.id]||[];
     const couns=counMap[s.id]||[];
-    const subjRows=subjs.map((sub,si)=>`<tr draggable="true" ondragstart="subjDragStart(event,'${s.id}',${si})" ondragover="subjDragOver(event)" ondragleave="subjDragLeave(event)" ondrop="subjDrop(event,'${s.id}',${si})">
-      <td style="text-align:left;font-weight:500;color:var(--text)"><span style="color:#ccc;cursor:grab;margin-right:3px;font-size:10px">⠇</span><span style="cursor:pointer" data-val="${sub.subject||''}" onclick="editSubjectCell(this,'${sub.id}','subject','text')">${sub.subject||'-'}</span></td>
-      <td style="cursor:pointer" data-val="${sub.day||''}" onclick="editSubjectCell(this,'${sub.id}','day','text')">${sub.day||'-'}</td>
-      <td style="cursor:pointer" data-val="${sub.start_date||''}" onclick="editSubjectCell(this,'${sub.id}','start_date','date')">${sub.start_date||'-'}</td>
-      <td style="cursor:pointer" data-val="${sub.end_date||''}" onclick="editSubjectCell(this,'${sub.id}','end_date','date')">${sub.end_date||'-'}</td>
-      <td style="cursor:pointer" data-val="${sub.class_time||''}" onclick="editSubjectCell(this,'${sub.id}','class_time','text')">${sub.class_time||'-'}</td>
-      <td style="white-space:nowrap"><select onchange="updateSubjectStatus('${sub.id}',this.value)" class="std-badge ${SB_STATUS_CLASS[sub.status]||'sb-standby'}" style="border:none;font-size:10px;font-weight:600;padding:2px 3px;border-radius:8px;cursor:pointer;outline:none">${STATUS_OPTS.map(o=>`<option ${o===(sub.status||'미배정')?'selected':''}>${o}</option>`).join('')}</select><span onclick="deleteSubject('${sub.id}')" style="cursor:pointer;color:#ddd;margin-left:3px;font-size:13px">×</span></td>
+    const _esc=v=>(v==null?'':String(v)).replace(/"/g,'&quot;');
+    const _gcell=(sub,si,c,field,type,val)=>`<td class="sgrid-cell" data-stu="${s.id}" data-sid="${sub.id}" data-field="${field}" data-type="${type}" data-r="${si}" data-c="${c}" data-val="${_esc(val)}"><span class="sgrid-val">${val||'-'}</span></td>`;
+    const subjRows=subjs.map((sub,si)=>`<tr data-subrow="${sub.id}" ondragover="subjDragOver(event)" ondragleave="subjDragLeave(event)" ondrop="subjDrop(event,'${s.id}',${si})">
+      <td class="sgrid-cell" data-stu="${s.id}" data-sid="${sub.id}" data-field="subject" data-type="text" data-r="${si}" data-c="0" data-val="${_esc(sub.subject)}" style="text-align:left"><span class="subj-grip" draggable="true" ondragstart="subjDragStart(event,'${s.id}',${si})" style="color:#ccc;cursor:grab;margin-right:3px;font-size:10px">⠇</span><span class="sgrid-val">${sub.subject||'-'}</span></td>
+      ${_gcell(sub,si,1,'day','text',sub.day)}
+      ${_gcell(sub,si,2,'start_date','date',sub.start_date)}
+      ${_gcell(sub,si,3,'end_date','date',sub.end_date)}
+      ${_gcell(sub,si,4,'class_time','text',sub.class_time)}
+      <td class="sgrid-cell" data-stu="${s.id}" data-sid="${sub.id}" data-field="status" data-type="status" data-r="${si}" data-c="5" data-val="${_esc(sub.status||'미배정')}" style="white-space:nowrap"><select onmousedown="event.stopPropagation()" onchange="updateSubjectStatus('${sub.id}',this.value)" class="std-badge ${SB_STATUS_CLASS[sub.status]||'sb-standby'}" style="border:none;font-size:10px;font-weight:600;padding:2px 3px;border-radius:8px;cursor:pointer;outline:none">${STATUS_OPTS.map(o=>`<option ${o===(sub.status||'미배정')?'selected':''}>${o}</option>`).join('')}</select><span onmousedown="event.stopPropagation()" onclick="deleteSubject('${sub.id}')" style="cursor:pointer;color:#ddd;margin-left:3px;font-size:13px">×</span></td>
     </tr>`).join('');
     const counselRows=couns.slice(0,3).map(c=>`<div class="std-counsel-row">
       <span class="std-counsel-date">${(c.date||'').slice(5).replace('-','.')}</span>
@@ -2893,14 +3057,12 @@ async function deleteStudent(){
   closeStudentEditModal();showToast('삭제됐어요');renderStudents();
 }
 
-function openSubjectAddRow(studentId){
-  // 해당 카드 찾아서 테이블에 입력 행 추가
-  renderStudents().then?.(()=>{});
-  // 간단하게: 별도 모달로 처리
-  document.getElementById('std-subj-student-id').value=studentId;
-  ['std-subj-name','std-subj-day','std-subj-start','std-subj-end','std-subj-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('std-subj-status').value='미배정';
-  document.getElementById('std-subj-modal').style.display='flex';
+async function openSubjectAddRow(studentId){
+  const {data,error}=await sb.from('student_subjects').insert({student_id:studentId,subject:'',status:'미배정'}).select().single();
+  if(error){showToast('추가 실패 😢');return;}
+  await renderStudents();
+  const td=document.querySelector(`.sgrid-cell[data-stu="${studentId}"][data-sid="${data.id}"][data-c="0"]`);
+  if(td){td.scrollIntoView&&td.scrollIntoView({block:'nearest'});editGridCell(td);}
 }
 function closeSubjModal(){document.getElementById('std-subj-modal').style.display='none';}
 async function saveSubject(){
