@@ -176,7 +176,7 @@ body.dark .cal-cell:not(.out-period){background:#5a5a5a}
 .palette-color{width:18px;height:18px;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:transform .1s}
 .palette-color:hover{transform:scale(1.2);border-color:#1a1a1a}
 .palette-more{font-size:11px;color:#aaa;cursor:pointer;text-align:center;padding:2px}
-/* 결제리스트 탭 */
+/* 결제목록 탭 */
 .list-filter-tabs{display:flex;gap:6px;margin-bottom:12px}
 .list-filter-tab{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s}
 .list-filter-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
@@ -308,7 +308,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   /* 모바일 수강생 카드 */
   .std-card{padding:10px 12px}
   .std-name{font-size:13px}
-  /* 결제 리스트 테이블 */
+  /* 결제 목록 테이블 */
   .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   /* 오늘 수업 한 줄 폰트 */
   #today-schedule-box .today-schedule div[style*="font-size:12px"]{font-size:11px}
@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v112</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v12</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -402,7 +402,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <div class="tab active" onclick="switchTab('main')">오늘 활동</div>
     <div class="tab" onclick="switchTab('calendar')">달력</div>
     <div class="tab" onclick="switchTab('students')">수강생 목록</div>
-    <div class="tab" onclick="switchTab('list')">결제 리스트</div>
+    <div class="tab" onclick="switchTab('list')">결제 목록</div>
     <div class="tab" onclick="switchTab('report')">영업일 리포트</div>
     
     <div class="tab admin-only" onclick="switchTab('period')" style="display:none">영업일 관리</div>
@@ -589,7 +589,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
       <div id="student-list"></div>
     </div>
 
-    <!-- 결제 리스트 -->
+    <!-- 결제 목록 -->
     <div class="tabs-page" id="tab-list">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
         <div class="list-filter-tabs">
@@ -786,7 +786,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <div class="modal-bg" id="student-modal">
   <div class="modal">
     <h3>결제 학생 추가</h3>
-    <div class="form-group"><label class="form-label">구분</label><select class="form-input" id="m-category"><option value="">선택</option><option>수강생</option><option>DB</option><option>COD</option><option>따즈아</option></select></div>
+    <div class="form-group"><label class="form-label">구분</label><select class="form-input" id="m-category"><option value="">선택</option><option>수강생</option><option>COD</option><option>DB</option><option>따즈아</option></select></div>
     <div class="form-group">
       <label class="form-label">영업일</label>
       <div class="period-field-wrap">
@@ -1118,17 +1118,20 @@ async function loadTodaySchedule(){
   const {data:profiles}=await sb.from('student_profiles').select('id,name').eq('user_id',currentUser.id);
   const studentIds=(profiles||[]).map(p=>p.id);
   const nameMap={};(profiles||[]).forEach(p=>nameMap[p.id]=p.name);
-  // 현재 영업일 + 미결제(결제리스트) 조회
+  // 현재 영업일 + 미결제(결제목록) 조회
   const _tk=todayKey();
   const {data:_periods}=await sb.from('periods').select('name,start_date,end_date').order('start_date',{ascending:true});
   const _curPeriod=(_periods||[]).find(p=>p.start_date<=_tk&&p.end_date>=_tk)||(_periods||[])[(_periods||[]).length-1]||{};
   let _payStudents=[];
   if(_curPeriod.name){
-    const {data:_ps}=await sb.from('students').select('name,amount,status,period').eq('user_id',currentUser.id).eq('period',_curPeriod.name);
+    const {data:_ps}=await sb.from('students').select('name,amount,status,period,category,sort_order').eq('user_id',currentUser.id).eq('period',_curPeriod.name);
     _payStudents=(_ps||[]).filter(s=>!['결제','결제 후 환불','취소'].includes(s.status||''));
+    const _CO={'수강생':0,'COD':1,'DB':2,'따즈아':3};
+    _payStudents.sort((a,b)=>((_CO[a.category]??4)-(_CO[b.category]??4))||((a.sort_order??999)-(b.sort_order??999)));
   }
+  const _CATCOLOR={'수강생':'#1E6230','COD':'#8E4A14','DB':'#21407C','따즈아':'#7E2651'};
   const _payRows=_payStudents.length
-    ?`<div style="column-count:3;column-gap:16px">`+_payStudents.map(s=>`<div style="break-inside:avoid;padding:3px 0;font-size:12px;color:var(--text)">${s.name||'?'} <span style="color:var(--text2);font-size:11px">· ${s.amount?Number(s.amount).toLocaleString()+'원':'-'}</span></div>`).join('')+`</div>`
+    ?`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 14px">`+_payStudents.map(s=>`<div style="padding:3px 0;font-size:12px;color:var(--text)">${s.category?`<span style="color:${_CATCOLOR[s.category]||'var(--text2)'};font-weight:700;margin-right:4px">${s.category}</span>`:''}${s.name||'?'} <span style="color:var(--text2);font-size:11px">${s.amount?Number(s.amount).toLocaleString():'-'}</span></div>`).join('')+`</div>`
     :'<div style="font-size:12px;color:var(--text3);padding-top:4px">미결제 없음</div>';
   let gaegangData=[],jonggangData=[],todayClassSubjs=[];
   if(studentIds.length){
@@ -1200,7 +1203,7 @@ async function loadTodaySchedule(){
     <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">${cols}</div>
     </div>
     <div class="today-schedule" style="flex:${_payFlex};min-width:0;width:100%">
-      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">&#128179; 결제 리스트</div>
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">&#128179; 결제 목록</div>
       ${_payRows}
     </div>
   </div>
@@ -2048,7 +2051,7 @@ async function openDayModal(dateStr){
 }
 
 
-// ── 결제 리스트 드래그 ──
+// ── 결제 목록 드래그 ──
 let _stuDragIdx=null;
 function stuDragStart(e,idx){_stuDragIdx=idx;e.currentTarget.style.opacity='.4';}
 function stuDragOver(e){e.preventDefault();e.currentTarget.style.borderTop='2px solid #1a1a1a';}
@@ -2290,6 +2293,8 @@ function editMemoInline(el,sid){
 async function renderList(){
   const {data}=await sb.from('students').select('*').eq('user_id',currentUser.id);
   let students=data||[];
+  const CAT_ORDER={'수강생':0,'COD':1,'DB':2,'따즈아':3};
+  const catRank=c=>CAT_ORDER[c]!=null?CAT_ORDER[c]:4;
   students.sort((a,b)=>{
     const cancelStatus=['취소','결제 후 환불'];
     const aCancel=cancelStatus.includes(a.status)?1:0;
@@ -2297,7 +2302,10 @@ async function renderList(){
     if(aCancel!==bCancel) return aCancel-bCancel;
     const pk=periodSortKey(a.period)-periodSortKey(b.period);
     if(pk!==0) return pk;
-    // 같은 영업일 안에서는 sort_order 순
+    // 구분 순서: 수강생→COD→DB→따즈아
+    const ck=catRank(a.category)-catRank(b.category);
+    if(ck!==0) return ck;
+    // 같은 구분 안에서는 sort_order 순
     return (a.sort_order!=null?a.sort_order:999)-(b.sort_order!=null?b.sort_order:999);
   });
   // 영업일 필터 옵션 채우기
@@ -2336,10 +2344,10 @@ async function renderList(){
       style="cursor:default">
     <td style="text-align:center;color:#ccc;cursor:grab;font-size:14px" title="드래그로 순서변경">⠿</td>
     <td><select onchange="updateStudentCategory('${s.id}',this.value)" style="${catSelStyle(s.category)}">
-      ${['','수강생','DB','COD','따즈아'].map(v=>`<option value="${v}" ${v===(s.category||'')?'selected':''}>${v||'미설정'}</option>`).join('')}
+      ${['','수강생','COD','DB','따즈아'].map(v=>`<option value="${v}" ${v===(s.category||'')?'selected':''}>${v||'미설정'}</option>`).join('')}
     </select></td>
     <td style="white-space:nowrap"><select onchange="updateStudentPeriod('${s.id}',this.value)" style="${periodSelStyle(s.period)}"><option value="" ${!s.period?'selected':''}>미설정</option>${buildPeriodOpts(s.period)}</select></td>
-    <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','name')" style="cursor:pointer;font-weight:500;display:inline-block">${s.name}</span></td>
+    <td style="white-space:nowrap"><span onclick="nameCellClick(this,'${s.id}','${s.category||''}')" ondblclick="nameCellDbl(this,'${s.id}')" style="cursor:pointer;font-weight:500;display:inline-block;${(s.category==='수강생'||s.category==='COD')?'text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px':''}" title="${(s.category==='수강생'||s.category==='COD')?'클릭: 수강생 목록 이동 · 더블클릭: 이름 수정':'더블클릭: 이름 수정'}">${s.name}</span></td>
     <td><span onclick="editCell(this,'${s.id}','course')" style="cursor:pointer;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:125px">${s.course||'-'}</span></td>
     <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','amount')" style="cursor:pointer;display:inline-block">${s.amount?Number(s.amount).toLocaleString()+'원':'-'}</span></td>
     <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="${statusSelStyle(s.status)}">
@@ -2350,6 +2358,26 @@ async function renderList(){
     :'<tr><td colspan="8" style="text-align:center;color:#bbb;padding:20px">등록된 학생이 없어요</td></tr>';
 }
 
+let _nameClickTimer=null;
+function nameCellClick(el,id,cat){
+  const name=el.textContent.trim();
+  clearTimeout(_nameClickTimer);
+  _nameClickTimer=setTimeout(()=>{
+    if(cat==='수강생'||cat==='COD') goToStudentRoster(name);
+    // DB·따즈아: 무반응
+  },230);
+}
+function nameCellDbl(el,id){
+  clearTimeout(_nameClickTimer);
+  editCell(el,id,'name');
+}
+function goToStudentRoster(name){
+  setStudentCat('전체');
+  switchTab('students');
+  const si=document.getElementById('student-search');
+  if(si)si.value=name;
+  renderStudents();
+}
 function editCell(el,id,field){
   const cur=el.textContent.replace('원','').replace(/,/g,'').trim();
   const val=cur==='-'?'':cur;
@@ -2368,7 +2396,7 @@ function editCell(el,id,field){
   const save=async()=>{
     const newVal=isMemo?input.value:input.value.trim();
     const update={};
-    update[field]=field==='amount'?Number(newVal)||0:newVal;
+    update[field]=field==='amount'?Number(String(newVal).replace(/[^0-9.]/g,''))||0:newVal;
     await sb.from('students').update(update).eq('id',id);
     renderList();showToast('수정됐어요 ✓');
   };
@@ -3544,7 +3572,7 @@ async function savePeriod(){
 async function genDaily(){
   const {data:e}=await sb.from('daily_logs').select('*').eq('user_id',currentUser.id).eq('date',todayKey()).single();
   const {data:logs}=await sb.from('daily_logs').select('sales,refund').eq('user_id',currentUser.id);
-  // 결제 리스트 총 매출 자동 계산
+  // 결제 목록 총 매출 자동 계산
   const {data:students}=await sb.from('students').select('amount,completed').eq('user_id',currentUser.id);
   const listTotal=(students||[]).reduce((s,st)=>s+(st.amount||0),0);
   const listDone=(students||[]).filter(st=>st.completed).reduce((s,st)=>s+(st.amount||0),0);
@@ -3564,7 +3592,7 @@ async function genDaily(){
 누적 실매출:  ${fmt(totalReal)}
 목표 잔여:    ${fmt(Math.max(0,goal-totalReal))} (달성 ${pct(totalReal,goal)}%)
 
-📋 결제 리스트
+📋 결제 목록
 총 등록:  ${(students||[]).length}명 / ${fmt(listTotal)}
 완료:     ${(students||[]).filter(s=>s.completed).length}명 / ${fmt(listDone)}
 
@@ -3705,7 +3733,20 @@ async function renderReportYearly(){
   const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:false});
   if(!periods||!periods.length){document.getElementById('report-yearly-grid').innerHTML='<div style="color:var(--text2);font-size:13px">영업일 기록이 없어요</div>';return;}
   const today=todayKey();
-  const activePeriods=periods.filter(p=>p.start_date<=today);
+  // 가입일(KST) 기준: 가입일 전에 끝난 영업일은 숨김 → 가입한 영업일부터 표시
+  let signupDate=null;
+  const {data:_me}=await sb.from('profiles').select('created_at').eq('id',currentUser.id).single();
+  if(_me&&_me.created_at){
+    signupDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(_me.created_at));
+  }
+  // 가입 당시 활성이던 영업일을 찾아 그 시작일 이후만 표시
+  let cutoffStart=null;
+  if(signupDate){
+    const sp=periods.find(p=>p.start_date<=signupDate&&(!p.end_date||p.end_date>=signupDate));
+    cutoffStart=sp?sp.start_date:signupDate;
+  }
+  let activePeriods=periods.filter(p=>p.start_date<=today);
+  if(cutoffStart)activePeriods=activePeriods.filter(p=>p.start_date>=cutoffStart);
   if(!activePeriods.length){document.getElementById('report-yearly-grid').innerHTML='<div style="color:var(--text2);font-size:13px">표시할 영업일이 없어요</div>';return;}
   // 각 영업일별 합산
   const cards=await Promise.all(activePeriods.map(async p=>{
