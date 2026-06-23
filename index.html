@@ -263,6 +263,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 .std-counsel-text{font-size:13px;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1}
 .schedule-title-txt{flex:1;font-size:13px;color:var(--text)}
 .admin-notice{background:#fff8e8;border:1px solid #ffe0a0;border-radius:10px;padding:12px 16px;font-size:12px;color:#b45309;margin-bottom:14px}
+#notice-input:empty:before{content:attr(data-ph);color:var(--text3);pointer-events:none}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .3s;z-index:300;pointer-events:none}
 .toast.show{opacity:1}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite}
@@ -680,7 +681,11 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div id="notice-type-update" onclick="selectNoticeType('update')" style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer">업데이트</div>
           <div id="notice-type-important" onclick="selectNoticeType('important')" style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer">중요</div>
         </div>
-        <div class="form-group"><textarea class="form-input" id="notice-input" rows="3" placeholder="공지 내용을 입력해주세요..." style="resize:vertical"></textarea></div>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <button type="button" onmousedown="event.preventDefault()" onclick="noticeFormat('bold')" title="굵게 (Ctrl+B)" style="width:30px;height:28px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-weight:800;cursor:pointer">B</button>
+          <button type="button" onmousedown="event.preventDefault()" onclick="noticeFormat('underline')" title="밑줄 (Ctrl+U)" style="width:30px;height:28px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);text-decoration:underline;cursor:pointer">U</button>
+        </div>
+        <div class="form-group"><div id="notice-input" contenteditable="true" data-ph="공지 내용을 입력해주세요..." onkeydown="noticeEditorKey(event)" class="form-input" style="resize:vertical;min-height:72px;overflow:auto;text-align:left;line-height:1.6"></div></div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary" onclick="saveNotice()">저장</button>
         </div>
@@ -1004,7 +1009,7 @@ async function loadNotice(){
       const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
       const type=n.notice_type||'update';
       const typeLabel=type==='important'?'중요':'업데이트';
-      const html=n.content.split('\n').join('<br>');
+      const html=sanitizeNoticeHtml((n.content||'').split('\n').join('<br>'));
       return `<div class="notice-box ${type}" style="margin-bottom:8px"><span style="font-size:18px">📢</span><div style="flex:1"><div class="notice-date">${typeLabel} · ${dateStr}</div><div class="notice-text">${html}</div></div></div>`;
     };
     if(latestImportant) boxHtml+=makeBox(latestImportant);
@@ -1021,7 +1026,7 @@ async function loadNotice(){
         return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border2)">
           <div style="flex:1">
             <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">${typeLabel} · ${dateStr}</div>
-            <div style="font-size:13px;color:var(--text);white-space:pre-wrap">${n.content}</div>
+            <div style="font-size:13px;color:var(--text);line-height:1.6">${sanitizeNoticeHtml((n.content||'').split('\n').join('<br>'))}</div>
           </div>
           <span onclick="deleteNoticeById('${n.id}')" style="color:#ddd;cursor:pointer;font-size:18px;padding:0 4px;flex-shrink:0">×</span>
         </div>`;
@@ -1039,12 +1044,54 @@ async function deleteNoticeById(id){
   await loadNotice();
 }
 
+// ===== 공지 서식(굵게/밑줄) =====
+function noticeFormat(cmd){
+  const ed=document.getElementById('notice-input');if(!ed)return;
+  ed.focus();
+  try{document.execCommand(cmd,false,null);}catch(_){}
+}
+function noticeEditorKey(e){
+  if(e.ctrlKey||e.metaKey){
+    const k=(e.key||'').toLowerCase();
+    if(k==='b'){e.preventDefault();noticeFormat('bold');}
+    else if(k==='u'){e.preventDefault();noticeFormat('underline');}
+  }
+}
+// 굵게·밑줄·줄바꿈만 남기고 모두 제거 (저장/표시 공통)
+function sanitizeNoticeHtml(html){
+  const tmp=document.createElement('div');tmp.innerHTML=html||'';
+  const walk=node=>{
+    [...node.childNodes].forEach(ch=>{
+      if(ch.nodeType===1){
+        let tag=ch.tagName.toLowerCase();
+        // execCommand가 만드는 b/strong/u 외 span(font-weight/underline) 처리
+        const style=ch.getAttribute&&ch.getAttribute('style')||'';
+        const isBold=tag==='b'||tag==='strong'||/font-weight\s*:\s*(bold|[6-9]00)/.test(style);
+        const isUnder=tag==='u'||/text-decoration[^;]*underline/.test(style);
+        walk(ch);
+        const inner=ch.innerHTML;
+        let rep=inner;
+        if(isBold)rep=`<b>${rep}</b>`;
+        if(isUnder)rep=`<u>${rep}</u>`;
+        if(tag==='br')rep='<br>';
+        else if(tag==='div'||tag==='p')rep=(node.firstChild!==ch?'<br>':'')+rep;
+        const span=document.createElement('span');span.innerHTML=rep;
+        ch.replaceWith(...span.childNodes);
+      }
+    });
+  };
+  walk(tmp);
+  return tmp.innerHTML;
+}
+
 async function saveNotice(){
-  const content=document.getElementById('notice-input').value.trim();
-  if(!content){showToast('내용을 입력해주세요');return;}
+  const ed=document.getElementById('notice-input');
+  const raw=ed?sanitizeNoticeHtml(ed.innerHTML):'';
+  const plain=ed?(ed.textContent||'').trim():'';
+  if(!plain){showToast('내용을 입력해주세요');return;}
   const notice_type=_noticeType||'update';
-  await sb.from('notices').insert({content,notice_type});
-  document.getElementById('notice-input').value='';
+  await sb.from('notices').insert({content:raw,notice_type});
+  if(ed)ed.innerHTML='';
   selectNoticeType('update');
   showToast('공지 저장됐어요 ✓');
   await loadNotice();
@@ -1053,7 +1100,7 @@ async function saveNotice(){
 async function deleteNotice(){
   if(!confirm('공지를 삭제할까요?'))return;
   await sb.from('notices').delete().neq('id','00000000-0000-0000-0000-000000000000');
-  document.getElementById('notice-input').value='';
+  const _ne=document.getElementById('notice-input');if(_ne)_ne.innerHTML='';
   document.getElementById('notice-box').innerHTML='';
   showToast('공지 삭제됐어요');
 }
