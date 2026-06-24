@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v12</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v13</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -551,6 +551,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div class="std-chip" onclick="setStudentCat('제과제빵')">제과제빵</div>
           <div class="std-chip" onclick="setStudentCat('바리스타')">바리스타</div>
           <div class="std-chip" onclick="setStudentCat('입시')">입시</div>
+          <div class="std-chip" onclick="setStudentCat('서브')">서브</div>
           <div class="std-chip" onclick="setStudentCat('전체')">전체</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
@@ -2278,7 +2279,7 @@ function buildPeriodOpts(cur){const _a=(periodPickerData||[]).filter(p=>!isPastP
 function periodSelStyle(p){if(!p)return 'border:1px solid #e0deda;border-radius:20px;font-size:11px;padding:3px 9px;outline:none;cursor:pointer;background:#fff;color:#777';const c=periodColor(p);return `border:none;border-radius:20px;font-size:11px;font-weight:600;padding:3px 9px;outline:none;cursor:pointer;background:${c[0]};color:${c[1]}`;}
 const CAT_COLORS={'수강생':['#CFEDD2','#1E6230'],'DB':['#CFDDF5','#21407C'],'COD':['#FCE0CC','#8E4A14'],'따즈아':['#FBD2E2','#7E2651']};
 function catSelStyle(c){const v=CAT_COLORS[c]||['#EAE9E5','#55534E'];return `border:none;border-radius:20px;font-size:11px;font-weight:700;padding:3px 9px;outline:none;cursor:pointer;background:${v[0]};color:${v[1]}`;}
-const PROF_CAT_COLORS={'원데이':['#FBD2E2','#7E2651'],'조리':['#CFEDD2','#1E6230'],'제과제빵':['#FCE0CC','#8E4A14'],'바리스타':['#FBEEC4','#79590C'],'입시':['#CFDDF5','#21407C']};
+const PROF_CAT_COLORS={'원데이':['#FBD2E2','#7E2651'],'조리':['#CFEDD2','#1E6230'],'제과제빵':['#FCE0CC','#8E4A14'],'바리스타':['#FBEEC4','#79590C'],'입시':['#CFDDF5','#21407C'],'서브':['#E5E7EB','#4B5563']};
 function profCatStyle(c){const v=PROF_CAT_COLORS[c]||['#EAE9E5','#55534E'];return `background:${v[0]};color:${v[1]}`;}
 async function updateStudentPeriod(id,val){await sb.from('students').update({period:val}).eq('id',id);showToast('영업일 업데이트 완료');renderList();}
 function editMemoInline(el,sid){
@@ -2994,8 +2995,10 @@ async function renderStudents(){
   const displaySubjMap={};
   list=list.filter(s=>{
     let subs=subjMap[s.id]||[];
-    // 검색어가 이 학생의 학생정보(이름·원서·전화)에 맞는지
-    const infoHit=q&&((s.name||'').includes(q)||(s.student_no||'').includes(q)||(s.phone||'').includes(q));
+    // 검색어가 이 학생의 학생정보(이름·원서·본인전화·부모전화)에 맞는지
+    const qDigits=q?q.replace(/[^0-9]/g,''):'';
+    const phoneDigits=((s.phone||'')+' '+(s.parent_mom||'')).replace(/[^0-9]/g,'');
+    const infoHit=q&&((s.name||'').includes(q)||(s.student_no||'').includes(q)||(s.phone||'').includes(q)||(s.parent_mom||'').includes(q)||(qDigits.length>=3&&phoneDigits.includes(qDigits)));
     // 검색 필터: 과목명 매칭 (단, 학생정보로 맞았으면 과목명 조건은 면제)
     if(q&&!infoHit){
       subs=subs.filter(sub=>(sub.subject||'').includes(q));
@@ -3320,16 +3323,19 @@ function downloadStudentTemplate(){
   URL.revokeObjectURL(a.href);
 }
 
+// 전화번호 자동 하이픈: 01012345678 → 010-1234-5678
+function fmtPhone(v){
+  if(!v)return '';
+  const d=String(v).replace(/[^0-9]/g,'');
+  if(d.length===11)return d.slice(0,3)+'-'+d.slice(3,7)+'-'+d.slice(7);      // 휴대폰
+  if(d.length===10){
+    if(d.startsWith('02'))return d.slice(0,2)+'-'+d.slice(2,6)+'-'+d.slice(6); // 서울
+    return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);                       // 지역/구형
+  }
+  if(d.length===9&&d.startsWith('02'))return d.slice(0,2)+'-'+d.slice(2,5)+'-'+d.slice(5);
+  return String(v).trim(); // 형식 모르면 원본 유지
+}
 async function uploadStudentExcel(input){
-  const file=input.files[0];
-  if(!file){return;}
-  if(typeof XLSX==='undefined'){showToast('엑셀 라이브러리 로딩 중...');return;}
-  const data=await file.arrayBuffer();
-  const wb=XLSX.read(data,{type:'array',cellDates:true});
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  const rows_raw=XLSX.utils.sheet_to_json(ws,{header:1,raw:false});
-  // 첫 행은 헤더, 두 번째 행부터 데이터
-  const dataRows=rows_raw.slice(1).filter(r=>r[2]&&String(r[2]).trim());
   if(!dataRows.length){showToast('데이터가 없어요');input.value='';return;}
   const toInsert=[];
   const subjToInsert=[];
@@ -3342,7 +3348,7 @@ async function uploadStudentExcel(input){
       category:String(r[0]||'').trim(),
       student_no:String(r[1]||'').trim(),
       name,
-      phone:String(r[8]||'').trim()
+      phone:fmtPhone(String(r[8]||'').trim())
     });
     const subject=String(r[3]||'').trim();
     if(subject){
@@ -3827,7 +3833,7 @@ sb.auth.getSession().then(({data:{session}})=>{
       </div>
       <div class="form-group"><label class="form-label">구분</label>
         <select class="form-input" id="std-m-cat">
-          <option>원데이</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
+          <option>원데이</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option><option>서브</option>
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px">
@@ -3855,7 +3861,7 @@ sb.auth.getSession().then(({data:{session}})=>{
       </div>
       <div class="form-group"><label class="form-label">구분</label>
         <select class="form-input" id="std-e-cat">
-          <option>원데이</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option>
+          <option>원데이</option><option>조리</option><option>제과제빵</option><option>바리스타</option><option>입시</option><option>서브</option>
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px">
