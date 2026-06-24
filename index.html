@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v14</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v15</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -2112,12 +2112,27 @@ async function loadDmBadges(dateStr){
 function renderDmTodoList(){
   const el=document.getElementById('dm-todo-list');
   if(!el)return;
-  el.innerHTML=dmTodos.length?dmTodos.map(t=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border2)">
+  el.innerHTML=dmTodos.length?dmTodos.map(t=>{
+    const cancelled=t.category==='취소됨';
+    const textStyle=cancelled?'text-decoration:line-through;color:var(--text)':(t.done?'text-decoration:line-through;color:#bbb':'color:var(--text)');
+    const showCancel=(t.category==='상담'||t.category==='면담'||cancelled);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border2)">
       <div class="chk ${t.done?'done':''}" onclick="toggleDmTodo('${t.id}')"></div>
-      <span onclick="editDmTodoInline(this,'${t.id}')" style="flex:1;font-size:13px;cursor:text;${t.done?'text-decoration:line-through;color:#bbb':'color:var(--text)'}">${t.content}</span>
+      <span onclick="editDmTodoInline(this,'${t.id}')" style="flex:1;font-size:13px;cursor:text;${textStyle}">${t.content}</span>
+      ${showCancel?`<button onclick="cancelDmCounsel('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f5c5c5;background:transparent;color:#c0392b;cursor:pointer;white-space:nowrap">${cancelled?'취소해제':'취소'}</button>`:''}
       <span style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px" onclick="deleteDmTodo('${t.id}')">×</span>
-    </div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:4px 0">할 일을 추가해보세요</div>';
+    </div>`;}).join(''):'<div style="font-size:12px;color:var(--text3);padding:4px 0">할 일을 추가해보세요</div>';
+}
+async function cancelDmCounsel(id){
+  const item=dmTodos.find(t=>t.id===id);if(!item)return;
+  const isCancelled=item.category==='취소됨';
+  const prev=item._origCategory||(isCancelled?'상담':item.category);
+  if(!isCancelled)item._origCategory=item.category;
+  item.category=isCancelled?prev:'취소됨';
+  await sb.from('todos').update({category:item.category}).eq('id',id);
+  renderDmTodoList();
+  if(dayModalDate===todayKey())loadTodos();
+  renderCalendar();
 }
 
 let _dmCounselType='상담';
