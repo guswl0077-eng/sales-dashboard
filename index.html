@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v15</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v16</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1156,7 +1156,7 @@ async function loadTodaySchedule(){
     .filter(s=>!s.day||s.day.replace(/[^가-힣]/g,'').split('').some(d=>s.day.includes(_todayDayChar)));
   _classes.sort((a,b)=>(a.class_time||'99:99').localeCompare(b.class_time||'99:99'));
   const _classRows=_classes.length
-    ?_classes.map(c=>`<div style="display:flex;gap:6px;align-items:baseline;padding:4px 0;border-bottom:.5px solid var(--border2)"><span style="font-size:11px;font-weight:700;color:#378ADD;flex-shrink:0;min-width:38px">${c.class_time||'--:--'}</span><span style="font-size:12px;color:var(--text);flex:1">${nameMap[c.student_id]||'?'} <span style="color:var(--text2);font-size:11px">· ${c.subject||'-'}</span></span></div>`).join('')
+    ?_classes.map(c=>{const _nm=nameMap[c.student_id]||'?';return `<div style="display:flex;gap:6px;align-items:baseline;padding:4px 0;border-bottom:.5px solid var(--border2)"><span style="font-size:11px;font-weight:700;color:#378ADD;flex-shrink:0;min-width:38px">${c.class_time||'--:--'}</span><span style="font-size:12px;color:var(--text);flex:1"><span onclick="openStudentTab('${_nm.replace(/'/g,"\\'")}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px">${_nm}</span> <span style="color:var(--text2);font-size:11px">· ${c.subject||'-'}</span></span></div>`;}).join('')
     :'<div style="font-size:12px;color:var(--text3);padding-top:4px">오늘 수업 없음</div>';
   const cols=dates.map(d=>{
     const dt=new Date(d+'T00:00:00');
@@ -1173,8 +1173,8 @@ async function loadTodaySchedule(){
     const hasStu=data.gaegang.length||data.jonggang.length;
     const dividerHtml=hasStu?`<div class="sched-divider"></div>`:'';
     const stuHtml=[
-      ...data.gaegang.map(s=>`<div class="sched-stu"><span style="color:#378ADD;font-size:7px;flex-shrink:0;margin-top:3px">&#9679;</span><div style="flex:1;overflow:hidden;min-width:0"><div class="sched-stu-g" style="font-weight:600">${s.name}(개강)</div><div class="sched-stu-sub">${s.subject}</div></div></div>`),
-      ...data.jonggang.map(s=>`<div class="sched-stu"><span style="color:#D85A30;font-size:7px;flex-shrink:0;margin-top:3px">&#9679;</span><div style="flex:1;overflow:hidden;min-width:0"><div class="sched-stu-r" style="font-weight:600">${s.name}(종강)</div><div class="sched-stu-sub">${s.subject}</div></div></div>`)
+      ...data.gaegang.map(s=>`<div class="sched-stu"><span style="color:#378ADD;font-size:7px;flex-shrink:0;margin-top:3px">&#9679;</span><div style="flex:1;overflow:hidden;min-width:0"><div class="sched-stu-g" style="font-weight:600"><span onclick="openStudentTab('${(s.name||'').replace(/'/g,"\\'")}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:#bcd;text-underline-offset:2px">${s.name}</span>(개강)</div><div class="sched-stu-sub">${s.subject}</div></div></div>`),
+      ...data.jonggang.map(s=>`<div class="sched-stu"><span style="color:#D85A30;font-size:7px;flex-shrink:0;margin-top:3px">&#9679;</span><div style="flex:1;overflow:hidden;min-width:0"><div class="sched-stu-r" style="font-weight:600"><span onclick="openStudentTab('${(s.name||'').replace(/'/g,"\\'")}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:#ecc;text-underline-offset:2px">${s.name}</span>(종강)</div><div class="sched-stu-sub">${s.subject}</div></div></div>`)
     ].join('');
     return `<div style="text-align:center;${isToday?'background:var(--sched-today);border-radius:6px;padding:3px 2px':'padding:3px 2px'}">
       ${dayLabel}
@@ -2366,7 +2366,7 @@ async function renderList(){
       ${['','수강생','COD','DB','따즈아'].map(v=>`<option value="${v}" ${v===(s.category||'')?'selected':''}>${v||'미설정'}</option>`).join('')}
     </select></td>
     <td style="white-space:nowrap"><select onchange="updateStudentPeriod('${s.id}',this.value)" style="${periodSelStyle(s.period)}"><option value="" ${!s.period?'selected':''}>미설정</option>${buildPeriodOpts(s.period)}</select></td>
-    <td style="white-space:nowrap"><span onclick="nameCellClick(this,'${s.id}','${s.category||''}')" ondblclick="nameCellDbl(this,'${s.id}')" style="cursor:pointer;font-weight:500;display:inline-block;${(s.category==='수강생'||s.category==='COD')?'text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px':''}" title="${(s.category==='수강생'||s.category==='COD')?'클릭: 수강생 목록 이동 · 더블클릭: 이름 수정':'더블클릭: 이름 수정'}">${s.name}</span></td>
+    <td style="white-space:nowrap"><span onclick="nameCellClick(this,'${s.id}','${s.category||''}')" ondblclick="nameCellDbl(this,'${s.id}')" style="cursor:pointer;font-weight:500;display:inline-block;${(s.category==='수강생'||s.category==='COD')?'text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px':''}" title="${(s.category==='수강생'||s.category==='COD')?'클릭: 수강생 목록 새 탭 · 더블클릭: 이름 수정':'더블클릭: 이름 수정'}">${s.name}</span></td>
     <td><span onclick="editCell(this,'${s.id}','course')" style="cursor:pointer;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:125px">${s.course||'-'}</span></td>
     <td style="white-space:nowrap"><span onclick="editCell(this,'${s.id}','amount')" style="cursor:pointer;display:inline-block">${s.amount?Number(s.amount).toLocaleString()+'원':'-'}</span></td>
     <td><select onchange="updateStudentStatus('${s.id}',this.value)" style="${statusSelStyle(s.status)}">
@@ -2382,7 +2382,7 @@ function nameCellClick(el,id,cat){
   const name=el.textContent.trim();
   clearTimeout(_nameClickTimer);
   _nameClickTimer=setTimeout(()=>{
-    if(cat==='수강생'||cat==='COD') goToStudentRoster(name);
+    if(cat==='수강생'||cat==='COD') openStudentTab(name);
     // DB·따즈아: 무반응
   },230);
 }
@@ -2390,12 +2390,10 @@ function nameCellDbl(el,id){
   clearTimeout(_nameClickTimer);
   editCell(el,id,'name');
 }
-function goToStudentRoster(name){
-  setStudentCat('전체');
-  switchTab('students');
-  const si=document.getElementById('student-search');
-  if(si)si.value=name;
-  renderStudents();
+// 새 탭으로 수강생 목록 + 이름 검색 열기
+function openStudentTab(name){
+  const url=location.origin+location.pathname+'?tab=students&student='+encodeURIComponent(name);
+  window.open(url,'_blank');
 }
 function editCell(el,id,field){
   const cur=el.textContent.replace('원','').replace(/,/g,'').trim();
@@ -3822,8 +3820,23 @@ async function renderReportYearly(){
   document.getElementById('report-yearly-grid').innerHTML=cards.join('');
 }
 
+function applyUrlParams(){
+  try{
+    const p=new URLSearchParams(location.search);
+    const tab=p.get('tab'), student=p.get('student');
+    if(tab==='students'){
+      setStudentCat('전체');
+      switchTab('students');
+      if(student){
+        const si=document.getElementById('student-search');
+        if(si)si.value=student;
+        renderStudents();
+      }
+    }
+  }catch(_){}
+}
 sb.auth.getSession().then(({data:{session}})=>{
-  if(session){currentUser=session.user;loadProfile().then(()=>enterApp());}
+  if(session){currentUser=session.user;loadProfile().then(()=>{enterApp();applyUrlParams();});}
   else{document.getElementById('auth-wrap').style.display='flex';}
 });
 </script>
