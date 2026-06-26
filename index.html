@@ -887,7 +887,6 @@ async function doLogin(){
   btn.disabled=false;btn.textContent='로그인';
   if(error){msgEl.textContent='아이디 또는 비밀번호가 틀렸어요.';return;}
   currentUser=data.user;
-  sb.from('profiles').update({last_login:new Date().toISOString()}).eq('id',data.user.id).then(()=>{},()=>{});
   await loadProfile();enterApp();
 }
 
@@ -928,6 +927,8 @@ async function doLogout(){
 async function loadProfile(){
   const {data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
   currentProfile=data;
+  // 마지막 접속 기록 (앱 열릴 때마다 = 자동 로그인 포함)
+  sb.from('profiles').update({last_login:new Date().toISOString()}).eq('id',currentUser.id).then(()=>{},()=>{});
 }
 
 function enterApp(){
