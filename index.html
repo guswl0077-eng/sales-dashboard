@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v17</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v18</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1133,7 +1133,7 @@ async function loadTodaySchedule(){
   }
   const _CATCOLOR={'수강생':'#1E6230','COD':'#8E4A14','DB':'#21407C','따즈아':'#7E2651'};
   const _payRows=_payStudents.length
-    ?`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 14px">`+_payStudents.map(s=>`<div style="padding:3px 0;font-size:12px;color:var(--text)">${s.category?`<span style="color:${_CATCOLOR[s.category]||'var(--text2)'};font-weight:700;margin-right:4px">${s.category}</span>`:''}${s.name||'?'} <span style="color:var(--text2);font-size:11px">${s.amount?Number(s.amount).toLocaleString():'-'}</span></div>`).join('')+`</div>`
+    ?`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 14px">`+_payStudents.map(s=>{const _mv=(s.category==='수강생'||s.category==='COD');const _nm=(s.name||'?');return `<div style="padding:3px 0;font-size:12px;color:var(--text)">${s.category?`<span style="color:${_CATCOLOR[s.category]||'var(--text2)'};font-weight:700;margin-right:4px">${s.category}</span>`:''}${_mv?`<span onclick="openStudentTab('${_nm.replace(/'/g,"\\'")}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px">${_nm}</span>`:_nm} <span style="color:var(--text2);font-size:11px">${s.amount?Number(s.amount).toLocaleString():'-'}</span></div>`;}).join('')+`</div>`
     :'<div style="font-size:12px;color:var(--text3);padding-top:4px">미결제 없음</div>';
   let gaegangData=[],jonggangData=[],todayClassSubjs=[];
   if(studentIds.length){
