@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v19</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v23</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -960,7 +960,7 @@ async function loadTodayBadges(){
     const wbg=WORK_BG[wt]||'#e8f0fe', wtc=WORK_TC[wt]||'#1a56db';
     html+=`<span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">근무</span><span style="background:${wbg};color:${wtc};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${wt}</span>`;
   }
-  if(_allTags.length){html+=`<span style="font-size:13px;color:var(--text3);font-weight:600">오늘 태그</span>`;html+=_allTags.map(d=>`<span style="color:${readableTagColor(d.cal_tags.color||'#888')};font-size:16px;font-weight:700;padding:0 4px">${d.cal_tags.text}</span>`).join('');}
+  if(_allTags.length){html+=`<span style="font-size:13px;color:var(--text3);font-weight:600">오늘 태그</span>`;html+=_allTags.map(d=>{const _c=d.cal_tags.color||'#888';return `<span style="background:${tagPillBg(_c)};color:${tagPillText(_c)};font-size:14px;font-weight:700;padding:3px 11px;border-radius:13px">${d.cal_tags.text}</span>`;}).join('');}
   html+='</div>';
   el.innerHTML=html;
 }
@@ -1152,7 +1152,7 @@ async function loadTodaySchedule(){
   const _todayDayChar=DAYS_KR[today.getDay()];
   let _classes=(todayClassSubjs)
     .filter(s=>!['종강','환불','휴학','COD','미배정'].includes(s.status||''))
-    .filter(s=>!s.day||s.day.replace(/[^가-힣]/g,'').split('').some(d=>s.day.includes(_todayDayChar)));
+    .filter(s=>dayFieldHasToday(s.day,_todayDayChar));
   _classes.sort((a,b)=>(a.class_time||'99:99').localeCompare(b.class_time||'99:99'));
   const _classRows=_classes.length
     ?_classes.map(c=>{const _nm=nameMap[c.student_id]||'?';return `<div style="display:flex;gap:6px;align-items:baseline;padding:4px 0;border-bottom:.5px solid var(--border2)"><span style="font-size:11px;font-weight:700;color:#378ADD;flex-shrink:0;min-width:38px">${c.class_time||'--:--'}</span><span style="font-size:12px;color:var(--text);flex:1"><span onclick="openStudentTab('${_nm.replace(/'/g,"\\'")}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px">${_nm}</span> <span style="color:var(--text2);font-size:11px">· ${c.subject||'-'}</span></span></div>`;}).join('')
@@ -1797,7 +1797,26 @@ function pickTextColor(hex){
   return lum>0.6?'#1a1a1a':'#fff';
 }
 function hexToRgba(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
-// 태그 색을 배경 대비 잘 보이게 보정 (라이트=밝은색 어둡게 / 다크=어두운색 밝게)
+const DAY_SEQ='일월화수목금토';
+// 요일 칸이 오늘 요일을 포함하는지 (월~금 같은 범위, 월,수 / 월·수 / 월수 등 모두 인식)
+function dayFieldHasToday(dayStr,todayChar){
+  if(!dayStr)return true; // 요일 미입력이면 표시
+  const s=String(dayStr);
+  const set=new Set();
+  // 1) 범위 표기: A~B (예: 월~금, 토~일)
+  const rangeRe=/([일월화수목금토])\s*[~\-–]\s*([일월화수목금토])/g;
+  let m;
+  while((m=rangeRe.exec(s))){
+    let a=DAY_SEQ.indexOf(m[1]), b=DAY_SEQ.indexOf(m[2]);
+    if(a>-1&&b>-1){
+      if(a<=b){for(let i=a;i<=b;i++)set.add(DAY_SEQ[i]);}
+      else{for(let i=a;i<7;i++)set.add(DAY_SEQ[i]);for(let i=0;i<=b;i++)set.add(DAY_SEQ[i]);} // 토~월 같은 wrap
+    }
+  }
+  // 2) 개별 요일 글자 전부
+  for(const ch of s){if(DAY_SEQ.includes(ch))set.add(ch);}
+  return set.has(todayChar);
+}
 function readableTagColor(hex){
   if(!hex||hex[0]!=='#')return 'var(--text)';
   let h=hex.slice(1);if(h.length===3)h=h.split('').map(c=>c+c).join('');
@@ -1811,7 +1830,29 @@ function readableTagColor(hex){
   }
   return '#'+[r,g,b].map(c=>Math.max(0,Math.min(255,c)).toString(16).padStart(2,'0')).join('');
 }
-// 색 정렬용: 무지개 순(빨강0→보라), 무채색(회색·검정·흰색)은 맨 뒤
+// 태그 옅은 배경색 (라이트=흰색쪽으로, 다크=검정쪽으로 섞기)
+function hexToHslArr(hex){
+  let h=hex.slice(1);if(h.length===3)h=h.split('').map(c=>c+c).join('');
+  let r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let H=0;
+  if(d){if(mx===r)H=((g-b)/d)%6;else if(mx===g)H=(b-r)/d+2;else H=(r-g)/d+4;H*=60;if(H<0)H+=360;}
+  const L=(mx+mn)/2, S=d===0?0:d/(1-Math.abs(2*L-1));
+  return [H,S,L];
+}
+function tagPillBg(hex){
+  if(!hex||hex[0]!=='#')return 'var(--border2)';
+  const [H,S]=hexToHslArr(hex);const isDark=document.body.classList.contains('dark');
+  if(S<0.08)return isDark?'#3a3a3c':'#ececec'; // 무채색
+  const Sb=Math.min(0.65,Math.max(0.32,S)), Lb=isDark?0.24:0.88;
+  return `hsl(${Math.round(H)} ${Math.round(Sb*100)}% ${Math.round(Lb*100)}%)`;
+}
+function tagPillText(hex){
+  if(!hex||hex[0]!=='#')return 'var(--text)';
+  const [H,S]=hexToHslArr(hex);const isDark=document.body.classList.contains('dark');
+  if(S<0.08)return isDark?'#e0e0e0':'#444';
+  const St=Math.min(0.85,Math.max(0.45,S)), Lt=isDark?0.80:0.30;
+  return `hsl(${Math.round(H)} ${Math.round(St*100)}% ${Math.round(Lt*100)}%)`;
+}
 function colorSortKey(hex){
   if(!hex||hex[0]!=='#')return [2,0];
   let h=hex.slice(1);
@@ -1835,6 +1876,7 @@ function sortByColor(arr,getHex){
     .map(o=>o.x);
 }
 async function renderCalendar(){
+ try{
   const {data:periods}=await sb.from('periods').select('*').order('start_date',{ascending:true});
   allPeriods=periods||[];
   if(!_calInitialized&&allPeriods.length){
@@ -2010,6 +2052,11 @@ async function renderCalendar(){
     cur.setDate(cur.getDate()+1);
   }
   document.getElementById('cal-body').innerHTML=html;
+ }catch(err){
+  console.error('renderCalendar 오류:',err);
+  const _cb=document.getElementById('cal-body');
+  if(_cb)_cb.innerHTML=`<div style="padding:20px;color:#c0392b;font-size:13px;line-height:1.6">달력을 불러오는 중 오류가 발생했어요.<br><span style="color:#888;font-size:12px">${(err&&err.message)||err}</span></div>`;
+ }
 }
 
 async function onCalCellClick(dateStr){
