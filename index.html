@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v20</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v19</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1152,7 +1152,7 @@ async function loadTodaySchedule(){
   const _todayDayChar=DAYS_KR[today.getDay()];
   let _classes=(todayClassSubjs)
     .filter(s=>!['종강','환불','휴학','COD','미배정'].includes(s.status||''))
-    .filter(s=>dayFieldHasToday(s.day,_todayDayChar));
+    .filter(s=>!s.day||s.day.replace(/[^가-힣]/g,'').split('').some(d=>s.day.includes(_todayDayChar)));
   _classes.sort((a,b)=>(a.class_time||'99:99').localeCompare(b.class_time||'99:99'));
   const _classRows=_classes.length
     ?_classes.map(c=>{const _nm=nameMap[c.student_id]||'?';return `<div style="display:flex;gap:6px;align-items:baseline;padding:4px 0;border-bottom:.5px solid var(--border2)"><span style="font-size:11px;font-weight:700;color:#378ADD;flex-shrink:0;min-width:38px">${c.class_time||'--:--'}</span><span style="font-size:12px;color:var(--text);flex:1"><span onclick="openStudentTab('${_nm.replace(/'/g,"\\'")}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px">${_nm}</span> <span style="color:var(--text2);font-size:11px">· ${c.subject||'-'}</span></span></div>`;}).join('')
@@ -1796,26 +1796,8 @@ function pickTextColor(hex){
   const lum=(0.299*r+0.587*g+0.114*b)/255;
   return lum>0.6?'#1a1a1a':'#fff';
 }
-const DAY_SEQ='일월화수목금토';
-// 요일 칸이 오늘 요일을 포함하는지 (월~금 같은 범위, 월,수 / 월·수 / 월수 등 모두 인식)
-function dayFieldHasToday(dayStr,todayChar){
-  if(!dayStr)return true; // 요일 미입력이면 표시
-  const s=String(dayStr);
-  const set=new Set();
-  // 1) 범위 표기: A~B (예: 월~금, 토~일)
-  const rangeRe=/([일월화수목금토])\s*[~\-–]\s*([일월화수목금토])/g;
-  let m;
-  while((m=rangeRe.exec(s))){
-    let a=DAY_SEQ.indexOf(m[1]), b=DAY_SEQ.indexOf(m[2]);
-    if(a>-1&&b>-1){
-      if(a<=b){for(let i=a;i<=b;i++)set.add(DAY_SEQ[i]);}
-      else{for(let i=a;i<7;i++)set.add(DAY_SEQ[i]);for(let i=0;i<=b;i++)set.add(DAY_SEQ[i]);} // 토~월 같은 wrap
-    }
-  }
-  // 2) 개별 요일 글자 전부
-  for(const ch of s){if(DAY_SEQ.includes(ch))set.add(ch);}
-  return set.has(todayChar);
-}
+function hexToRgba(hex,a){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`;}
+// 태그 색을 배경 대비 잘 보이게 보정 (라이트=밝은색 어둡게 / 다크=어두운색 밝게)
 function readableTagColor(hex){
   if(!hex||hex[0]!=='#')return 'var(--text)';
   let h=hex.slice(1);if(h.length===3)h=h.split('').map(c=>c+c).join('');
