@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v20</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v21</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -960,7 +960,7 @@ async function loadTodayBadges(){
     const wbg=WORK_BG[wt]||'#e8f0fe', wtc=WORK_TC[wt]||'#1a56db';
     html+=`<span style="font-size:13px;color:var(--text3);flex-shrink:0;font-weight:600">근무</span><span style="background:${wbg};color:${wtc};padding:4px 16px;border-radius:8px;font-size:16px;font-weight:700">${wt}</span>`;
   }
-  if(_allTags.length){html+=`<span style="font-size:13px;color:var(--text3);font-weight:600">오늘 태그</span>`;html+=_allTags.map(d=>`<span style="color:${readableTagColor(d.cal_tags.color||'#888')};font-size:16px;font-weight:700;padding:0 4px">${d.cal_tags.text}</span>`).join('');}
+  if(_allTags.length){html+=`<span style="font-size:13px;color:var(--text3);font-weight:600">오늘 태그</span>`;html+=_allTags.map(d=>{const _c=d.cal_tags.color||'#888';return `<span style="background:${tagPillBg(_c)};color:${tagPillText(_c)};font-size:14px;font-weight:700;padding:3px 11px;border-radius:13px">${d.cal_tags.text}</span>`;}).join('');}
   html+='</div>';
   el.innerHTML=html;
 }
@@ -1829,7 +1829,29 @@ function readableTagColor(hex){
   }
   return '#'+[r,g,b].map(c=>Math.max(0,Math.min(255,c)).toString(16).padStart(2,'0')).join('');
 }
-// 색 정렬용: 무지개 순(빨강0→보라), 무채색(회색·검정·흰색)은 맨 뒤
+// 태그 옅은 배경색 (라이트=흰색쪽으로, 다크=검정쪽으로 섞기)
+function hexToHslArr(hex){
+  let h=hex.slice(1);if(h.length===3)h=h.split('').map(c=>c+c).join('');
+  let r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let H=0;
+  if(d){if(mx===r)H=((g-b)/d)%6;else if(mx===g)H=(b-r)/d+2;else H=(r-g)/d+4;H*=60;if(H<0)H+=360;}
+  const L=(mx+mn)/2, S=d===0?0:d/(1-Math.abs(2*L-1));
+  return [H,S,L];
+}
+function tagPillBg(hex){
+  if(!hex||hex[0]!=='#')return 'var(--border2)';
+  const [H,S]=hexToHslArr(hex);const isDark=document.body.classList.contains('dark');
+  if(S<0.08)return isDark?'#3a3a3c':'#ececec'; // 무채색
+  const Sb=Math.min(0.65,Math.max(0.32,S)), Lb=isDark?0.24:0.88;
+  return `hsl(${Math.round(H)} ${Math.round(Sb*100)}% ${Math.round(Lb*100)}%)`;
+}
+function tagPillText(hex){
+  if(!hex||hex[0]!=='#')return 'var(--text)';
+  const [H,S]=hexToHslArr(hex);const isDark=document.body.classList.contains('dark');
+  if(S<0.08)return isDark?'#e0e0e0':'#444';
+  const St=Math.min(0.85,Math.max(0.45,S)), Lt=isDark?0.80:0.30;
+  return `hsl(${Math.round(H)} ${Math.round(St*100)}% ${Math.round(Lt*100)}%)`;
+}
 function colorSortKey(hex){
   if(!hex||hex[0]!=='#')return [2,0];
   let h=hex.slice(1);
