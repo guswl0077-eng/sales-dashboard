@@ -2479,6 +2479,7 @@ function editCell(el,id,field){
   };
   input.addEventListener('blur',save);
   input.addEventListener('keydown',e=>{
+    if(e.isComposing||e.keyCode===229)return; // 한글 조합 확정 Enter는 무시
     if(isMemo){
       if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();input.blur();} // Enter = 저장
       // Shift+Enter = 줄바꿈 (기본 동작)
@@ -2894,6 +2895,9 @@ document.addEventListener('keydown',e=>{
   if(k==='ArrowRight'||k==='ArrowLeft'||k==='ArrowUp'||k==='ArrowDown'){sgMove(k,e.shiftKey);e.preventDefault();return;}
   if(k==='Enter'||k==='F2'){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);e.preventDefault();return;}
   if(k==='Delete'||k==='Backspace'){sgDeleteSel();e.preventDefault();return;}
+  // 한글 등 IME 조합 중에는 keydown이 미완성 자모(예: ㅁ)로 들어와서 중복 입력됨 → 조합 중이면 셀만 열고 자모 시딩 안 함
+  const composing=e.isComposing||e.keyCode===229;
+  if(composing){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,'');return;}
   if(k.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,k);}
 });
 document.addEventListener('paste',e=>{
@@ -2982,11 +2986,12 @@ function editGridCell(td,initialChar){
   const valSpan=td.querySelector('.sgrid-val');
   const input=document.createElement('input');
   input.type=type==='date'?'date':'text';
-  input.value=initialChar!=null?initialChar:cur;
+  // date 입력창에는 한 글자 시딩(initialChar)을 넣지 않음 (native date는 임의 문자 버려서 값이 사라짐)
+  input.value=(initialChar&&type!=='date')?initialChar:cur;
   input.style.cssText='width:96%;border:1px solid var(--text);border-radius:5px;padding:2px 4px;font-size:12px;outline:none;background:var(--card);color:var(--text)';
   if(valSpan)valSpan.style.display='none';
   td.appendChild(input);input.focus();
-  if(initialChar==null&&type!=='date')input.select();
+  if(!initialChar&&type!=='date')input.select();
   let done=false,nav=null;
   const commit=async()=>{
     if(done)return;done=true;
@@ -3001,6 +3006,8 @@ function editGridCell(td,initialChar){
   const moveTo=(nr,nc,edit)=>{nav={r:nr,c:nc,edit};input.blur();};
   input.addEventListener('blur',commit);
   input.addEventListener('keydown',ev=>{
+    // 한글 조합 확정용 Enter/키는 가로채지 않음 (마지막 글자 유실 방지)
+    if(ev.isComposing||ev.keyCode===229)return;
     const atEnd=input.selectionStart===input.value.length&&input.selectionEnd===input.value.length;
     const atStart=input.selectionStart===0&&input.selectionEnd===0;
     const max=sgMaxRow(stu);
@@ -3725,7 +3732,9 @@ function reportCard(dateStr, log, todoTotal, todoDone){
   const d=new Date(dateStr+'T00:00:00');
   const DAYS=['일','월','화','수','목','금','토'];
   const label=`${String(d.getMonth()+1).padStart(2,'0')}월 ${String(d.getDate()).padStart(2,'0')}일 (${DAYS[d.getDay()]})`;
-  const isHoliday=(log?.work_type||'').includes('휴무');
+  const workType=log?.work_type||'';
+  // 당직/추당은 데이터 그대로 노출 + 뱃지, 그 외 근무유형(휴무/연차/반차/보건휴가 등 자유 입력 포함)은 전부 휴무형 카드
+  const isOffType=!!workType&&workType!=='당직'&&workType!=='추당';
   const sales=log?.sales||0;
   const refund=log?.refund||0;
   const real=sales-refund;
@@ -3737,20 +3746,22 @@ function reportCard(dateStr, log, todoTotal, todoDone){
   const pctTodo=todoTotal>0?Math.round(todoDone/todoTotal*100):0;
   const barColor=pctTodo>=80?'#1a8a50':pctTodo>=50?'#b45309':'#c0392b';
   const badgeCls=pctTodo>=80?'background:#dcfce7;color:#166534':pctTodo>=50?'background:#fef3c7;color:#92400e':'background:#fee2e2;color:#991b1b';
-  // 휴무 카드
-  if(isHoliday){
+  // 휴무형 카드 (휴무/연차/반차/보건휴가 등 당직·추당을 제외한 모든 근무유형)
+  if(isOffType){
     return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
       <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">${label}</div>
-      <div style="font-size:26px;font-weight:500;color:var(--text2);text-align:center;padding:16px 0">휴무 💤</div>
-      ${sales>0?`<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-top:1px solid var(--border2);margin-top:4px"><span style="color:var(--text2)">매출</span><span style="font-weight:600;color:#1a8a50">${fmt(sales)}</span></div>`:''}
+      <div style="font-size:26px;font-weight:500;color:var(--text2);text-align:center;padding:16px 0">${workType} 💤</div>
     </div>`;
   }
-  // 일반 카드
+  // 일반 카드 (당직/추당 포함 - 데이터 그대로 노출)
   return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px${isToday?';border-color:#f59e0b':''
 }">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <span style="font-size:13px;font-weight:600;color:var(--text)">${label}</span>
-      ${isToday?'<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e;font-weight:600">오늘</span>':''}
+      <div style="display:flex;align-items:center;gap:6px">
+        ${(workType==='당직'||workType==='추당')?`<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${WORK_BG[workType]};color:${WORK_TC[workType]};font-weight:700">${workType}</span>`:''}
+        ${isToday?'<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e;font-weight:600">오늘</span>':''}
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px">
       ${[
