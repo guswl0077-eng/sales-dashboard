@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v24</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v25</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -2842,7 +2842,7 @@ async function deleteSubject(id){
 // ===== 엑셀식 과목 그리드 =====
 const SGRID_COLS=['subject','day','start_date','end_date','class_time','status'];
 const SGRID_TYPES=['text','text','date','date','text','status'];
-let sgrid={stu:null,a:null,f:null,dragging:false,extra:new Set()};
+let sgrid={stu:null,a:null,f:null,dragging:false,extra:new Set(),clickEdit:null};
 function sgEl(stu,r,c){return document.querySelector(`.sgrid-cell[data-stu="${stu}"][data-r="${r}"][data-c="${c}"]`);}
 function sgMaxRow(stu){let m=-1;document.querySelectorAll(`.sgrid-cell[data-stu="${stu}"][data-c="0"]`).forEach(td=>{m=Math.max(m,+td.dataset.r);});return m;}
 function sgRect(){if(!sgrid.a||!sgrid.f)return null;return{r0:Math.min(sgrid.a.r,sgrid.f.r),r1:Math.max(sgrid.a.r,sgrid.f.r),c0:Math.min(sgrid.a.c,sgrid.f.c),c1:Math.max(sgrid.a.c,sgrid.f.c)};}
@@ -2870,18 +2870,30 @@ document.addEventListener('mousedown',e=>{
   if(!td){if(!e.target.closest('.sgrid-cell input'))sgClear();return;}
   if(e.target.closest('.subj-grip')||e.target.closest('input'))return;
   const stu=td.dataset.stu,r=+td.dataset.r,c=+td.dataset.c;
-  if((e.ctrlKey||e.metaKey)&&sgrid.stu===stu){const k=r+','+c;if(sgrid.extra.has(k))sgrid.extra.delete(k);else sgrid.extra.add(k);sgrid.f={r,c};sgPaint();e.preventDefault();return;}
-  if(e.shiftKey&&sgrid.stu===stu&&sgrid.a){sgrid.f={r,c};}
-  else{sgrid.stu=stu;sgrid.a={r,c};sgrid.f={r,c};sgrid.extra.clear();}
+  if((e.ctrlKey||e.metaKey)&&sgrid.stu===stu){const k=r+','+c;if(sgrid.extra.has(k))sgrid.extra.delete(k);else sgrid.extra.add(k);sgrid.f={r,c};sgPaint();sgrid.clickEdit=null;e.preventDefault();return;}
+  if(e.shiftKey&&sgrid.stu===stu&&sgrid.a){sgrid.f={r,c};sgrid.clickEdit=null;}
+  else{
+    sgrid.stu=stu;sgrid.a={r,c};sgrid.f={r,c};sgrid.extra.clear();
+    // 수정중인 다른 셀 확정 후, 이 셀은 클릭(드래그X) 시 바로 편집 진입 예정으로 표시
+    sgrid.clickEdit={stu,r,c,field:td.dataset.field};
+  }
   sgrid.dragging=true;sgPaint();e.preventDefault();
 });
 document.addEventListener('mouseover',e=>{
   if(!sgrid.dragging)return;
   const td=e.target.closest('.sgrid-cell');
   if(!td||td.dataset.stu!==sgrid.stu)return;
-  sgrid.f={r:+td.dataset.r,c:+td.dataset.c};sgPaint();
+  const nr=+td.dataset.r,nc=+td.dataset.c;
+  // 다른 셀로 드래그가 일어나면 클릭 편집 취소 (범위 선택 모드)
+  if(sgrid.clickEdit&&(nr!==sgrid.clickEdit.r||nc!==sgrid.clickEdit.c))sgrid.clickEdit=null;
+  sgrid.f={r:nr,c:nc};sgPaint();
 });
-document.addEventListener('mouseup',()=>{sgrid.dragging=false;});
+document.addEventListener('mouseup',()=>{
+  sgrid.dragging=false;
+  // 순수 클릭(드래그 없음)이면 해당 셀 바로 편집 진입 → 한글 IME 정상 동작 (입력창이 타이핑 전에 포커스됨)
+  const ce=sgrid.clickEdit;sgrid.clickEdit=null;
+  if(ce){const td=sgEl(ce.stu,ce.r,ce.c);if(td&&!td.querySelector('input'))editGridCell(td);}
+});
 document.addEventListener('dblclick',e=>{const td=e.target.closest('.sgrid-cell');if(td)editGridCell(td);});
 
 document.addEventListener('keydown',e=>{
@@ -2895,9 +2907,9 @@ document.addEventListener('keydown',e=>{
   if(k==='ArrowRight'||k==='ArrowLeft'||k==='ArrowUp'||k==='ArrowDown'){sgMove(k,e.shiftKey);e.preventDefault();return;}
   if(k==='Enter'||k==='F2'){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);e.preventDefault();return;}
   if(k==='Delete'||k==='Backspace'){sgDeleteSel();e.preventDefault();return;}
-  // 한글 등 IME 조합 중에는 keydown이 미완성 자모(예: ㅁ)로 들어와서 중복 입력됨 → 조합 중이면 셀만 열고 자모 시딩 안 함
-  const composing=e.isComposing||e.keyCode===229;
-  if(composing){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,'');return;}
+  // 한글 조합 키(keyCode 229)는 여기서 가로채지 않음 — 셀만 열면 조합 첫 글자가 유실됨.
+  // 영문/숫자 등 단일 문자만 시딩. (한글은 셀 클릭 시 이미 편집 진입하므로 이 경로 안 탐)
+  if(e.isComposing||e.keyCode===229){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);e.preventDefault();return;}
   if(k.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,k);}
 });
 document.addEventListener('paste',e=>{
