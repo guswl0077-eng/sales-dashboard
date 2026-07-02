@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v26</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v27</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -804,7 +804,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
     <div id="m-profile-block" style="display:none">
       <div class="form-group">
         <label class="form-label">수강생 찾기</label>
-        <input class="form-input" id="m-profile-search" placeholder="이름·원서번호로 검색..." oninput="searchPayProfile()" autocomplete="off">
+        <input class="form-input" id="m-profile-search" placeholder="이름으로 검색..." oninput="searchPayProfile()" autocomplete="off">
         <div id="m-profile-results" style="margin-top:6px;max-height:180px;overflow:auto"></div>
         <div id="m-profile-selected" style="display:none;margin-top:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg3)"></div>
       </div>
@@ -2540,12 +2540,12 @@ async function searchPayProfile(){
   const q=document.getElementById('m-profile-search').value.trim();
   const box=document.getElementById('m-profile-results');
   if(!q){box.innerHTML='';return;}
-  const {data}=await sb.from('student_profiles').select('id,name,student_no,category').eq('user_id',currentUser.id).ilike('name','%'+q+'%').limit(20);
+  const {data}=await sb.from('student_profiles').select('id,name,phone,category').eq('user_id',currentUser.id).ilike('name','%'+q+'%').limit(20);
   const list=data||[];
   if(!list.length){box.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 4px">검색 결과 없음</div>';return;}
   box.innerHTML=list.map(p=>{
     const nm=(p.name||'?').replace(/'/g,"\\'");
-    const sub=[p.student_no,p.category].filter(Boolean).join(' · ');
+    const sub=[p.phone,p.category].filter(Boolean).join(' · ');
     return `<div onclick="selectPayProfile('${p.id}','${nm}')" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;cursor:pointer;font-size:12px">
       <span><span style="font-weight:600">${p.name||'?'}</span>${sub?` <span style="color:var(--text2);font-size:11px">${sub}</span>`:''}</span>
       <span style="color:#378ADD;font-size:15px">＋</span>
