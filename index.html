@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v25</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v26</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -787,7 +787,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <div class="modal-bg" id="student-modal">
   <div class="modal">
     <h3>결제 학생 추가</h3>
-    <div class="form-group"><label class="form-label">구분</label><select class="form-input" id="m-category"><option value="">선택</option><option>수강생</option><option>COD</option><option>DB</option><option>따즈아</option></select></div>
+    <div class="form-group"><label class="form-label">구분</label><select class="form-input" id="m-category" onchange="onPayCatChange()"><option value="">선택</option><option>수강생</option><option>COD</option><option>DB</option><option>따즈아</option></select></div>
     <div class="form-group">
       <label class="form-label">영업일</label>
       <div class="period-field-wrap">
@@ -798,7 +798,21 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         </div>
       </div>
     </div>
-    <div class="form-group"><label class="form-label">이름</label><input class="form-input" id="m-name" placeholder="홍길동"></div>
+    <!-- 구분 선택 전 안내 -->
+    <div class="form-group" id="m-cat-hint" style="display:block"><div style="font-size:12px;color:var(--text3);padding:10px 0;text-align:center">구분을 먼저 선택해주세요</div></div>
+    <!-- 수강생/COD: 기존 수강생 검색·선택 -->
+    <div id="m-profile-block" style="display:none">
+      <div class="form-group">
+        <label class="form-label">수강생 찾기</label>
+        <input class="form-input" id="m-profile-search" placeholder="이름·원서번호로 검색..." oninput="searchPayProfile()" autocomplete="off">
+        <div id="m-profile-results" style="margin-top:6px;max-height:180px;overflow:auto"></div>
+        <div id="m-profile-selected" style="display:none;margin-top:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg3)"></div>
+      </div>
+    </div>
+    <!-- DB/따즈아: 이름 직접 입력 -->
+    <div id="m-name-block" style="display:none">
+      <div class="form-group"><label class="form-label">이름</label><input class="form-input" id="m-name" placeholder="홍길동"></div>
+    </div>
     <div class="form-group"><label class="form-label">과정</label><input class="form-input" id="m-course" placeholder="F&B, 로스팅 LV.1 등"></div>
     <div class="form-group"><label class="form-label">금액 (원)</label><input class="form-input" type="number" id="m-amount" placeholder="4800000"></div>
     <div class="form-group"><label class="form-label">상태</label><select class="form-input" id="m-status"><option>연락예정</option><option>연락완료</option><option>면담예정</option><option>면담완료</option><option>결제</option><option>결제 후 환불</option><option>취소</option></select></div>
@@ -1125,14 +1139,15 @@ async function loadTodaySchedule(){
   const _curPeriod=(_periods||[]).find(p=>p.start_date<=_tk&&p.end_date>=_tk)||(_periods||[])[(_periods||[]).length-1]||{};
   let _payStudents=[];
   if(_curPeriod.name){
-    const {data:_ps}=await sb.from('students').select('name,amount,status,period,category,sort_order').eq('user_id',currentUser.id).eq('period',_curPeriod.name);
+    let {data:_ps,error:_pe}=await sb.from('students').select('id,name,amount,status,period,category,sort_order,profile_id').eq('user_id',currentUser.id).eq('period',_curPeriod.name);
+    if(_pe&&/profile_id/.test(_pe.message||'')){({data:_ps}=await sb.from('students').select('id,name,amount,status,period,category,sort_order').eq('user_id',currentUser.id).eq('period',_curPeriod.name));}
     _payStudents=(_ps||[]).filter(s=>!['결제','결제 후 환불','취소'].includes(s.status||''));
     const _CO={'수강생':0,'COD':1,'DB':2,'따즈아':3};
     _payStudents.sort((a,b)=>((_CO[a.category]??4)-(_CO[b.category]??4))||((a.sort_order??999)-(b.sort_order??999)));
   }
   const _CATCOLOR={'수강생':'#1E6230','COD':'#8E4A14','DB':'#21407C','따즈아':'#7E2651'};
   const _payRows=_payStudents.length
-    ?`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 14px">`+_payStudents.map(s=>{const _mv=(s.category==='수강생'||s.category==='COD');const _nm=(s.name||'?');return `<div style="padding:3px 0;font-size:12px;color:var(--text)">${s.category?`<span style="color:${_CATCOLOR[s.category]||'var(--text2)'};font-weight:700;margin-right:4px">${s.category}</span>`:''}${_mv?`<span onclick="openStudentTab('${_nm.replace(/'/g,"\\'")}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px">${_nm}</span>`:_nm} <span style="color:var(--text2);font-size:11px">${s.amount?Number(s.amount).toLocaleString():'-'}</span></div>`;}).join('')+`</div>`
+    ?`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 14px">`+_payStudents.map(s=>{const _mv=(s.category==='수강생'||s.category==='COD');const _nm=(s.name||'?');const _pid=s.profile_id||'';return `<div style="padding:3px 0;font-size:12px;color:var(--text)">${s.category?`<span style="color:${_CATCOLOR[s.category]||'var(--text2)'};font-weight:700;margin-right:4px">${s.category}</span>`:''}${(_mv&&_pid)?`<span onclick="openStudentTab('${_nm.replace(/'/g,"\\'")}','${_pid}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px">${_nm}</span>`:_nm} <span style="color:var(--text2);font-size:11px">${s.amount?Number(s.amount).toLocaleString():'-'}</span></div>`;}).join('')+`</div>`
     :'<div style="font-size:12px;color:var(--text3);padding-top:4px">미결제 없음</div>';
   let gaegangData=[],jonggangData=[],todayClassSubjs=[];
   if(studentIds.length){
@@ -2451,8 +2466,10 @@ function nameCellDbl(el,id){
   editCell(el,id,'name');
 }
 // 새 탭으로 수강생 목록 + 이름 검색 열기
-function openStudentTab(name){
-  const url=location.origin+location.pathname+'?tab=students&student='+encodeURIComponent(name);
+function openStudentTab(name,pid){
+  let url=location.origin+location.pathname+'?tab=students';
+  if(pid)url+='&pid='+encodeURIComponent(pid);
+  else url+='&student='+encodeURIComponent(name);
   window.open(url,'_blank');
 }
 function editCell(el,id,field){
@@ -2504,15 +2521,74 @@ function closeStudentModal(){
   document.getElementById('m-period-picker').classList.remove('open');
 }
 
+let _paySelProfile=null;
+function onPayCatChange(){
+  const cat=document.getElementById('m-category').value;
+  const isProfile=(cat==='수강생'||cat==='COD');
+  const isName=(cat==='DB'||cat==='따즈아');
+  document.getElementById('m-cat-hint').style.display=cat?'none':'block';
+  document.getElementById('m-profile-block').style.display=isProfile?'block':'none';
+  document.getElementById('m-name-block').style.display=isName?'block':'none';
+  // 전환 시 선택/입력 초기화
+  _paySelProfile=null;
+  const sel=document.getElementById('m-profile-selected');sel.style.display='none';sel.innerHTML='';
+  document.getElementById('m-profile-search').value='';
+  document.getElementById('m-profile-results').innerHTML='';
+  document.getElementById('m-name').value='';
+}
+async function searchPayProfile(){
+  const q=document.getElementById('m-profile-search').value.trim();
+  const box=document.getElementById('m-profile-results');
+  if(!q){box.innerHTML='';return;}
+  const {data}=await sb.from('student_profiles').select('id,name,student_no,category').eq('user_id',currentUser.id).ilike('name','%'+q+'%').limit(20);
+  const list=data||[];
+  if(!list.length){box.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 4px">검색 결과 없음</div>';return;}
+  box.innerHTML=list.map(p=>{
+    const nm=(p.name||'?').replace(/'/g,"\\'");
+    const sub=[p.student_no,p.category].filter(Boolean).join(' · ');
+    return `<div onclick="selectPayProfile('${p.id}','${nm}')" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;cursor:pointer;font-size:12px">
+      <span><span style="font-weight:600">${p.name||'?'}</span>${sub?` <span style="color:var(--text2);font-size:11px">${sub}</span>`:''}</span>
+      <span style="color:#378ADD;font-size:15px">＋</span>
+    </div>`;
+  }).join('');
+}
+function selectPayProfile(id,name){
+  _paySelProfile={id,name};
+  document.getElementById('m-profile-results').innerHTML='';
+  document.getElementById('m-profile-search').value='';
+  const sel=document.getElementById('m-profile-selected');
+  sel.style.display='block';
+  sel.innerHTML=`선택됨: <span style="font-weight:700">${name}</span> <span onclick="clearPayProfile()" style="cursor:pointer;color:#c0392b;margin-left:8px;font-size:12px">✕ 취소</span>`;
+}
+function clearPayProfile(){
+  _paySelProfile=null;
+  const sel=document.getElementById('m-profile-selected');sel.style.display='none';sel.innerHTML='';
+}
+
 async function addStudent(){
-  const name=document.getElementById('m-name').value.trim();
-  if(!name){showToast('이름을 입력해주세요');return;}
-  const {error}=await sb.from('students').insert({user_id:currentUser.id,name,category:document.getElementById('m-category').value,course:document.getElementById('m-course').value,amount:Number(document.getElementById('m-amount').value)||0,period:document.getElementById('m-period').value,status:document.getElementById('m-status').value,memo:document.getElementById('m-memo').value,completed:false});
+  const cat=document.getElementById('m-category').value;
+  if(!cat){showToast('구분을 선택해주세요');return;}
+  let name='',profileId=null;
+  if(cat==='수강생'||cat==='COD'){
+    if(!_paySelProfile){showToast('수강생을 검색해서 선택해주세요');return;}
+    name=_paySelProfile.name;profileId=_paySelProfile.id;
+  }else{
+    name=document.getElementById('m-name').value.trim();
+    if(!name){showToast('이름을 입력해주세요');return;}
+  }
+  const baseRow={user_id:currentUser.id,name,category:cat,course:document.getElementById('m-course').value,amount:Number(document.getElementById('m-amount').value)||0,period:document.getElementById('m-period').value,status:document.getElementById('m-status').value,memo:document.getElementById('m-memo').value,completed:false};
+  let {error}=await sb.from('students').insert({...baseRow,profile_id:profileId});
+  // profile_id 컬럼이 아직 없으면(구버전 DB) 컬럼 없이 재시도
+  if(error&&/profile_id/.test(error.message||'')){
+    ({error}=await sb.from('students').insert(baseRow));
+    if(!error)showToast('연결 정보(profile_id) 컬럼이 없어 이름만 저장됐어요');
+  }
   if(error){showToast('추가 실패 😢');return;}
   closeStudentModal();
-  ['m-name','m-course','m-amount','m-period','m-memo'].forEach(id=>document.getElementById(id).value='');
+  ['m-name','m-course','m-amount','m-period','m-memo','m-profile-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('m-category').value='';
   document.getElementById('m-status').value='연락예정';
+  clearPayProfile();onPayCatChange();
   renderList();showToast('추가됐어요 ✓');
 }
 
@@ -3103,7 +3179,10 @@ async function renderStudents(){
   // 통합 검색 + 진행현황 필터 (같은 과목에서 동시 충족)
   // displaySubjMap: 학생별로 화면에 실제 표시할 과목 목록
   const displaySubjMap={};
+  const _pidFocus=window._focusPid||null;
   list=list.filter(s=>{
+    // pid로 열린 경우: 그 학생 한 명만
+    if(_pidFocus&&s.id!==_pidFocus)return false;
     let subs=subjMap[s.id]||[];
     // 검색어가 이 학생의 학생정보(이름·원서·본인전화·부모전화)에 맞는지
     const qDigits=q?q.replace(/[^0-9]/g,''):'';
@@ -3921,14 +4000,15 @@ async function renderReportYearly(){
 function applyUrlParams(){
   try{
     const p=new URLSearchParams(location.search);
-    const tab=p.get('tab'), student=p.get('student');
+    const tab=p.get('tab'), student=p.get('student'), pid=p.get('pid');
     if(tab==='students'){
-      // 검색어를 먼저 채워서 이후 모든 렌더가 필터링된 상태로 그려지게
       const si=document.getElementById('student-search');
-      if(si&&student)si.value=student;
-      setStudentCat('전체');   // 필터링 렌더
-      switchTab('students');   // 필터링 렌더
-      renderStudents();        // 최종 보장
+      // pid(고유번호)가 있으면 그 학생만 정확히 열기 우선, 없으면 이름 검색
+      if(si)si.value=pid?'':(student||'');
+      window._focusPid=pid||null;
+      setStudentCat('전체');
+      switchTab('students');
+      renderStudents();
     }
   }catch(_){}
 }
