@@ -2907,10 +2907,10 @@ document.addEventListener('keydown',e=>{
   if(k==='ArrowRight'||k==='ArrowLeft'||k==='ArrowUp'||k==='ArrowDown'){sgMove(k,e.shiftKey);e.preventDefault();return;}
   if(k==='Enter'||k==='F2'){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);e.preventDefault();return;}
   if(k==='Delete'||k==='Backspace'){sgDeleteSel();e.preventDefault();return;}
-  // 한글 조합 키(keyCode 229)는 여기서 가로채지 않음 — 셀만 열면 조합 첫 글자가 유실됨.
-  // 영문/숫자 등 단일 문자만 시딩. (한글은 셀 클릭 시 이미 편집 진입하므로 이 경로 안 탐)
-  if(e.isComposing||e.keyCode===229){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);e.preventDefault();return;}
-  if(k.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,k);}
+  // 한글 조합 키(keyCode 229): 편집칸만 열고 preventDefault 하지 않음.
+  // editGridCell이 rAF로 포커스를 잡으므로, 조합은 새 입력칸에서 이어짐.
+  if(e.isComposing||e.keyCode===229){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);return;}
+  if(k.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,k);e.preventDefault();}
 });
 document.addEventListener('paste',e=>{
   if(!sgrid.stu||!sgrid.f)return;
@@ -2983,11 +2983,19 @@ async function sgPaste(text){
   });
   await Promise.all(ups);showToast('붙여넣었어요 ✓');renderStudents();
 }
-// 날짜 문자열 정규화: 2026.1.5 / 2026/01/05 / 1-5 등 → YYYY-MM-DD (불확실하면 원본 유지)
+// 날짜 문자열 정규화: 2026.1.5 / 2026/01/05 / 20260105 / 260105 등 → YYYY-MM-DD (불확실하면 원본 유지)
 function normDate(v){
   if(!v)return '';
-  const m=v.match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+  v=String(v).trim();
+  // 구분자 있는 형식: 2026.1.5 / 2026-01-05 / 2026/1/5
+  let m=v.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
   if(m)return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  // 숫자만 8자리: 20260105
+  m=v.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if(m)return `${m[1]}-${m[2]}-${m[3]}`;
+  // 숫자만 6자리: 260105 → 2026-01-05 (20xx 가정)
+  m=v.match(/^(\d{2})(\d{2})(\d{2})$/);
+  if(m)return `20${m[1]}-${m[2]}-${m[3]}`;
   return v;
 }
 function editGridCell(td,initialChar){
@@ -2997,18 +3005,24 @@ function editGridCell(td,initialChar){
   const cur=td.dataset.val||'';
   const valSpan=td.querySelector('.sgrid-val');
   const input=document.createElement('input');
-  input.type=type==='date'?'date':'text';
-  // date 입력창에는 한 글자 시딩(initialChar)을 넣지 않음 (native date는 임의 문자 버려서 값이 사라짐)
-  input.value=(initialChar&&type!=='date')?initialChar:cur;
+  // 날짜칸도 일반 text 입력 (네이티브 date칸은 20200101 연속입력 시 깨짐). 저장 시 normDate로 자동 변환.
+  input.type='text';
+  if(type==='date')input.placeholder='20260105';
+  input.value=initialChar?initialChar:cur;
   input.style.cssText='width:96%;border:1px solid var(--text);border-radius:5px;padding:2px 4px;font-size:12px;outline:none;background:var(--card);color:var(--text)';
   if(valSpan)valSpan.style.display='none';
-  td.appendChild(input);input.focus();
-  if(!initialChar&&type!=='date')input.select();
+  td.appendChild(input);
+  // 포커스는 다음 프레임에 (mouseup 기본 포커스 처리 이후여야 확실히 잡힘 → 한글 IME 정상)
+  requestAnimationFrame(()=>{
+    input.focus();
+    if(initialChar){const n=input.value.length;input.setSelectionRange(n,n);}
+    else input.select();
+  });
   let done=false,nav=null;
   const commit=async()=>{
     if(done)return;done=true;
     let val=input.value.trim();
-    if(type==='date')val=val||'';
+    if(type==='date')val=normDate(val); // 20200101 / 2020.1.1 등 → 2020-01-01
     await sb.from('student_subjects').update({[field]:val||null}).eq('id',sid);
     td.dataset.val=val;
     if(valSpan){valSpan.textContent=val||'-';valSpan.style.display='';}
@@ -3026,8 +3040,8 @@ function editGridCell(td,initialChar){
     if(ev.key==='Enter'){ev.preventDefault();moveTo(Math.min(max,r+1),c,false);}
     else if(ev.key==='Tab'){ev.preventDefault();const nc=ev.shiftKey?Math.max(0,c-1):Math.min(5,c+1);moveTo(r,nc,true);}
     else if(ev.key==='Escape'){done=true;if(input.parentElement)input.remove();if(valSpan){valSpan.textContent=cur||'-';valSpan.style.display='';}}
-    else if(ev.key==='ArrowRight'&&(atEnd||type==='date')){ev.preventDefault();moveTo(r,Math.min(5,c+1),true);}
-    else if(ev.key==='ArrowLeft'&&(atStart||type==='date')){ev.preventDefault();moveTo(r,Math.max(0,c-1),true);}
+    else if(ev.key==='ArrowRight'&&atEnd){ev.preventDefault();moveTo(r,Math.min(5,c+1),true);}
+    else if(ev.key==='ArrowLeft'&&atStart){ev.preventDefault();moveTo(r,Math.max(0,c-1),true);}
     else if(ev.key==='ArrowDown'){ev.preventDefault();moveTo(Math.min(max,r+1),c,true);}
     else if(ev.key==='ArrowUp'){ev.preventDefault();moveTo(Math.max(0,r-1),c,true);}
   });
