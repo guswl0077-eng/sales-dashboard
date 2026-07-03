@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v27</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v28</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -420,7 +420,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div class="card" style="padding:12px 14px">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
               <div style="display:flex;flex-wrap:wrap;gap:6px" id="today-work-type-btns"></div>
-              <input class="form-input" id="today-work-custom" placeholder="직접 입력..." oninput="if(!this.value.trim()){todayWorkType=null;renderTodayWorkTypeBtns();}triggerAutoSave()" style="font-size:13px;padding:6px 10px;flex:1;min-width:0">
+              <input class="form-input" id="today-work-custom" placeholder="직접 입력..." oninput="if(!this.value.trim()){todayWorkType=null;renderTodayWorkTypeBtns();}triggerAutoSave();loadTodayBadges()" style="font-size:13px;padding:6px 10px;flex:1;min-width:0">
             </div>
           </div>
           <div class="sec-title">영업 / 상담 성과</div>
@@ -963,11 +963,13 @@ async function loadTodayBadges(){
   if(!el)return;
   const today=todayKey();
   const {data}=await sb.from('cal_date_tags').select('*,cal_tags(*)').eq('date',today);
-  if(!data||!data.length){el.innerHTML='';return;}
-  const _allTags=sortByColor(data.filter(d=>d.cal_tags&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id)),d=>d.cal_tags.color);
-  // 오늘 근무유형
-  const {data:wf}=await sb.from('work_schedules').select('work_type').eq('user_id',currentUser.id).eq('date',today).single();
-  const wt=wf?.work_type||'';
+  const _allTags=sortByColor((data||[]).filter(d=>d.cal_tags&&(d.cal_tags.scope==='shared'||d.user_id===currentUser.id)),d=>d.cal_tags.color);
+  // 오늘 근무유형: 화면의 현재 값(직접입력 or 선택) 우선, 없으면 DB 조회
+  let wt=(document.getElementById('today-work-custom')?.value||'').trim()||todayWorkType||'';
+  if(!wt){
+    const {data:wf}=await sb.from('work_schedules').select('work_type').eq('user_id',currentUser.id).eq('date',today).single();
+    wt=wf?.work_type||'';
+  }
   if(!_allTags.length&&!wt){el.innerHTML='';return;}
   let html='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0 4px">';
   if(wt){
@@ -2303,6 +2305,7 @@ function selectTodayWorkType(w){
   document.getElementById('today-work-custom').value='';
   renderTodayWorkTypeBtns();
   triggerAutoSave();
+  loadTodayBadges();
 }
 
 function renderWorkTypeBtns(){
