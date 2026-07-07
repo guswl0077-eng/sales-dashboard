@@ -386,7 +386,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v28</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v29</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -3436,66 +3436,166 @@ function downloadStudentTemplate(){
 }
 
 let _excelUploading=false;
+// ── 업로드 진행바 팝업 ──
+function showUploadProgress(){
+  let ov=document.getElementById('upload-progress-ov');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='upload-progress-ov';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999';
+    ov.innerHTML=`<div style="background:var(--card);border-radius:14px;padding:24px;width:min(90vw,360px);box-shadow:0 8px 30px rgba(0,0,0,0.25)">
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">수강생 업로드 중...</div>
+      <div id="up-sub" style="font-size:12px;color:var(--text3);margin-bottom:16px">파일을 읽고 있어요</div>
+      <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-bottom:8px"><div id="up-bar" style="width:0%;height:100%;background:#1a8a50;border-radius:4px;transition:width .2s"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2)"><span id="up-count"></span><span id="up-pct">0%</span></div>
+    </div>`;
+    document.body.appendChild(ov);
+  }
+  ov.style.display='flex';
+}
+function setUploadProgress(pct,sub,count){
+  const bar=document.getElementById('up-bar'),p=document.getElementById('up-pct'),s=document.getElementById('up-sub'),c=document.getElementById('up-count');
+  if(bar)bar.style.width=pct+'%';
+  if(p)p.textContent=Math.round(pct)+'%';
+  if(sub&&s)s.textContent=sub;
+  if(c)c.textContent=count||'';
+}
+function hideUploadProgress(){const ov=document.getElementById('upload-progress-ov');if(ov)ov.style.display='none';}
+// ── 중복 안내 팝업 (Promise로 네/아니오 반환) ──
+function askDupMerge(dupList){
+  return new Promise(resolve=>{
+    const ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:10000';
+    const rows=dupList.map(d=>`${d.name} · ${d.student_no||d.phone||'-'}`).join('<br>');
+    ov.innerHTML=`<div style="background:var(--card);border-radius:14px;padding:24px;width:min(92vw,470px);box-shadow:0 8px 30px rgba(0,0,0,0.25);max-height:86vh;overflow:auto">
+      <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px">잠깐! 이미 있는 학생이 있어요</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">방금 올린 파일 속 <b>${dupList.length}명</b>은 이미 수강생 목록에 등록돼 있어요.</div>
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:18px">
+        <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">✅ 「네」를 누르면</div>
+          <div style="font-size:12.5px;color:var(--text2);line-height:1.65">그 학생의 <b>새 과목만 아래에 추가</b>돼요.<br>원래 있던 과목은 그대로 남아요.<br><span style="color:var(--text3)">예) 박시은에게 원래 과목 2개가 있었고 파일에 새 과목 1개가 있으면 → 박시은 과목 3개가 돼요.</span></div>
+        </div>
+        <div style="padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">🚫 「아니오」를 누르면</div>
+          <div style="font-size:12.5px;color:var(--text2);line-height:1.65">이미 있는 ${dupList.length}명은 <b>그대로 두고</b>,<br>파일에 있는 <b>처음 보는 학생만</b> 새로 추가돼요.</div>
+        </div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:18px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px">이미 있는 학생</div>
+        <div style="font-size:12.5px;color:var(--text);line-height:1.8">${rows}</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="dup-no" class="btn btn-outline" style="padding:8px 18px">아니오</button>
+        <button id="dup-yes" class="btn btn-primary" style="padding:8px 18px">네</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#dup-yes').onclick=()=>{ov.remove();resolve(true);};
+    ov.querySelector('#dup-no').onclick=()=>{ov.remove();resolve(false);};
+  });
+}
+
 async function uploadStudentExcel(input){
   if(_excelUploading){showToast('이미 처리 중이에요');return;}
+  const file=input.files[0];
+  if(!file){return;}
+  if(typeof XLSX==='undefined'){showToast('엑셀 라이브러리 로딩 중... 잠시 후 다시');input.value='';return;}
   _excelUploading=true;
+  showUploadProgress();
+  setUploadProgress(5,'파일을 읽고 있어요');
   try{
-    const file=input.files[0];
-    if(!file)return;
-    if(typeof XLSX==='undefined'){showToast('엑셀 라이브러리 로딩 중...');return;}
-
     // 1) 엑셀 파싱
     const buf=await file.arrayBuffer();
     const wb=XLSX.read(buf,{type:'array'});
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false});
     const dataRows=rows.slice(1).filter(r=>r[2]&&String(r[2]).trim());
-    if(!dataRows.length){showToast('데이터가 없어요');return;}
+    if(!dataRows.length){hideUploadProgress();showToast('데이터가 없어요');return;}
+    setUploadProgress(15,'같은 사람끼리 묶는 중');
 
-    // 2) 같은 원서번호(없으면 이름+전화) 기준으로 행 묶기
+    // 날짜 정규화 헬퍼
+    const toD=v=>{
+      if(!v)return null;
+      if(v instanceof Date)return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
+      let s=String(v).trim().replace(/[./]/g,'-');
+      if(/^\d{2}-\d{2}-\d{2}$/.test(s))s='20'+s;
+      return /^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(0,10):null;
+    };
+    // 2) 파일 안에서 같은 사람(원서번호 → 이름+전화) 묶기
     const parsed=new Map();
     for(const r of dataRows){
-      const name=String(r[2]||''). trim();if(!name)continue;
-      const rawNo=r[1];
-      const no=(rawNo!=null&&!(rawNo instanceof Date))?String(rawNo).replace(/\s/g,''):'';
-      const ph=String(r[8]||'').replace(/[^0-9]/g,'');
-      const key=no||(name+'|'+ph)||name;
-      if(!parsed.has(key))parsed.set(key,{name,student_no:no,category:String(r[0]||'').trim(),phone:String(r[8]||'').trim(),subjects:[]});
+      const name=String(r[2]||'').trim();if(!name)continue;
+      const no=String(r[1]||'').replace(/\s/g,'').trim();
+      const phoneRaw=String(r[8]||'').trim();
+      const phoneDigits=phoneRaw.replace(/[^0-9]/g,'');
+      const key=no||(name+'|'+phoneDigits);
+      if(!parsed.has(key))parsed.set(key,{name,student_no:no,category:String(r[0]||'').trim(),phone:fmtPhone(phoneRaw),phoneDigits,subjects:[]});
       const stu=parsed.get(key);
       const subj=String(r[3]||'').trim();
       if(subj){
-        const toD=v=>{
-          if(!v)return null;
-          if(v instanceof Date)return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
-          let s=String(v).trim();
-          // 구분자 통일 (점/슬래시 → 대시)
-          s=s.replace(/[./]/g,'-');
-          // 2자리 연도 처리: YY-MM-DD → 20YY-MM-DD
-          if(/^\d{2}-\d{2}-\d{2}$/.test(s)) s='20'+s;
-          // YYYY-MM-DD 형식만 반환
-          return /^\d{4}-\d{2}-\d{2}/.test(s)?s.slice(0,10):null;
-        };
         stu.subjects.push({subject:subj,day:r[4]?String(r[4]).trim():'',start_date:toD(r[5]),end_date:toD(r[6]),class_time:r[7]?String(r[7]).trim():'',status:r[9]?String(r[9]).trim():'미배정'});
       }
     }
+    setUploadProgress(30,'기존 목록과 비교 중');
 
-    // 3) DB에 이미 있는 학생 전체 로드 (중복 방지)
-    const {data:dbStudents=[]}=await sb.from('student_profiles').select('id,name,student_no').eq('user_id',currentUser.id);
-    const dbKeys=new Set(dbStudents.map(s=>(s.student_no||s.name)));
-
-    // 4) 새 학생만 INSERT
-    let added=0,skipped=0;
-    for(const [key,stu] of parsed){
-      const dbKey=stu.student_no||(stu.name+'|'+stu.phone.replace(/[^0-9]/g,''))||stu.name;
-      if(dbKeys.has(stu.student_no&&stu.student_no)||dbStudents.some(s=>s.name===stu.name&&s.student_no===stu.student_no)){
-        skipped++;continue;
-      }
-      const {data:ins,error}=await sb.from('student_profiles').insert({id:crypto.randomUUID(),user_id:currentUser.id,name:stu.name,student_no:stu.student_no,phone:stu.phone,category:stu.category}).select('id').single();
-      if(error){showToast('저장 실패: '+stu.name);continue;}
-      added++;
-      if(stu.subjects.length){const {error:se}=await sb.from('student_subjects').insert(stu.subjects.map(s=>({...s,student_id:ins.id})));if(se)console.error('[과목삽입실패]',stu.name,se.message);}
+    // 3) 기존 수강생 로드 (중복 판단용)
+    const {data:dbStudents}=await sb.from('student_profiles').select('id,name,student_no,phone').eq('user_id',currentUser.id);
+    const dbList=dbStudents||[];
+    const findExisting=(stu)=>{
+      if(stu.student_no)return dbList.find(s=>(s.student_no||'').trim()===stu.student_no);
+      return dbList.find(s=>s.name===stu.name&&(s.phone||'').replace(/[^0-9]/g,'')===stu.phoneDigits&&stu.phoneDigits);
+    };
+    // 중복/신규 분류
+    const dupItems=[],newItems=[];
+    for(const [,stu] of parsed){
+      const ex=findExisting(stu);
+      if(ex){dupItems.push({...stu,existingId:ex.id});}else{newItems.push(stu);}
     }
-    showToast(skipped>0?`${added}명 추가, ${skipped}명 이미 존재`:`${added}명 추가됐어요 ✓`);
+
+    // 4) 중복이 있으면 안내 팝업 (네=과목 이어붙이기 / 아니오=신규만)
+    let mergeDup=false;
+    if(dupItems.length){
+      hideUploadProgress();
+      mergeDup=await askDupMerge(dupItems);
+      showUploadProgress();
+    }
+
+    // 처리 대상 목록 구성
+    const targets=[...newItems.map(s=>({stu:s,mode:'new'}))];
+    if(mergeDup)dupItems.forEach(s=>targets.push({stu:s,mode:'merge',existingId:s.existingId}));
+    const total=targets.length||1;
+    let addedNew=0,merged=0,addedSubj=0,doneN=0;
+
+    for(const t of targets){
+      const stu=t.stu;
+      if(t.mode==='new'){
+        const sid=crypto.randomUUID();
+        const {error}=await sb.from('student_profiles').insert({id:sid,user_id:currentUser.id,name:stu.name,student_no:stu.student_no,phone:stu.phone,category:stu.category});
+        if(!error){
+          addedNew++;
+          if(stu.subjects.length){const {error:se}=await sb.from('student_subjects').insert(stu.subjects.map(s=>({...s,student_id:sid})));if(!se)addedSubj+=stu.subjects.length;}
+        }
+      }else{
+        // merge: 기존 카드에 새 과목만 이어붙이기 (똑같은 과목=과목명+개강일 같으면 제외)
+        const {data:exSubs}=await sb.from('student_subjects').select('subject,start_date').eq('student_id',t.existingId);
+        const seen=new Set((exSubs||[]).map(s=>(s.subject||'')+'|'+(s.start_date||'')));
+        const toAdd=stu.subjects.filter(s=>!seen.has((s.subject||'')+'|'+(s.start_date||'')));
+        if(toAdd.length){const {error:se}=await sb.from('student_subjects').insert(toAdd.map(s=>({...s,student_id:t.existingId})));if(!se)addedSubj+=toAdd.length;}
+        merged++;
+      }
+      doneN++;
+      setUploadProgress(30+doneN/total*68,'저장 중',`${doneN} / ${total}명`);
+    }
+    setUploadProgress(100,'완료!');
+    setTimeout(hideUploadProgress,500);
+    let msg=`신규 ${addedNew}명`;
+    if(merged)msg+=`, 기존 ${merged}명에 과목 추가`;
+    msg+=` · 과목 ${addedSubj}개 ✓`;
+    showToast(msg);
     renderStudents();
+  }catch(e){
+    hideUploadProgress();
+    showToast('업로드 실패: '+(e.message||e));
+    console.error('[업로드오류]',e);
   }finally{
     _excelUploading=false;
     input.value='';
@@ -3527,53 +3627,7 @@ function fmtPhone(v){
   if(d.length===9&&d.startsWith('02'))return d.slice(0,2)+'-'+d.slice(2,5)+'-'+d.slice(5);
   return String(v).trim(); // 형식 모르면 원본 유지
 }
-async function uploadStudentExcel(input){
-  if(!dataRows.length){showToast('데이터가 없어요');input.value='';return;}
-  const toInsert=[];
-  const subjToInsert=[];
-  for(const r of dataRows){
-    const name=String(r[2]||'').trim();
-    if(!name)continue;
-    const sid=crypto.randomUUID();
-    toInsert.push({
-      id:sid,user_id:currentUser.id,
-      category:String(r[0]||'').trim(),
-      student_no:String(r[1]||'').trim(),
-      name,
-      phone:fmtPhone(String(r[8]||'').trim())
-    });
-    const subject=String(r[3]||'').trim();
-    if(subject){
-      const statusVal=r[9]?String(r[9]).trim():'';
-      subjToInsert.push({
-        student_id:sid,
-        subject,
-        day:r[4]?String(r[4]).trim():'',
-        start_date:r[5]&&String(r[5]).trim()?String(r[5]).trim().slice(0,10):null,
-        end_date:r[6]&&String(r[6]).trim()?String(r[6]).trim().slice(0,10):null,
-        class_time:r[7]?String(r[7]).trim():'',
-        status:statusVal||'미배정'
-      });
-    }
-  }
-  // 수강생 한 명씩 저장 → 실제 id로 과목 저장
-  let successCount=0;
-  for(let i=0;i<toInsert.length;i++){
-    const {data:inserted,error}=await sb.from('student_profiles').insert(toInsert[i]).select('id').single();
-    if(error){showToast('저장 실패: '+toInsert[i].name+' - '+error.message);continue;}
-    successCount++;
-    // 해당 수강생 과목 찾아서 실제 id로 저장
-    const realId=inserted.id;
-    const mySubjs=subjToInsert.filter(s=>s.student_id===toInsert[i].id);
-    if(mySubjs.length){
-      const subjsWithRealId=mySubjs.map(s=>({...s,student_id:realId}));
-      const {error:se}=await sb.from('student_subjects').insert(subjsWithRealId);
-      if(se)console.error('과목 저장 실패:',se.message);
-    }
-  }
-  input.value='';
-  showToast(`${successCount}명 추가됐어요 ✓`);renderStudents();
-}
+
 
 let _pastGroupOpen={};
 function togglePastGroup(key){
