@@ -387,7 +387,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v34</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v35</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -712,12 +712,48 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         </div>
         <div class="form-group"><label class="form-label">휴일 이름</label><input class="form-input" id="h-name" placeholder="예: 여름방학"></div>
         <button class="btn btn-primary" onclick="saveCustomHoliday()">휴일 추가</button>
-        <div style="margin-top:14px"><div class="tbl-wrap"><table><thead><tr><th>날짜</th><th>이름</th><th style="width:30px"></th></tr></thead><tbody id="holiday-tbody"></tbody></table></div></div>
+        <div style="border-top:.5px solid var(--border);margin-top:14px;padding-top:10px">
+          <div onclick="toggleFold('fold-holiday')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+            <span style="font-size:12px;font-weight:600;color:var(--text2)">추가한 휴일 <span id="holiday-count" style="color:var(--text3);font-weight:400"></span></span>
+            <span class="fold-arrow" id="arrow-fold-holiday" style="font-size:11px;color:var(--text3)">▸ 펼치기</span>
+          </div>
+          <div id="fold-holiday" style="display:none;margin-top:8px"><div class="tbl-wrap"><table><thead><tr><th>날짜</th><th>이름</th><th style="width:30px"></th></tr></thead><tbody id="holiday-tbody"></tbody></table></div></div>
+        </div>
       </div>
-      <div class="sec-title">공지 이력</div>
-      <div class="card"><div id="notice-history"></div></div>
-      <div class="sec-title">영업일 이력</div>
-      <div class="card"><div class="tbl-wrap"><table><thead><tr><th>영업일</th><th>기간</th><th style="width:30px"></th></tr></thead><tbody id="period-tbody"></tbody></table></div></div>
+
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">🧹 클린데이 관리</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5">매달 <b>마지막 주 금요일</b>이 자동으로 클린데이(수업 없음)로 표시돼요. 그 달만 날짜가 바뀌거나 없으면 아래에서 바꿔주세요.</div>
+        <div style="background:var(--bg3);border:.5px solid var(--border);border-radius:8px;padding:9px 12px;margin-bottom:12px"><span style="font-size:11px;color:var(--text3)">이번 달 자동 계산 · </span><span id="cd-auto" style="font-size:13px;font-weight:600">-</span></div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1"><label class="form-label">대상 월</label><input class="form-input" type="month" id="cd-month"></div>
+          <div class="form-group" style="flex:1"><label class="form-label">바꿀 날짜</label><input class="form-input" type="date" id="cd-date"></div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);margin-bottom:12px;cursor:pointer"><input type="checkbox" id="cd-none"> 이 달은 클린데이 없음</label>
+        <button class="btn btn-primary" onclick="saveCleanDay()">저장</button>
+        <div style="border-top:.5px solid var(--border);margin-top:14px;padding-top:10px">
+          <div onclick="toggleFold('fold-cleanday')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+            <span style="font-size:12px;font-weight:600;color:var(--text2)">예외 지정한 달 <span id="cleanday-count" style="color:var(--text3);font-weight:400"></span></span>
+            <span class="fold-arrow" id="arrow-fold-cleanday" style="font-size:11px;color:var(--text3)">▸ 펼치기</span>
+          </div>
+          <div id="fold-cleanday" style="display:none;margin-top:8px"><div class="tbl-wrap"><table><thead><tr><th>월</th><th>클린데이</th><th style="width:30px"></th></tr></thead><tbody id="cleanday-tbody"></tbody></table></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div onclick="toggleFold('fold-notice')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="font-size:14px;font-weight:600">📢 공지 이력 <span id="notice-count" style="font-size:11px;color:var(--text3);font-weight:400"></span></span>
+          <span class="fold-arrow" id="arrow-fold-notice" style="font-size:11px;color:var(--text3)">▸ 펼치기</span>
+        </div>
+        <div id="fold-notice" style="display:none;margin-top:12px"><div id="notice-history"></div></div>
+      </div>
+      <div class="card">
+        <div onclick="toggleFold('fold-period')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="font-size:14px;font-weight:600">📅 영업일 이력 <span id="period-count" style="font-size:11px;color:var(--text3);font-weight:400"></span></span>
+          <span class="fold-arrow" id="arrow-fold-period" style="font-size:11px;color:var(--text3)">▸ 펼치기</span>
+        </div>
+        <div id="fold-period" style="display:none;margin-top:12px"><div class="tbl-wrap"><table><thead><tr><th>영업일</th><th>기간</th><th style="width:30px"></th></tr></thead><tbody id="period-tbody"></tbody></table></div></div>
+      </div>
     </div>
 
   </div>
@@ -870,6 +906,88 @@ async function loadCustomHolidays(){
     customHolidays={};(data||[]).forEach(h=>{customHolidays[h.date]=h.name;});
   }catch(_){}
 }
+// ── 클린데이(청소일/수업없음): 매달 마지막 금요일 자동, 예외는 clean_days 테이블 ──
+let cleanDayExceptions={}; // 'YYYY-MM' -> {date:'YYYY-MM-DD'|null, none:bool}
+function lastFridayOf(year,month0){ // month0: 0-based
+  const d=new Date(year,month0+1,0); // 그 달 마지막 날
+  while(d.getDay()!==5)d.setDate(d.getDate()-1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function cleanDayOfMonth(year,month0){ // 그 달의 클린데이 날짜(YYYY-MM-DD) 또는 '' (없음)
+  const ym=`${year}-${String(month0+1).padStart(2,'0')}`;
+  const ex=cleanDayExceptions[ym];
+  if(ex){if(ex.none)return '';if(ex.date)return ex.date;}
+  return lastFridayOf(year,month0);
+}
+function getCleanDay(dateStr){ // 그 날짜가 클린데이면 '클린데이', 아니면 ''
+  if(!dateStr)return '';
+  const [y,m]=dateStr.split('-').map(Number);
+  return cleanDayOfMonth(y,m-1)===dateStr?'클린데이':'';
+}
+async function loadCleanDays(){
+  try{
+    const {data,error}=await sb.from('clean_days').select('ym,date,none');
+    if(error)return;
+    cleanDayExceptions={};(data||[]).forEach(c=>{cleanDayExceptions[c.ym]={date:c.date||null,none:!!c.none};});
+  }catch(_){}
+}
+async function saveCleanDay(){
+  const ym=document.getElementById('cd-month').value; // 'YYYY-MM'
+  const date=document.getElementById('cd-date').value;
+  const none=document.getElementById('cd-none').checked;
+  if(!ym){showToast('대상 월을 선택해주세요');return;}
+  if(!none&&!date){showToast('바꿀 날짜를 넣거나 "없음"을 체크해주세요');return;}
+  if(!none&&date&&date.slice(0,7)!==ym){showToast('바꿀 날짜가 대상 월과 달라요');return;}
+  const row={user_id:currentUser.id,ym,date:none?null:date,none};
+  const {error}=await sb.from('clean_days').upsert(row,{onConflict:'ym'});
+  if(error){showToast('저장 실패: '+(error.message||''));return;}
+  document.getElementById('cd-date').value='';document.getElementById('cd-none').checked=false;
+  await loadCleanDays();renderCleanDayList();updateCleanDayAuto();
+  if(document.getElementById('tab-calendar')?.classList.contains('active'))renderCalendar();
+  loadTodaySchedule();
+  showToast('저장됐어요 ✓');
+}
+async function deleteCleanDayException(ym){
+  const {error}=await sb.from('clean_days').delete().eq('ym',ym);
+  if(error){showToast('삭제 실패');return;}
+  await loadCleanDays();renderCleanDayList();
+  if(document.getElementById('tab-calendar')?.classList.contains('active'))renderCalendar();
+  loadTodaySchedule();
+  showToast('삭제됐어요 (다시 자동으로)');
+}
+function updateCleanDayAuto(){
+  const el=document.getElementById('cd-auto');
+  if(!el)return;
+  const n=new Date();const cd=cleanDayOfMonth(n.getFullYear(),n.getMonth());
+  if(cd){const d=new Date(cd+'T00:00:00');el.textContent=`${cd.slice(0,4)}년 ${Number(cd.slice(5,7))}월 ${Number(cd.slice(8,10))}일 (${['일','월','화','수','목','금','토'][d.getDay()]})`;}
+  else el.textContent='이번 달은 클린데이 없음';
+}
+async function renderCleanDayList(){
+  const tb=document.getElementById('cleanday-tbody');
+  if(!tb)return;
+  const {data}=await sb.from('clean_days').select('*').order('ym',{ascending:true});
+  const rows=data||[];
+  const cnt=document.getElementById('cleanday-count');if(cnt)cnt.textContent=rows.length?`${rows.length}건`:'';
+  if(!rows.length){tb.innerHTML='<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:8px 0">예외 지정한 달이 없어요 (전부 자동)</td></tr>';return;}
+  tb.innerHTML=rows.map(c=>{
+    let disp;
+    if(c.none)disp='<span style="color:var(--text3)">없음</span>';
+    else if(c.date){const d=new Date(c.date+'T00:00:00');disp=`${c.date.slice(5)} (${['일','월','화','수','목','금','토'][d.getDay()]})`;}
+    else disp='-';
+    return `<tr><td style="font-size:12px">${c.ym}</td><td style="font-size:12px">${disp}</td><td><span onclick="deleteCleanDayException('${c.ym}')" style="cursor:pointer;color:#c0392b;font-size:14px">✕</span></td></tr>`;
+  }).join('');
+}
+// 접기/펼치기 (상태는 메모리 유지 - 세션 내)
+const _foldState={};
+function toggleFold(id){
+  const el=document.getElementById(id);
+  const arrow=document.getElementById('arrow-'+id);
+  if(!el)return;
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  _foldState[id]=open;
+  if(arrow)arrow.textContent=open?'▾ 접기':'▸ 펼치기';
+}
 async function saveCustomHoliday(){
   const start=document.getElementById('h-start').value;
   const endRaw=document.getElementById('h-end').value;
@@ -895,6 +1013,7 @@ async function renderHolidayList(){
   if(!tb)return;
   const {data}=await sb.from('custom_holidays').select('*').order('date',{ascending:true});
   const rows=data||[];
+  const cnt=document.getElementById('holiday-count');if(cnt)cnt.textContent=rows.length?`${rows.length}일`:'';
   if(!rows.length){tb.innerHTML='<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:8px 0">추가한 휴일이 없어요</td></tr>';return;}
   tb.innerHTML=rows.map(h=>`<tr><td style="font-size:12px">${h.date}</td><td style="font-size:12px">${h.name}</td><td><span onclick="deleteCustomHoliday('${h.id}')" style="cursor:pointer;color:#c0392b;font-size:14px">✕</span></td></tr>`).join('');
 }
@@ -1099,6 +1218,7 @@ async function loadNotice(){
     box.innerHTML=boxHtml;
   }
   if(history){
+    const nc=document.getElementById('notice-count');if(nc)nc.textContent=(notices&&notices.length)?`${notices.length}건`:'';
     if(notices&&notices.length){
       history.innerHTML=notices.map(n=>{
         const d=new Date(n.updated_at);
@@ -1189,6 +1309,8 @@ async function deleteNotice(){
 
 async function loadTodaySchedule(){
   const box=document.getElementById('today-schedule-box');
+  await loadCustomHolidays();
+  await loadCleanDays();
   const today=new Date();
   const dates=Array.from({length:7},(_,i)=>{
     const d=new Date(today);d.setDate(today.getDate()+i);
@@ -1236,16 +1358,39 @@ async function loadTodaySchedule(){
     .filter(s=>!['종강','환불','휴학','COD','미배정'].includes(s.status||''))
     .filter(s=>dayFieldHasToday(s.day,_todayDayChar));
   _classes.sort((a,b)=>(a.class_time||'99:99').localeCompare(b.class_time||'99:99'));
-  const _classRows=_classes.length
+  const _todayKey=todayKey();
+  const _todayHoli=getHoliday(_todayKey);
+  const _todayClean=getCleanDay(_todayKey);
+  let _classRows;
+  if(_todayHoli){
+    _classRows=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 0"><div style="font-size:16px;font-weight:700;color:#d9534f;margin-bottom:4px">${_todayHoli}</div><div style="font-size:11px;color:var(--text3)">수업 없음</div></div>`;
+  }else if(_todayClean){
+    _classRows=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 0"><div style="font-size:16px;font-weight:700;color:#5b6470;margin-bottom:4px">클린데이 🧹</div><div style="font-size:11px;color:var(--text3)">수업 없음</div></div>`;
+  }else{
+    _classRows=_classes.length
     ?_classes.map(c=>{const _nm=nameMap[c.student_id]||'?';return `<div style="display:flex;gap:6px;align-items:baseline;padding:4px 0;border-bottom:.5px solid var(--border2)"><span style="font-size:11px;font-weight:700;color:#378ADD;flex-shrink:0;min-width:38px">${c.class_time||'--:--'}</span><span style="font-size:12px;color:var(--text);flex:1"><span onclick="openStudentTab('${_nm.replace(/'/g,"\\'")}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:#ccc;text-underline-offset:2px">${_nm}</span> <span style="color:var(--text2);font-size:11px">· ${c.subject||'-'}</span></span></div>`;}).join('')
     :'<div style="font-size:12px;color:var(--text3);padding-top:4px">오늘 수업 없음</div>';
+  }
   const cols=dates.map(d=>{
     const dt=new Date(d+'T00:00:00');
     const isToday=d===todayKey();
     const data=byDate[d];
+    const _holi=getHoliday(d);
+    const _clean=getCleanDay(d);
     const dayLabel=isToday
       ?`<div class="sched-day" style="font-weight:700;color:var(--sched-title)">오늘</div>`
-      :`<div class="sched-day" style="color:var(--sched-muted)">${DAYS_KR[dt.getDay()]}</div>`;
+      :`<div class="sched-day" style="color:${_holi?'#d9534f':(_clean?'#5b6470':'var(--sched-muted)')}">${DAYS_KR[dt.getDay()]}</div>`;
+    // 공휴일/휴일: 빨간 배경+이름 / 클린데이: 회색 배경+이름 (수업 없는 날이라 개강일정도 안 뜸)
+    if(_holi||_clean){
+      const _isHoli=!!_holi;
+      const _bg=_isHoli?(document.body.classList.contains('dark')?'rgba(231,76,60,0.15)':'rgba(231,76,60,0.16)'):(document.body.classList.contains('dark')?'rgba(120,120,130,0.18)':'rgba(120,120,130,0.14)');
+      const _col=_isHoli?'#d9534f':'#5b6470';
+      const _nm=_isHoli?_holi:'🧹 클린데이';
+      return `<div style="text-align:center;${isToday?'':''}background:${_bg};border-radius:6px;padding:3px 2px;min-height:52px;display:flex;flex-direction:column">
+        ${dayLabel}
+        <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;font-weight:700;color:${_col};line-height:1.3;word-break:keep-all">${_nm}</span></div>
+      </div>`;
+    }
     const coursesHtml=`<div class="sched-courses">${
       data.courses.length
         ?data.courses.map(t=>`<div class="sched-item" style="color:var(--sched-text);font-weight:${isToday?'600':'400'}">${t}</div>`).join('')
@@ -1581,7 +1726,7 @@ function switchTab(name){
   if(name==='schedule'){renderSchedule();setTimeout(initSchedColorPopup,100);}
   if(name==='students'){renderStudents();}
   if(name==='report'){renderReportDaily();}
-  if(name==='period'){renderPeriod();loadNotice();loadAccountList();renderHolidayList();}
+  if(name==='period'){renderPeriod();loadNotice();loadAccountList();renderHolidayList();loadCleanDays().then(()=>{renderCleanDayList();updateCleanDayAuto();const cm=document.getElementById('cd-month');if(cm&&!cm.value){const n=new Date();cm.value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;}});}
 }
 
 async function renderSales(){
@@ -2070,12 +2215,15 @@ async function renderCalendar(){
     const _dow=cur.getDay();
     const _holiName=getHoliday(dateStr);
     const _isHoli=!!_holiName;
+    const _cleanName=(!_isHoli)?getCleanDay(dateStr):'';
+    const _isClean=!!_cleanName;
     const _isSun=_dow===0||_isHoli;
     const _isSat=_dow===6&&!_isHoli;
-    // 주말/공휴일 배경 (태그 배경 없을 때만, 표시용 옅게). 공휴일 빨간 배경은 영업일 범위 안에서만, 범위 밖이면 회색 유지(날짜·이름만 빨강)
+    // 주말/공휴일 배경 (태그 배경 없을 때만, 표시용 옅게). 공휴일 빨간 배경은 영업일 범위 안에서만, 범위 밖이면 회색 유지(날짜·이름만 빨강). 클린데이는 회색.
     let _wkBg='';
     if(!tagBg&&inPeriod){
       if(_isHoli||_isSun)_wkBg=_isDark?'rgba(231,76,60,0.15)':'rgba(231,76,60,0.20)';
+      else if(_isClean)_wkBg=_isDark?'rgba(120,120,130,0.18)':'rgba(120,120,130,0.14)';
       else if(_isSat)_wkBg=_isDark?'rgba(100,150,230,0.15)':'rgba(60,120,220,0.20)';
     }
     const bg=tagBg||_wkBg;
@@ -2101,6 +2249,7 @@ async function renderCalendar(){
         <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap;flex:1;min-width:0">
           <span style="flex-shrink:0">${isToday?`<span class="cal-date-inner">${day}</span>`:day}</span>
           ${_isHoli?`<span style="font-size:10px;font-weight:700;color:${tagBg?'#fff':_holiColor};flex-shrink:0">${_holiName}</span>`:''}
+          ${_isClean?`<span style="font-size:10px;font-weight:700;color:${_isDark?'#a0a8b4':'#5b6470'};flex-shrink:0">🧹클린데이</span>`:''}
           ${inPeriod?(()=>{
             const _shBg=dateTags.filter(t=>t.cal_tags.scope==='shared'&&(t.cal_tags.display_type||'bg')==='bg');
             const _myBg=dateTags.filter(t=>t.cal_tags.scope!=='shared'&&t.user_id===currentUser.id&&(t.cal_tags.display_type||'bg')==='bg');
@@ -3866,6 +4015,7 @@ async function renderPeriod(){
   const {data}=await sb.from('periods').select('*').order('created_at',{ascending:false});
   const periods=data||[];
   if(periods[0]){document.getElementById('p-name').value=periods[0].name||'';document.getElementById('p-start').value=periods[0].start_date||'';document.getElementById('p-end').value=periods[0].end_date||'';}
+  const _pc=document.getElementById('period-count');if(_pc)_pc.textContent=periods.length?`${periods.length}건`:'';
   document.getElementById('period-tbody').innerHTML=periods.length?periods.map(p=>`<tr><td style="font-weight:500">${p.name}</td><td style="font-size:12px;color:var(--text2)">${p.start_date||''}~${p.end_date||''}</td><td><span onclick="deletePeriod('${p.id}')" style="color:#ddd;cursor:pointer;font-size:18px;padding:0 4px">×</span></td></tr>`).join(''):'<tr><td colspan="2" style="text-align:center;color:#bbb;padding:20px">없어요</td></tr>';
 }
 
