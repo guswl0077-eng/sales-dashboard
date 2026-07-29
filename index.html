@@ -387,7 +387,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v36</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v37</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1452,16 +1452,30 @@ function todoTimeMin(t){
   if(!m)return null;
   return Number(m[1])*60+Number(m[2]);
 }
-// 정렬 비교: 완료/취소 그룹 → 시간 있는 것 위(시간순) → 드래그 순서(sort_order) → 생성순
+// 정렬 비교: 완료/취소 그룹 → 내가 정한 순서(sort_order) 우선 → 안 건드린 건 시간순 → 생성순
+// sort_order는 입력 시 시간 위치 기준으로 자동 부여되고(=시간순 기본값), 드래그하면 재부여됨(=내 순서 우선).
 function todoCompare(a,b,ia,ib){
   const r=todoRank(a)-todoRank(b);if(r)return r;
+  const hasA=a.sort_order!=null,hasB=b.sort_order!=null;
+  if(hasA&&hasB){if(a.sort_order!==b.sort_order)return a.sort_order-b.sort_order;return (ia||0)-(ib||0);}
+  // 한쪽만 sort_order 있으면: sort_order 없는(옛 데이터) 항목은 뒤로
+  if(hasA)return -1;
+  if(hasB)return 1;
+  // 둘 다 없으면(옛 데이터) 시간순 → 생성순
   const ta=todoTimeMin(a),tb=todoTimeMin(b);
   if(ta!=null&&tb!=null){if(ta!==tb)return ta-tb;}
-  else if(ta!=null){return -1;} // a만 시간 → a 위
-  else if(tb!=null){return 1;}  // b만 시간 → b 위
-  const sa=a.sort_order!=null?a.sort_order:999,sb2=b.sort_order!=null?b.sort_order:999;
-  if(sa!==sb2)return sa-sb2;
+  else if(ta!=null)return -1;
+  else if(tb!=null)return 1;
   return (ia||0)-(ib||0);
+}
+// 활성 항목(미완료/미취소)에 현재 정렬 순서대로 sort_order를 0,1,2…로 부여·저장.
+// 시간순 기본값 + 기존 드래그 순서를 반영 → 신규 입력분도 시간 위치에 자동 배치, 이후 드래그가 우선.
+async function ensureTodoOrder(list){
+  const active=list.filter(t=>!t.done&&t.category!=='취소됨');
+  const ordered=active.map((t,i)=>({t,i})).sort((a,b)=>todoCompare(a.t,b.t,a.i,b.i)).map(x=>x.t);
+  const updates=[];
+  ordered.forEach((t,i)=>{if(t.sort_order!==i){t.sort_order=i;updates.push(t.id);}});
+  if(updates.length){try{await Promise.all(ordered.map((t,i)=>sb.from('todos').update({sort_order:i}).eq('id',t.id)));}catch(err){console.warn('할일 순서 저장 실패(sort_order 컬럼 필요):',err);}}
 }
 async function loadTodos(){
   const {data}=await sb.from('todos').select('*').eq('user_id',currentUser.id).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at');
@@ -1552,6 +1566,7 @@ async function addTodo(){
   if(error){showToast('추가 실패');return;}
   document.getElementById('todo-text').value='';
   todos.push(data);
+  await ensureTodoOrder([...fixedTodos,...todos]);
   renderTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
 }
@@ -1583,6 +1598,7 @@ async function addCounsel(){
   document.getElementById('counsel-min').value='';
   document.getElementById('counsel-text').value='';
   todos.push(data);
+  await ensureTodoOrder([...fixedTodos,...todos]);
   renderTodos();
 }
 
@@ -2499,7 +2515,8 @@ async function addDmCounsel(){
   document.getElementById('dm-counsel-min').value='';
   document.getElementById('dm-counsel-text').value='';
   dmTodos.push(data);
-  renderDmTodoList();
+  await ensureTodoOrder(dmTodos);
+  renderDmTodos(dayModalDate);
   if(dayModalDate===todayKey())loadTodos();
 }
 
@@ -2511,7 +2528,9 @@ async function addDmTodo(){
   if(error){showToast('추가 실패');return;}
   input.value='';
   dmTodos.push(data);
-  renderDmTodoList();
+  await ensureTodoOrder(dmTodos);
+  renderDmTodos(dayModalDate);
+  if(dayModalDate===todayKey())loadTodos();
 }
 
 async function toggleDmTodo(id){
