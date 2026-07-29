@@ -387,7 +387,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v35</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v36</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1446,6 +1446,23 @@ function todoRank(t){
   if(t.category==='취소됨')return 1;
   return 0;
 }
+// 할 일 맨 앞 HH:MM 시간 파싱 → 분(minutes), 없으면 null
+function todoTimeMin(t){
+  const m=(t.content||'').match(/^\s*(\d{1,2}):(\d{2})\b/);
+  if(!m)return null;
+  return Number(m[1])*60+Number(m[2]);
+}
+// 정렬 비교: 완료/취소 그룹 → 시간 있는 것 위(시간순) → 드래그 순서(sort_order) → 생성순
+function todoCompare(a,b,ia,ib){
+  const r=todoRank(a)-todoRank(b);if(r)return r;
+  const ta=todoTimeMin(a),tb=todoTimeMin(b);
+  if(ta!=null&&tb!=null){if(ta!==tb)return ta-tb;}
+  else if(ta!=null){return -1;} // a만 시간 → a 위
+  else if(tb!=null){return 1;}  // b만 시간 → b 위
+  const sa=a.sort_order!=null?a.sort_order:999,sb2=b.sort_order!=null?b.sort_order:999;
+  if(sa!==sb2)return sa-sb2;
+  return (ia||0)-(ib||0);
+}
 async function loadTodos(){
   const {data}=await sb.from('todos').select('*').eq('user_id',currentUser.id).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at');
   const today=todayKey();
@@ -1458,7 +1475,7 @@ function renderTodos(){
   const el=document.getElementById('todo-list');
   // 정렬: 일반 → 취소 → 완료 (sort_order 순서는 유지하며 그룹별로만 재배치)
   const merged=[...fixedTodos.map(t=>({...t,_fixed:true})),...todos];
-  const all=merged.map((t,i)=>({t,i})).sort((a,b)=>(todoRank(a.t)-todoRank(b.t))||(a.i-b.i)).map(x=>x.t);
+  const all=merged.map((t,i)=>({t,i})).sort((a,b)=>todoCompare(a.t,b.t,a.i,b.i)).map(x=>x.t);
   if(!all.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:4px 0">할 일을 추가해보세요</div>';return;}
   el.innerHTML=all.map((t,i)=>`
     <div class="todo-item" draggable="true"
@@ -2166,9 +2183,9 @@ async function renderCalendar(){
   // 할일 데이터 로드
   const {data:todoData}=await sb.from('todos').select('date,done,content,is_fixed,category,sort_order,created_at').eq('user_id',currentUser.id).gte('date',startStr).lte('date',endStr).eq('is_fixed',false);
   calTodoData={};(todoData||[]).forEach(t=>{if(!calTodoData[t.date])calTodoData[t.date]=[];calTodoData[t.date].push(t);});
-  // 내 할일과 동일 정렬: 일반 → 취소 → 완료 (그룹 내 sort_order 유지)
+  // 오늘 활동과 동일 정렬: 완료/취소 그룹 → 시간순 → 드래그 순서(sort_order)
   Object.keys(calTodoData).forEach(d=>{
-    calTodoData[d]=calTodoData[d].map((t,i)=>({t,i})).sort((a,b)=>(todoRank(a.t)-todoRank(b.t))||((a.t.sort_order??999)-(b.t.sort_order??999))||(a.i-b.i)).map(x=>x.t);
+    calTodoData[d]=calTodoData[d].map((t,i)=>({t,i})).sort((a,b)=>todoCompare(a.t,b.t,a.i,b.i)).map(x=>x.t);
   });
   calScheduleData={};(schedData||[]).forEach(s=>{if(!calScheduleData[s.date])calScheduleData[s.date]=[];calScheduleData[s.date].push(s.title)});
   calLogData={};(logData||[]).forEach(l=>calLogData[l.date]={real:(l.sales||0)-(l.refund||0),blog:l.blog||0});
@@ -2379,7 +2396,7 @@ async function stuDrop(e,toIdx){
 let dmTodos=[];
 async function renderDmTodos(dateStr){
   const {data}=await sb.from('todos').select('*').eq('user_id',currentUser.id).eq('date',dateStr).eq('is_fixed',false).order('created_at');
-  dmTodos=data||[];
+  dmTodos=(data||[]).map((t,i)=>({t,i})).sort((a,b)=>todoCompare(a.t,b.t,a.i,b.i)).map(x=>x.t);
   renderDmTodoList();
 }
 
@@ -2406,16 +2423,42 @@ async function loadDmBadges(dateStr){
 function renderDmTodoList(){
   const el=document.getElementById('dm-todo-list');
   if(!el)return;
-  el.innerHTML=dmTodos.length?dmTodos.map(t=>{
+  const _isToday=dayModalDate===todayKey();
+  // 오늘이 아닌 날만 드래그로 순서 변경 가능 (오늘은 '오늘 활동'에서 관리 → 충돌 방지)
+  el.innerHTML=dmTodos.length?dmTodos.map((t,i)=>{
     const cancelled=t.category==='취소됨';
     const textStyle=cancelled?'text-decoration:line-through;color:var(--text)':(t.done?'text-decoration:line-through;color:#bbb':'color:var(--text)');
     const showCancel=(t.category==='상담'||t.category==='면담'||cancelled);
-    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border2)">
+    const dragAttrs=(!_isToday&&!t.done&&!cancelled)?`draggable="true" ondragstart="dmTodoDragStart(event,${i})" ondragover="dmTodoDragOver(event)" ondragleave="dmTodoDragLeave(event)" ondrop="dmTodoDrop(event,${i})"`:'';
+    const handle=(!_isToday&&!t.done&&!cancelled)?'<span class="todo-drag" style="cursor:grab;color:var(--text3);flex-shrink:0">⠿</span>':'';
+    return `<div class="dm-todo-item" ${dragAttrs} style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border2)">
+      ${handle}
       <div class="chk ${t.done?'done':''}" onclick="toggleDmTodo('${t.id}')"></div>
       <span onclick="editDmTodoInline(this,'${t.id}')" style="flex:1;font-size:13px;cursor:text;${textStyle}">${t.content}</span>
       ${showCancel?`<button onclick="cancelDmCounsel('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f5c5c5;background:transparent;color:#c0392b;cursor:pointer;white-space:nowrap">${cancelled?'취소해제':'취소'}</button>`:''}
       <span style="color:#ddd;cursor:pointer;font-size:16px;padding:0 4px" onclick="deleteDmTodo('${t.id}')">×</span>
     </div>`;}).join(''):'<div style="font-size:12px;color:var(--text3);padding:4px 0">할 일을 추가해보세요</div>';
+}
+// 달력(다른 날) 할일 드래그 순서 변경
+let _dmDragIdx=null;
+function dmTodoDragStart(e,idx){_dmDragIdx=idx;e.currentTarget.style.opacity='0.5';}
+function dmTodoDragOver(e){e.preventDefault();e.currentTarget.style.background='rgba(55,138,221,0.08)';}
+function dmTodoDragLeave(e){e.currentTarget.style.background='';}
+async function dmTodoDrop(e,toIdx){
+  e.preventDefault();
+  document.querySelectorAll('.dm-todo-item').forEach(el=>{el.style.opacity='';el.style.background='';});
+  if(_dmDragIdx===null||_dmDragIdx===toIdx){_dmDragIdx=null;return;}
+  const arr=[...dmTodos];
+  const moved=arr.splice(_dmDragIdx,1)[0];
+  arr.splice(toIdx,0,moved);
+  _dmDragIdx=null;
+  dmTodos=arr;
+  renderDmTodoList();
+  // 순서 저장: 시간 없는(드래그 대상) 항목만 sort_order 갱신
+  try{
+    await Promise.all(arr.map((t,i)=>sb.from('todos').update({sort_order:i}).eq('id',t.id)));
+  }catch(err){console.warn('할일 순서 저장 실패(sort_order 컬럼 필요):',err);}
+  renderCalendar();
 }
 async function cancelDmCounsel(id){
   const item=dmTodos.find(t=>t.id===id);if(!item)return;
