@@ -387,7 +387,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v37</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v38</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -4199,11 +4199,12 @@ function reportCard(dateStr, log, todoTotal, todoDone){
   const pctTodo=todoTotal>0?Math.round(todoDone/todoTotal*100):0;
   const barColor=pctTodo>=80?'#1a8a50':pctTodo>=50?'#b45309':'#c0392b';
   const badgeCls=pctTodo>=80?'background:#dcfce7;color:#166534':pctTodo>=50?'background:#fef3c7;color:#92400e':'background:#fee2e2;color:#991b1b';
-  // 휴무형 카드 (휴무/연차/반차/보건휴가 등 당직·추당을 제외한 모든 근무유형)
+  // 휴무형 카드 (휴무/연차/반차/보건휴가 등 당직·추당을 제외한 모든 근무유형). 실매출 있으면 금액 표시
   if(isOffType){
     return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px">
       <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">${label}</div>
-      <div style="font-size:26px;font-weight:500;color:var(--text2);text-align:center;padding:16px 0">${workType} 💤</div>
+      <div style="font-size:26px;font-weight:500;color:var(--text2);text-align:center;padding:${real>0?'12px':'16px'} 0">${workType} 💤</div>
+      ${real>0?`<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:8px 2px 0;border-top:1px solid var(--border2)"><span style="color:var(--text2)">실매출</span><span style="font-weight:700;color:#1a8a50">${fmt(real)}</span></div>`:''}
     </div>`;
   }
   // 일반 카드 (당직/추당 포함 - 데이터 그대로 노출)
