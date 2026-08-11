@@ -287,7 +287,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .split{grid-template-columns:1fr}
   .cal-cell{min-height:52px;padding:4px}
   .cal-date{font-size:11px}
-  .cal-work-badge{font-size:7px;padding:1px 3px;white-space:normal;line-height:1.25;word-break:break-all}
+  .cal-work-badge{font-size:7px;padding:1px 3px;white-space:normal;line-height:1.25;word-break:keep-all;overflow-wrap:anywhere;max-width:100%}
   .cal-todo-line{font-size:9px!important;line-height:1.3!important}
   .cal-grid div>div{font-size:9px}
   .money-input{width:90px}
@@ -331,6 +331,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .cal-header{padding:10px 12px}
   .cal-title{font-size:13px}
   .cal-nav button{padding:3px 8px;font-size:12px}
+  .counsel-add-wrap>.todo-add-row{flex:1 1 100%!important}
   .todo-add-row{gap:4px}
   #counsel-text{min-width:0;font-size:12px}
   #student-search{flex:1!important;min-width:0!important}
@@ -392,7 +393,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v42</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v43</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -459,17 +460,19 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
               <input class="todo-input" id="todo-text" placeholder="할 일 입력..." onkeydown="if(event.key==='Enter')addTodo()">
               <button class="btn btn-primary btn-sm" onclick="addTodo()">추가</button>
             </div>
-            <div class="todo-add-row" style="margin-top:6px">
-              <input class="todo-input" id="counsel-hour" placeholder="00" style="width:36px;text-align:center;padding:7px 4px;flex:none">
-              <span style="font-size:13px;color:var(--text2)">:</span>
-              <input class="todo-input" id="counsel-min" placeholder="00" style="width:36px;text-align:center;padding:7px 4px;flex:none">
-              <div id="counsel-type-sangdam" onclick="selectCounselType('상담')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">상담</div>
-              <div id="counsel-type-myundam" onclick="selectCounselType('면담')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">면담</div>
-              <div id="counsel-type-contact" onclick="selectCounselType('컨텍')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">컨텍</div>
-            </div>
-            <div class="todo-add-row" style="margin-top:6px">
-              <input class="todo-input" id="counsel-text" placeholder="일정 입력..." onkeydown="if(event.key==='Enter')addCounsel()" style="flex:1;min-width:0">
-              <button class="btn btn-primary btn-sm" onclick="addCounsel()">추가</button>
+            <div class="counsel-add-wrap" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px">
+              <div class="todo-add-row" style="flex:0 0 auto">
+                <input class="todo-input" id="counsel-hour" placeholder="00" style="width:36px;text-align:center;padding:7px 4px;flex:none">
+                <span style="font-size:13px;color:var(--text2)">:</span>
+                <input class="todo-input" id="counsel-min" placeholder="00" style="width:36px;text-align:center;padding:7px 4px;flex:none">
+                <div id="counsel-type-sangdam" onclick="selectCounselType('상담')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">상담</div>
+                <div id="counsel-type-myundam" onclick="selectCounselType('면담')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">면담</div>
+                <div id="counsel-type-contact" onclick="selectCounselType('컨텍')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">컨텍</div>
+              </div>
+              <div class="todo-add-row" style="flex:1 1 200px;min-width:0">
+                <input class="todo-input" id="counsel-text" placeholder="일정 입력..." onkeydown="if(event.key==='Enter')addCounsel()" style="flex:1;min-width:0">
+                <button class="btn btn-primary btn-sm" onclick="addCounsel()">추가</button>
+              </div>
             </div>
           </div>
           <div class="sec-title">메모</div>
@@ -563,11 +566,15 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
           <div class="std-chip" onclick="setStudentCat('서브')">서브</div>
           <div class="std-chip" onclick="setStudentCat('전체')">전체</div>
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button id="hidden-toggle-btn" class="btn btn-outline" onclick="toggleShowHidden()" style="font-size:12px">숨겨진 수강생 보기</button>
-          <button class="btn btn-primary" onclick="openStudentAddModal()">＋ 수강생 추가</button>
-          <button class="btn btn-outline" onclick="downloadStudentTemplate()">↓ 양식 다운로드</button>
-          <label class="btn btn-outline" style="cursor:pointer">↑ 파일 업로드<input type="file" id="student-excel-file" accept=".xlsx,.xls" style="display:none" onchange="uploadStudentExcel(this)"></label>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+          <div style="display:flex;gap:6px">
+            <button id="hidden-toggle-btn" class="btn btn-outline" onclick="toggleShowHidden()" style="font-size:12px">숨겨진 수강생 보기</button>
+            <button class="btn btn-primary" onclick="openStudentAddModal()">＋ 수강생 추가</button>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline" onclick="downloadStudentTemplate()">↓ 양식 다운로드</button>
+            <label class="btn btn-outline" style="cursor:pointer">↑ 파일 업로드<input type="file" id="student-excel-file" accept=".xlsx,.xls" style="display:none" onchange="uploadStudentExcel(this)"></label>
+          </div>
         </div>
       </div>
       <!-- 2줄: 검색 + 검색버튼 + 선택삭제 -->
