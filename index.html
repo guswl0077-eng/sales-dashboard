@@ -287,7 +287,8 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .split{grid-template-columns:1fr}
   .cal-cell{min-height:52px;padding:4px}
   .cal-date{font-size:11px}
-  .cal-work-badge{font-size:9px;padding:1px 4px}
+  .cal-work-badge{font-size:7px;padding:1px 3px;white-space:normal;line-height:1.25;word-break:break-all}
+  .cal-todo-line{font-size:9px!important;line-height:1.3!important}
   .cal-grid div>div{font-size:9px}
   .money-input{width:90px}
   .num-input{width:60px}
@@ -297,9 +298,14 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .today-schedule>div:last-child{gap:2px!important}
   .report-grid{grid-template-columns:1fr}
   .content{padding:10px 8px}
-  .topbar{height:48px;padding:0 12px}
-  .logo{font-size:13px}
+  .topbar{height:auto;padding:8px 12px;flex-direction:column;align-items:stretch;gap:8px}
+  .logo{font-size:14px}
   .date-badge{display:none}
+  .topbar-right{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:stretch}
+  .topbar-right>#dark-toggle{justify-content:center}
+  .topbar-right .admin-chip,.topbar-right .user-chip,.topbar-right .logout-btn{align-items:center;justify-content:center;text-align:center;white-space:nowrap;font-size:12px;padding:7px 4px;border-radius:20px}
+  .topbar-right .user-chip,.topbar-right .logout-btn{display:flex}
+  .logout-btn{white-space:nowrap;font-size:12px;padding:7px 4px}
   .nav-tabs{padding:0 8px;gap:0}
   .tab{padding:10px 10px;font-size:12px}
   .metrics-grid{grid-template-columns:1fr 1fr;gap:8px}
@@ -325,7 +331,6 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
   .cal-header{padding:10px 12px}
   .cal-title{font-size:13px}
   .cal-nav button{padding:3px 8px;font-size:12px}
-  .topbar-right{gap:6px}.logout-btn{white-space:nowrap;font-size:12px;padding:4px 8px}
   .todo-add-row{gap:4px}
   #counsel-text{min-width:0;font-size:12px}
   #student-search{flex:1!important;min-width:0!important}
@@ -387,7 +392,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v40</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v42</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1208,7 +1213,17 @@ async function loadNotice(){
   const box=document.getElementById('notice-box');
   const history=document.getElementById('notice-history');
   if(box){
-    const toShow=(notices||[]).filter(n=>n.content);
+    // 배너 노출 조건: 작성일(1일째)~3일째, 3일째 되는 날 오전 8시(한국시간)에 내려감. 이력엔 계속 남음.
+    const _kstYmd=(dt)=>{const s=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(dt);return s;}; // 'YYYY-MM-DD'
+    const _inBannerWindow=(n)=>{
+      const created=new Date(n.updated_at);
+      // 작성일(KST) 자정 기준 +2일 08:00(KST) = 3일째 오전 8시 → 그 시각부터 배너에서 내림
+      const ymd=_kstYmd(created).split('-').map(Number);
+      // KST(UTC+9)의 (작성일+2일) 08:00 을 UTC로: 08:00 KST = 23:00(전날) UTC → Date.UTC로 계산
+      const cutoffUtc=Date.UTC(ymd[0],ymd[1]-1,ymd[2]+2,8-9,0,0); // 8시(KST)-9시간=UTC
+      return Date.now()<cutoffUtc;
+    };
+    const toShow=(notices||[]).filter(n=>n.content&&_inBannerWindow(n));
     // 업데이트/중요 각각 최신 1개씩
     const latestUpdate=toShow.find(n=>(n.notice_type||'update')==='update');
     const latestImportant=toShow.find(n=>n.notice_type==='important');
@@ -2305,14 +2320,21 @@ async function renderCalendar(){
         if(wType&&inPeriod){out+=`<div class="cal-work-badge work-${cls}">${wType}</div>`;lines++;}
         if(realSales>0&&inPeriod){out+=`<div style="font-size:10px;font-weight:600;color:#1a8a50">${Number(realSales).toLocaleString()}원</div>`;lines++;}
         const todoList=inPeriod?(calTodoData[dateStr]||[]):[];
+        const MAX_TODO=3;
         let shownTodos=0;
         for(const t of todoList){
-          if(lines>=7)break;
+          if(shownTodos>=MAX_TODO)break;
           const _bgHex=bgTag?bgTag.cal_tags.color:'';
           const _tc=_bgHex?pickTextColor(blendHex(_bgHex,_isDark?0.35:0.5,_isDark)):'var(--text)';
           const _dim=t.done||t.category==='취소됨';
-          out+=`<div style="font-size:11px;font-weight:500;color:${_tc};line-height:1.4;opacity:${_dim?0.4:1};${_dim?'text-decoration:line-through':''}">${t.content}</div>`;
-          lines++;shownTodos++;
+          out+=`<div class="cal-todo-line" style="font-size:11px;font-weight:500;color:${_tc};line-height:1.35;white-space:nowrap;overflow:hidden;opacity:${_dim?0.4:1};${_dim?'text-decoration:line-through':''}">${t.content}</div>`;
+          shownTodos++;
+        }
+        const _rest=todoList.length-shownTodos;
+        if(_rest>0){
+          const _bgHex=bgTag?bgTag.cal_tags.color:'';
+          const _tc=_bgHex?pickTextColor(blendHex(_bgHex,_isDark?0.35:0.5,_isDark)):'var(--text-accent,#378ADD)';
+          out+=`<div style="font-size:10px;font-weight:600;color:${_tc};line-height:1.3">+${_rest}개 더</div>`;
         }
         return out;
       })()}
