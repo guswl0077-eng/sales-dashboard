@@ -387,7 +387,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v38</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v40</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -460,6 +460,9 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
               <input class="todo-input" id="counsel-min" placeholder="00" style="width:36px;text-align:center;padding:7px 4px;flex:none">
               <div id="counsel-type-sangdam" onclick="selectCounselType('상담')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">상담</div>
               <div id="counsel-type-myundam" onclick="selectCounselType('면담')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">면담</div>
+              <div id="counsel-type-contact" onclick="selectCounselType('컨텍')" style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">컨텍</div>
+            </div>
+            <div class="todo-add-row" style="margin-top:6px">
               <input class="todo-input" id="counsel-text" placeholder="일정 입력..." onkeydown="if(event.key==='Enter')addCounsel()" style="flex:1;min-width:0">
               <button class="btn btn-primary btn-sm" onclick="addCounsel()">추가</button>
             </div>
@@ -580,9 +583,11 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         <div class="std-chip" onclick="setStudentStatus('COD',this)">COD</div>
         <div class="std-chip" onclick="setStudentStatus('휴학',this)">휴학</div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
         <input type="checkbox" id="student-check-all" onchange="toggleAllStudents(this)" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
-        <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 · 과목 검색" style="flex:1;min-width:0" onkeydown="if(event.key==='Enter')renderStudents()"> 
+        <input class="form-input" id="student-search" placeholder="이름 · 원서번호 · 전화번호 · 과목 검색" style="flex:1;min-width:0" onkeydown="if(event.key==='Enter')renderStudents()">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="renderStudents()" style="flex-shrink:0">검색</button>
         <select onchange="setStudentSort(this.value)" class="form-input" id="student-sort-sel" style="width:auto;padding:6px 10px;font-size:13px;flex-shrink:0;cursor:pointer"><option value="new">최신순</option><option value="old">오래된순</option><option value="name_asc">이름 ㄱ-ㅎ</option><option value="name_desc">이름 ㅎ-ㄱ</option><option value="modified">최근 수정순</option></select>
         <button class="btn btn-outline" onclick="mergeDuplicateStudents()" style="flex-shrink:0;color:#1a56db;border-color:#1a56db">중복 정리</button>
@@ -789,12 +794,15 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
         <input class="form-input" id="dm-todo-input" placeholder="할 일 입력..." style="font-size:13px" onkeydown="if(event.key==='Enter')addDmTodo()">
         <button class="btn btn-outline btn-sm" onclick="addDmTodo()">추가</button>
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
         <input class="form-input" id="dm-counsel-hour" placeholder="00" style="width:36px;text-align:center;padding:6px 4px;font-size:13px;flex:none">
         <span style="font-size:13px;color:var(--text2)">:</span>
         <input class="form-input" id="dm-counsel-min" placeholder="00" style="width:36px;text-align:center;padding:6px 4px;font-size:13px;flex:none">
         <div id="dm-counsel-sangdam" onclick="selectDmCounselType('상담')" style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0">상담</div>
         <div id="dm-counsel-myundam" onclick="selectDmCounselType('면담')" style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">면담</div>
+        <div id="dm-counsel-contact" onclick="selectDmCounselType('컨텍')" style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0">컨텍</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
         <input class="form-input" id="dm-counsel-text" placeholder="일정 입력..." style="font-size:13px;flex:1" onkeydown="if(event.key==='Enter')addDmCounsel()">
         <button class="btn btn-outline btn-sm" onclick="addDmCounsel()">추가</button>
       </div>
@@ -1505,7 +1513,7 @@ function renderTodos(){
         ondblclick="editTodoInline(this,'${t.id}',${!!t._fixed})"
         title="더블클릭하면 수정">${t.content}</span>
       ${!t.done&&(t.postpone_count||0)>0?`<span style="font-size:10px;padding:1px 5px;border-radius:4px;font-weight:500;white-space:nowrap;${(t.postpone_count||0)>=3?'background:#fee2e2;color:#991b1b':'background:#fef3c7;color:#92400e'}">${t.postpone_count}회 미룸</span>`:''}
-      ${(t.category==='상담'||t.category==='면담'||t.category==='취소됨')?`<button onclick="cancelCounsel('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f5c5c5;background:transparent;color:#c0392b;cursor:pointer;white-space:nowrap">${t.category==='취소됨'?'취소해제':'취소'}</button>`:''}
+      ${(t.category==='상담'||t.category==='면담'||t.category==='컨텍'||t.category==='취소됨')?`<button onclick="cancelCounsel('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #f5c5c5;background:transparent;color:#c0392b;cursor:pointer;white-space:nowrap">${t.category==='취소됨'?'취소해제':'취소'}</button>`:''}
       ${!t.done?`<button onclick="postponeTodo('${t.id}')" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid #e8e6e0;background:#fff;color:#888;cursor:pointer;white-space:nowrap">미루기</button>`:''}
       <span class="todo-del" onclick="deleteTodo('${t.id}',${!!t._fixed})">×</span>
     </div>`).join('');
@@ -1574,16 +1582,10 @@ async function addTodo(){
 let _counselType='상담';
 function selectCounselType(type){
   _counselType=type;
-  const s=document.getElementById('counsel-type-sangdam');
-  const m=document.getElementById('counsel-type-myundam');
-  if(!s||!m)return;
-  if(type==='상담'){
-    s.style.cssText='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
-    m.style.cssText='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
-  } else {
-    s.style.cssText='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
-    m.style.cssText='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
-  }
+  const on='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
+  const off='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
+  const map={'상담':'counsel-type-sangdam','면담':'counsel-type-myundam','컨텍':'counsel-type-contact'};
+  Object.entries(map).forEach(([t,id])=>{const el=document.getElementById(id);if(el)el.style.cssText=(t===type)?on:off;});
 }
 
 async function addCounsel(){
@@ -2444,7 +2446,7 @@ function renderDmTodoList(){
   el.innerHTML=dmTodos.length?dmTodos.map((t,i)=>{
     const cancelled=t.category==='취소됨';
     const textStyle=cancelled?'text-decoration:line-through;color:var(--text)':(t.done?'text-decoration:line-through;color:#bbb':'color:var(--text)');
-    const showCancel=(t.category==='상담'||t.category==='면담'||cancelled);
+    const showCancel=(t.category==='상담'||t.category==='면담'||t.category==='컨텍'||cancelled);
     const dragAttrs=(!_isToday&&!t.done&&!cancelled)?`draggable="true" ondragstart="dmTodoDragStart(event,${i})" ondragover="dmTodoDragOver(event)" ondragleave="dmTodoDragLeave(event)" ondrop="dmTodoDrop(event,${i})"`:'';
     const handle=(!_isToday&&!t.done&&!cancelled)?'<span class="todo-drag" style="cursor:grab;color:var(--text3);flex-shrink:0">⠿</span>':'';
     return `<div class="dm-todo-item" ${dragAttrs} style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border2)">
@@ -2491,16 +2493,10 @@ async function cancelDmCounsel(id){
 let _dmCounselType='상담';
 function selectDmCounselType(type){
   _dmCounselType=type;
-  const s=document.getElementById('dm-counsel-sangdam');
-  const m=document.getElementById('dm-counsel-myundam');
-  if(!s||!m)return;
-  if(type==='상담'){
-    s.style.cssText='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
-    m.style.cssText='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
-  } else {
-    s.style.cssText='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
-    m.style.cssText='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
-  }
+  const on='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0';
+  const off='padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;background:var(--card);color:var(--text2);border:1px solid var(--border);cursor:pointer;white-space:nowrap;flex-shrink:0';
+  const map={'상담':'dm-counsel-sangdam','면담':'dm-counsel-myundam','컨텍':'dm-counsel-contact'};
+  Object.entries(map).forEach(([t,id])=>{const el=document.getElementById(id);if(el)el.style.cssText=(t===type)?on:off;});
 }
 
 async function addDmCounsel(){
