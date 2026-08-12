@@ -395,7 +395,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v45</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v46</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1480,36 +1480,63 @@ function todoTimeMin(t){
   if(!m)return null;
   return Number(m[1])*60+Number(m[2]);
 }
-// 정렬 비교: 완료/취소 그룹 → 내가 정한 순서(sort_order) 우선 → 안 건드린 건 시간순 → 생성순
-// sort_order는 입력 시 시간 위치 기준으로 자동 부여되고(=시간순 기본값), 드래그하면 재부여됨(=내 순서 우선).
+// 할 일 맨 앞 특수문자(★ 등) 여부
+function todoIsStar(t){
+  const s=(t.content||'').trim();
+  return /^[★☆✦✧※!]/.test(s);
+}
+// 그룹 순위: ① ★특수문자 → ② 시간 → ③ 일반
+function todoGroup(t){
+  if(todoIsStar(t))return 0;
+  if(todoTimeMin(t)!=null)return 1;
+  return 2;
+}
+// 정렬 비교: 완료/취소 맨아래 → sort_order 순. (sort_order는 ensureTodoOrder가 규칙대로 채워둠)
 function todoCompare(a,b,ia,ib){
   const r=todoRank(a)-todoRank(b);if(r)return r;
-  const hasA=a.sort_order!=null,hasB=b.sort_order!=null;
-  if(hasA&&hasB){if(a.sort_order!==b.sort_order)return a.sort_order-b.sort_order;return (ia||0)-(ib||0);}
-  // 한쪽만 sort_order 있으면: sort_order 없는(옛 데이터) 항목은 뒤로
-  if(hasA)return -1;
-  if(hasB)return 1;
-  // 둘 다 없으면(옛 데이터) 시간순 → 생성순
-  const ta=todoTimeMin(a),tb=todoTimeMin(b);
-  if(ta!=null&&tb!=null){if(ta!==tb)return ta-tb;}
-  else if(ta!=null)return -1;
-  else if(tb!=null)return 1;
+  const sa=a.sort_order??999999, sb2=b.sort_order??999999;
+  if(sa!==sb2)return sa-sb2;
   return (ia||0)-(ib||0);
 }
-// 활성 항목(미완료/미취소)에 현재 정렬 순서대로 sort_order를 0,1,2…로 부여·저장.
-// 시간순 기본값 + 기존 드래그 순서를 반영 → 신규 입력분도 시간 위치에 자동 배치, 이후 드래그가 우선.
+// 활성 항목 sort_order 재계산·저장.
+// pinned 항목은 자기 자리(현재 sort_order) 고정, 나머지(auto)는 [★→시간순→일반]으로 빈 자리에 채움.
 async function ensureTodoOrder(list){
   const active=list.filter(t=>!t.done&&t.category!=='취소됨');
-  const ordered=active.map((t,i)=>({t,i})).sort((a,b)=>todoCompare(a.t,b.t,a.i,b.i)).map(x=>x.t);
+  if(!active.length)return;
+  const n=active.length;
+  const pinned=active.filter(t=>t.pinned);
+  const autos=active.filter(t=>!t.pinned);
+  // auto 정렬: 그룹(★0 → 시간1 → 일반2) → 시간순 → 기존 sort_order → 생성순
+  autos.sort((a,b)=>{
+    const ga=todoGroup(a),gb=todoGroup(b);
+    if(ga!==gb)return ga-gb;
+    if(ga===1){const ta=todoTimeMin(a),tb=todoTimeMin(b);if(ta!==tb)return ta-tb;}
+    const sa=a.sort_order??999,sb=b.sort_order??999;
+    if(sa!==sb)return sa-sb;
+    return new Date(a.created_at||0)-new Date(b.created_at||0);
+  });
+  // pinned가 차지할 자리(sort_order) 확보. pinned의 현재 sort_order를 우선 존중, 충돌/범위밖이면 근처로 배치
+  const result=new Array(n).fill(null);
+  const pinnedSorted=[...pinned].sort((a,b)=>(a.sort_order??999)-(b.sort_order??999));
+  for(const p of pinnedSorted){
+    let idx=Math.min(Math.max(p.sort_order??0,0),n-1);
+    while(result[idx]!==null)idx=(idx+1)%n; // 자리 겹치면 다음 빈 칸
+    result[idx]=p;
+  }
+  // 남은 칸에 auto 순서대로 채움
+  let ai=0;
+  for(let i=0;i<n;i++){if(result[i]===null){result[i]=autos[ai++];}}
+  // sort_order 0..n-1 부여, 변경분만 저장
   const updates=[];
-  ordered.forEach((t,i)=>{if(t.sort_order!==i){t.sort_order=i;updates.push(t.id);}});
-  if(updates.length){try{await Promise.all(ordered.map((t,i)=>sb.from('todos').update({sort_order:i}).eq('id',t.id)));}catch(err){console.warn('할일 순서 저장 실패(sort_order 컬럼 필요):',err);}}
+  result.forEach((t,i)=>{if(t.sort_order!==i){t.sort_order=i;updates.push(t.id);}});
+  if(updates.length){try{await Promise.all(result.map((t,i)=>sb.from('todos').update({sort_order:i}).eq('id',t.id)));}catch(err){console.warn('할일 순서 저장 실패:',err);}}
 }
 async function loadTodos(){
   const {data}=await sb.from('todos').select('*').eq('user_id',currentUser.id).order('sort_order',{ascending:true,nullsFirst:false}).order('created_at');
   const today=todayKey();
   fixedTodos=(data||[]).filter(t=>t.is_fixed);
   todos=(data||[]).filter(t=>!t.is_fixed&&t.date===today);
+  await ensureTodoOrder([...fixedTodos,...todos]);
   renderTodos();
 }
 
@@ -1555,13 +1582,15 @@ async function todoDrop(e,toIdx){
   const moved=arr.splice(_dragIdx,1)[0];
   arr.splice(toIdx,0,moved);
   _dragIdx=null;
+  moved.pinned=true; // 드래그한 항목은 그 자리 고정
   // 메모리 먼저 반영 (화면 즉시 업데이트)
   window._todoOrder=arr;
-  // sort_order 저장 (컬럼 없어도 앱 안 깨지게)
+  // sort_order + pinned 저장 (컬럼 없어도 앱 안 깨지게)
   try{
     await Promise.all(arr.map((t,i)=>sb.from('todos').update({sort_order:i}).eq('id',t.id)));
+    await sb.from('todos').update({pinned:true}).eq('id',moved.id);
   }catch(err){
-    console.warn('sort_order 저장 실패(컬럼 확인 필요):',err);
+    console.warn('sort_order/pinned 저장 실패(컬럼 확인 필요):',err);
   }
   await loadTodos();
   if(document.getElementById('tab-calendar')?.classList.contains('active')) renderCalendar();
@@ -2444,7 +2473,9 @@ async function stuDrop(e,toIdx){
 let dmTodos=[];
 async function renderDmTodos(dateStr){
   const {data}=await sb.from('todos').select('*').eq('user_id',currentUser.id).eq('date',dateStr).eq('is_fixed',false).order('created_at');
-  dmTodos=(data||[]).map((t,i)=>({t,i})).sort((a,b)=>todoCompare(a.t,b.t,a.i,b.i)).map(x=>x.t);
+  dmTodos=data||[];
+  await ensureTodoOrder(dmTodos);
+  dmTodos=dmTodos.map((t,i)=>({t,i})).sort((a,b)=>todoCompare(a.t,b.t,a.i,b.i)).map(x=>x.t);
   renderDmTodoList();
 }
 
@@ -2500,12 +2531,13 @@ async function dmTodoDrop(e,toIdx){
   const moved=arr.splice(_dmDragIdx,1)[0];
   arr.splice(toIdx,0,moved);
   _dmDragIdx=null;
+  moved.pinned=true; // 드래그한 항목은 그 자리 고정
   dmTodos=arr;
   renderDmTodoList();
-  // 순서 저장: 시간 없는(드래그 대상) 항목만 sort_order 갱신
   try{
     await Promise.all(arr.map((t,i)=>sb.from('todos').update({sort_order:i}).eq('id',t.id)));
-  }catch(err){console.warn('할일 순서 저장 실패(sort_order 컬럼 필요):',err);}
+    await sb.from('todos').update({pinned:true}).eq('id',moved.id);
+  }catch(err){console.warn('할일 순서 저장 실패:',err);}
   renderCalendar();
 }
 async function cancelDmCounsel(id){
