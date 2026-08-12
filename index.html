@@ -395,7 +395,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v47</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v48</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -1228,10 +1228,8 @@ async function loadNotice(){
       const cutoffUtc=Date.UTC(ymd[0],ymd[1]-1,ymd[2]+2,8-9,0,0); // 8시(KST)-9시간=UTC
       return Date.now()<cutoffUtc;
     };
-    const toShow=(notices||[]).filter(n=>n.content&&_inBannerWindow(n));
-    // 업데이트/중요 각각 최신 1개씩
-    const latestUpdate=toShow.find(n=>(n.notice_type||'update')==='update');
-    const latestImportant=toShow.find(n=>n.notice_type==='important');
+    // 3일 이내(배너 window) 공지 중 최신 3개까지 표시 (업데이트+중요 합산, 4개째부터 밀려남)
+    const toShow=(notices||[]).filter(n=>n.content&&_inBannerWindow(n)).slice(0,3);
     let boxHtml='';
     const makeBox=(n)=>{
       const d=new Date(n.updated_at);
@@ -1241,8 +1239,7 @@ async function loadNotice(){
       const html=sanitizeNoticeHtml((n.content||'').split('\n').join('<br>'));
       return `<div class="notice-box ${type}" style="margin-bottom:8px"><span style="font-size:18px">📢</span><div style="flex:1"><div class="notice-date">${typeLabel} · ${dateStr}</div><div class="notice-text">${html}</div></div></div>`;
     };
-    if(latestImportant) boxHtml+=makeBox(latestImportant);
-    if(latestUpdate) boxHtml+=makeBox(latestUpdate);
+    toShow.forEach(n=>{boxHtml+=makeBox(n);});
     box.innerHTML=boxHtml;
   }
   if(history){
