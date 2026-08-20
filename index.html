@@ -395,7 +395,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v51</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v52</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -3315,7 +3315,7 @@ document.addEventListener('mouseup',()=>{
   sgrid.dragging=false;
   // 순수 클릭(드래그 없음)이면 해당 셀 바로 편집 진입 → 한글 IME 정상 동작 (입력창이 타이핑 전에 포커스됨)
   const ce=sgrid.clickEdit;sgrid.clickEdit=null;
-  if(ce){const td=sgEl(ce.stu,ce.r,ce.c);if(td&&!td.querySelector('input'))editGridCell(td);}
+  if(ce){const td=sgEl(ce.stu,ce.r,ce.c);if(td&&!td.querySelector('input'))editGridCell(td,'',true);}
 });
 document.addEventListener('dblclick',e=>{const td=e.target.closest('.sgrid-cell');if(td)editGridCell(td);});
 
@@ -3327,7 +3327,7 @@ document.addEventListener('keydown',e=>{
   const k=e.key;
   if((e.ctrlKey||e.metaKey)&&(k==='c'||k==='C')){sgCopy();e.preventDefault();return;}
   if((e.ctrlKey||e.metaKey)&&(k==='v'||k==='V')){return;} // paste 이벤트에서 처리
-  if(k==='ArrowRight'||k==='ArrowLeft'||k==='ArrowUp'||k==='ArrowDown'){sgMove(k,e.shiftKey);e.preventDefault();return;}
+  if(k==='ArrowRight'||k==='ArrowLeft'||k==='ArrowUp'||k==='ArrowDown'){sgMove(k,e.shiftKey);e.preventDefault();if(!e.shiftKey){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,'',true);}return;}
   if(k==='Enter'||k==='F2'){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);e.preventDefault();return;}
   if(k==='Delete'||k==='Backspace'){sgDeleteSel();e.preventDefault();return;}
   // 한글 조합 키(keyCode 229): 편집칸을 즉시 열고 동기적으로 포커스 → 첫 글자부터 조합이 새 입력칸에서 이어짐
@@ -3435,9 +3435,10 @@ function editGridCell(td,initialChar,syncFocus){
   if(valSpan)valSpan.style.display='none';
   td.appendChild(input);
   if(syncFocus){
-    // 한글 IME: 지금 이 keydown 처리 중에 즉시 포커스해야 조합이 이 입력칸으로 들어옴
+    // 한글 IME: 지금 이 이벤트 처리 중에 즉시 포커스해야 조합이 이 입력칸으로 들어옴
     input.focus();
-    const n=input.value.length;try{input.setSelectionRange(n,n);}catch(_){}
+    if(initialChar){const n=input.value.length;try{input.setSelectionRange(n,n);}catch(_){}}
+    else{try{input.select();}catch(_){}}
   }else{
     // 포커스는 다음 프레임에 (mouseup 기본 포커스 처리 이후여야 확실히 잡힘)
     requestAnimationFrame(()=>{
