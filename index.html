@@ -395,7 +395,7 @@ body:not(.dark) .notice-box.important .notice-text{color:#78350f}
 <!-- 앱 -->
 <div class="app" id="app">
   <div class="topbar">
-    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v50</span></div>
+    <div class="logo">🌻 영업 대시보드 <span style="font-size:10px;background:#e0f0ff;color:#1a56db;padding:2px 6px;border-radius:8px;font-weight:700;margin-left:4px">v51</span></div>
     <div class="topbar-right">
       <div onclick="toggleDark()" id="dark-toggle" style="display:flex;background:var(--bg);border-radius:20px;padding:2px;gap:2px;cursor:pointer;border:1px solid var(--border)">
         <div id="dark-sun" style="padding:3px 8px;border-radius:20px;font-size:11px;background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)">☀️</div>
@@ -3330,9 +3330,8 @@ document.addEventListener('keydown',e=>{
   if(k==='ArrowRight'||k==='ArrowLeft'||k==='ArrowUp'||k==='ArrowDown'){sgMove(k,e.shiftKey);e.preventDefault();return;}
   if(k==='Enter'||k==='F2'){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);e.preventDefault();return;}
   if(k==='Delete'||k==='Backspace'){sgDeleteSel();e.preventDefault();return;}
-  // 한글 조합 키(keyCode 229): 편집칸만 열고 preventDefault 하지 않음.
-  // editGridCell이 rAF로 포커스를 잡으므로, 조합은 새 입력칸에서 이어짐.
-  if(e.isComposing||e.keyCode===229){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td);return;}
+  // 한글 조합 키(keyCode 229): 편집칸을 즉시 열고 동기적으로 포커스 → 첫 글자부터 조합이 새 입력칸에서 이어짐
+  if(e.isComposing||e.keyCode===229){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,'',true);return;}
   if(k.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){const td=sgEl(sgrid.stu,sgrid.f.r,sgrid.f.c);if(td)editGridCell(td,k);e.preventDefault();}
 });
 document.addEventListener('paste',e=>{
@@ -3421,7 +3420,7 @@ function normDate(v){
   if(m)return `20${m[1]}-${m[2]}-${m[3]}`;
   return v;
 }
-function editGridCell(td,initialChar){
+function editGridCell(td,initialChar,syncFocus){
   if(!td||td.querySelector('input'))return;
   const field=td.dataset.field,type=td.dataset.type,sid=td.dataset.sid,stu=td.dataset.stu,r=+td.dataset.r,c=+td.dataset.c;
   if(field==='status'){const sel=td.querySelector('select');if(sel)sel.focus();return;}
@@ -3435,12 +3434,18 @@ function editGridCell(td,initialChar){
   input.style.cssText='width:96%;border:1px solid var(--text);border-radius:5px;padding:2px 4px;font-size:12px;outline:none;background:var(--card);color:var(--text)';
   if(valSpan)valSpan.style.display='none';
   td.appendChild(input);
-  // 포커스는 다음 프레임에 (mouseup 기본 포커스 처리 이후여야 확실히 잡힘 → 한글 IME 정상)
-  requestAnimationFrame(()=>{
+  if(syncFocus){
+    // 한글 IME: 지금 이 keydown 처리 중에 즉시 포커스해야 조합이 이 입력칸으로 들어옴
     input.focus();
-    if(initialChar){const n=input.value.length;input.setSelectionRange(n,n);}
-    else input.select();
-  });
+    const n=input.value.length;try{input.setSelectionRange(n,n);}catch(_){}
+  }else{
+    // 포커스는 다음 프레임에 (mouseup 기본 포커스 처리 이후여야 확실히 잡힘)
+    requestAnimationFrame(()=>{
+      input.focus();
+      if(initialChar){const n=input.value.length;input.setSelectionRange(n,n);}
+      else input.select();
+    });
+  }
   let done=false,nav=null;
   const commit=async()=>{
     if(done)return;done=true;
